@@ -26,12 +26,12 @@
 | 4 ✅ | MODE: PLAN_STEP: i compiti del prossimo passo, generati dal codice com'è adesso e proposti come diff (ADR-011), con eval | Chiuso il passo 1 di mini-calc, "Prepara il passo 2" propone compiti simili a quelli scritti a mano, con i casi di test e un primo test d'esempio |
 | 4b | Il sentiero che cresce: condizioni da aggiornare quando un file o un test sparisce, "Aggiungi al percorso" dal fumetto e dalla review, passi chiusi compressi (ADR-011) | Rinominare `plates.ts` segnala i compiti da aggiornare e propone la correzione |
 | 5 ✅ | Fumetto `⌥P` con i quattro gradini e "Perché conta?", con eval | Sul bug `>`/`>=` parte da una domanda e non scrive mai il corpo |
-| 6 | Prepara il file: MODE: SCAFFOLD, scheletro composto da Pebble con anteprima | `plates.ts` nasce con firma e pseudocodice, senza corpo |
+| 6 ✅ | Prepara il file: MODE: SCAFFOLD, scheletro composto da Pebble con anteprima | `plates.ts` nasce con firma e pseudocodice, senza corpo |
 | 7 | Approfondisci e Quaderno | I concetti del fumetto finiscono in `quaderno.md` |
 | 8 | Prova reale su mini-calc, passi 1–3 | Note su cosa è utile e cosa è rumore |
 
 ## Da dove partire
-**Prova reale su mini-calc (passo 8), poi il passo 6.** Percorso, segnali, fumetto e passi generati ci sono: prima di aggiungere "Prepara il file" conviene usarli davvero su mini-calc, con gpt-6-sol, e annotare cosa è utile e cosa è rumore. Da tarare con l'uso: l'avviso "mai visto fallire" (ADR-010) compare anche su test legittimamente verdi dall'inizio, come il caso dei 20 kg.
+**Prova reale su mini-calc (passo 8), poi il quaderno (7).** Il ciclo del mockup c'è tutto tranne il quaderno: percorso, passi generati, "Prepara il file", segnali, fumetto. Prima di aggiungere altro conviene usarlo davvero su mini-calc, con gpt-6-sol, e annotare cosa è utile e cosa è rumore. Da tarare con l'uso: l'avviso "mai visto fallire" (ADR-010) compare anche su test legittimamente verdi dall'inizio, come il caso dei 20 kg.
 
 ## Da decidere più avanti
 - Prompt, ADR ed eval in inglese, ora che il repo è pubblico.
