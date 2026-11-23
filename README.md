@@ -125,3 +125,7 @@ Run the prompt evals (they use Claude Code in headless mode):
 python3 evals/run.py           # all cases
 python3 evals/run.py 11 12     # selected cases
 ```
+
+## License
+
+[MIT](LICENSE)

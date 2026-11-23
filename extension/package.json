@@ -4,7 +4,7 @@
   "description": "Un senior engineer nel tuo editor: guida, rivede e consiglia test. Il codice lo scrivi tu.",
   "version": "0.6.0",
   "publisher": "lordkenzo",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "engines": {
     "vscode": "^1.100.0"
