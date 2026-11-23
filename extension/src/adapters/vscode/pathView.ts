@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
-import { buildViewModel, parsePath, withCheckbox, type PathViewModel } from "../../core/path";
+import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState } from "../../core/path";
+import { SignalCollector } from "../signals/collector";
 
 const PATH_FILE = [".pebble", "percorso.md"] as const;
+const SEEN_RED_KEY = "pebble.path.seenRed";
 
 /** Percorso di esempio, scritto quando il progetto non ne ha ancora uno. */
 export const EXAMPLE_PATH = `# Percorso
@@ -18,28 +20,58 @@ Sotto ogni compito: fare, firma, fatto quando. Le righe che Pebble non riconosce
   fatto quando: test "il runner funziona"
 `;
 
+export interface PathSettings {
+  testCommand: string;
+  timeoutSeconds: number;
+  verifyOnSave: boolean;
+  requireRedFirst: boolean;
+}
+
+interface CheckInfo {
+  at?: string;
+  running: boolean;
+  tests?: number;
+  failed?: number;
+  error?: string;
+  command: string;
+}
+
 type FromWebview =
   | { type: "ready" }
   | { type: "toggle"; line: number; checked: boolean }
   | { type: "reveal"; line: number }
-  | { type: "createExample" };
+  | { type: "createExample" }
+  | { type: "verify" }
+  | { type: "settings" };
+
+const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
 /**
- * Vista "Percorso" (ADR-001, ADR-007): passi e compiti di .pebble/percorso.md,
- * con la grafica di mockup/on-demand.html. Spuntare una casella cambia solo quella riga del file.
+ * Vista "Percorso" (ADR-001, ADR-007) con la grafica di mockup/on-demand.html, e il suo controller:
+ * al salvataggio raccoglie i segnali locali (ADR-008), aggiorna le caselle e ricorda i test visti rossi (ADR-010).
  */
 export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly id = "pebble.path";
 
   private view: vscode.WebviewView | undefined;
-  private model: (PathViewModel & { hasFile: boolean }) | null = null;
+  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo }) | null = null;
+  private text: string | null = null;
   private readonly disposables: vscode.Disposable[] = [];
+  private readonly collector: SignalCollector | undefined;
+  private states = new Map<string, TaskState>();
+  private running = false;
+  private pending: boolean | null = null; // verifica in coda mentre ne gira un'altra; true = con i test
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private queuedRunTests = false;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly root: vscode.Uri | undefined,
+    private readonly memento: vscode.Memento,
+    private readonly settings: () => PathSettings,
   ) {
     if (root) {
+      this.collector = new SignalCollector(root, () => this.settings());
       const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(root, PATH_FILE.join("/")));
       this.disposables.push(
         watcher,
@@ -48,11 +80,22 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
         watcher.onDidDelete(() => void this.refresh()),
         // Le modifiche non ancora salvate contano: la vista segue quello che vedi nell'editor.
         vscode.workspace.onDidChangeTextDocument((e) => {
-          if (e.document.uri.toString() === this.uri?.toString()) this.load(e.document.getText());
+          if (this.isPathFile(e.document.uri)) this.load(e.document.getText());
+        }),
+        // Al salvataggio di un file del progetto: verifica con i test (non per percorso.md, che scriviamo noi).
+        vscode.workspace.onDidSaveTextDocument((doc) => {
+          if (!this.settings().verifyOnSave || this.isPathFile(doc.uri) || !this.inProject(doc.uri)) return;
+          this.schedule(true, 900);
+        }),
+        // Gli errori dell'editor cambiano spesso: rivaluta senza rilanciare i test.
+        vscode.languages.onDidChangeDiagnostics(() => {
+          if (this.text !== null) this.schedule(false, 600);
         }),
       );
     }
-    void this.refresh();
+    void this.refresh().then(() => {
+      if (this.text !== null) this.schedule(true, 1500);
+    });
   }
 
   get uri(): vscode.Uri | undefined {
@@ -73,8 +116,12 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "toggle") void this.toggle(m.line, m.checked);
       else if (m.type === "reveal") void this.reveal(m.line);
       else if (m.type === "createExample") void this.createExample();
+      else if (m.type === "verify") void this.verify(true);
+      else if (m.type === "settings") void vscode.commands.executeCommand("workbench.action.openSettings", "pebble.path");
     });
-    view.onDidChangeVisibility(() => view.visible && this.post());
+    view.onDidChangeVisibility(() => {
+      if (view.visible) this.post();
+    });
     view.onDidDispose(() => (this.view = undefined));
     this.decorate();
   }
@@ -92,11 +139,25 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   }
 
   private load(text: string | null): void {
+    this.text = text;
     const tasks = text === null ? [] : parsePath(text).tasks;
-    this.model = { ...buildViewModel(tasks), hasFile: text !== null };
+    const states = tasks.map((t) => this.states.get(keyOf(t)) ?? ({ status: "unknown", reason: "" } as TaskState));
+    this.model = { ...buildViewModel(tasks, states), hasFile: text !== null, check: this.checkInfo() };
     void vscode.commands.executeCommand("setContext", "pebble.hasPath", text !== null);
     this.decorate();
     this.post();
+  }
+
+  private checkInfo(): CheckInfo {
+    const run = this.collector?.last;
+    const info: CheckInfo = { running: this.running, command: this.settings().testCommand };
+    if (run) {
+      info.at = run.at.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+      info.tests = run.tests.length;
+      info.failed = run.tests.filter((t) => !t.ok).length;
+      if (run.error) info.error = run.error;
+    }
+    return info;
   }
 
   private post(): void {
@@ -110,6 +171,80 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     this.view.description = total ? `${done} di ${total}` : undefined;
     this.view.badge = total && done < total ? { value: total - done, tooltip: `${total - done} compiti da fare` } : undefined;
   }
+
+  // ---------- verifica con i segnali ----------
+
+  private schedule(runTests: boolean, delayMs: number): void {
+    this.queuedRunTests ||= runTests;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      const withTests = this.queuedRunTests;
+      this.queuedRunTests = false;
+      void this.verify(withTests);
+    }, delayMs);
+  }
+
+  /** Raccoglie i segnali, valuta i compiti e aggiorna le caselle. Mai due verifiche in parallelo. */
+  async verify(runTests: boolean): Promise<void> {
+    if (!this.collector || this.text === null) return;
+    if (this.running) {
+      this.pending = (this.pending ?? false) || runTests;
+      return;
+    }
+    this.running = true;
+    if (runTests) this.load(this.text); // mostra "sto lanciando i test"
+    try {
+      const tasks = parsePath(this.text).tasks;
+      const signals = await this.collector.collect(tasks, runTests);
+      let seenRed = this.memento.get<string[]>(SEEN_RED_KEY, []);
+      const run = this.collector.last;
+      if (runTests && run && !run.error) {
+        seenRed = updateSeenRed(seenRed, run.tests);
+        await this.memento.update(SEEN_RED_KEY, seenRed);
+      }
+      const states = evaluate(tasks, { ...signals, seenRed }, { requireRedFirst: this.settings().requireRedFirst });
+      this.states = new Map(tasks.map((t, i) => [keyOf(t), states[i]!]));
+      await this.applyCheckboxes();
+    } finally {
+      this.running = false;
+      await this.refresh();
+      if (this.pending !== null) {
+        const next = this.pending;
+        this.pending = null;
+        void this.verify(next);
+      }
+    }
+  }
+
+  /** Scrive nel file solo le caselle che cambiano, una riga per compito (ADR-007). */
+  private async applyCheckboxes(): Promise<void> {
+    const uri = this.uri;
+    if (!uri) return;
+    const doc = await vscode.workspace.openTextDocument(uri);
+    const edit = new vscode.WorkspaceEdit();
+    for (const task of parsePath(doc.getText()).tasks) {
+      const state = this.states.get(keyOf(task));
+      if (!state || state.status === "unknown") continue;
+      const want = state.status === "done";
+      if (want === task.checked) continue;
+      const updated = withCheckbox(doc.lineAt(task.line).text, want);
+      if (updated !== null) edit.replace(uri, doc.lineAt(task.line).range, updated);
+    }
+    if (!edit.size) return;
+    const wasDirty = doc.isDirty;
+    await vscode.workspace.applyEdit(edit);
+    if (!wasDirty) await doc.save();
+  }
+
+  private isPathFile(uri: vscode.Uri): boolean {
+    return uri.toString() === this.uri?.toString();
+  }
+
+  private inProject(uri: vscode.Uri): boolean {
+    return !!this.root && uri.scheme === "file" && uri.fsPath.startsWith(this.root.fsPath) && !/[\\/](node_modules|\.git|out|dist)[\\/]/.test(uri.fsPath);
+  }
+
+  // ---------- azioni ----------
 
   /** Apre percorso.md sulla riga del compito. */
   async reveal(line: number): Promise<void> {
@@ -135,9 +270,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     }
     await vscode.window.showTextDocument(uri, { preview: true });
     await this.refresh();
+    this.schedule(true, 300);
   }
 
-  /** Spuntare a mano: cambia solo la riga del compito, poi salva se il file non aveva modifiche in sospeso. */
+  /** Spuntare a mano: cambia solo la riga del compito. Se i segnali dicono altro, alla prossima verifica vincono loro. */
   private async toggle(line: number, checked: boolean): Promise<void> {
     const uri = this.uri;
     if (!uri) return;
@@ -156,6 +292,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   }
 
   dispose(): void {
+    clearTimeout(this.timer);
     for (const d of this.disposables) d.dispose();
   }
 }

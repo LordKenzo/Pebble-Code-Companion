@@ -109,6 +109,12 @@
         "command": "pebble.path.reveal",
         "title": "Apri il compito nel percorso",
         "category": "Pebble"
+      },
+      {
+        "command": "pebble.path.verify",
+        "title": "Verifica il percorso con test e compilatore",
+        "category": "Pebble",
+        "icon": "$(beaker)"
       }
     ],
     "menus": {
@@ -119,6 +125,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "pebble.path.verify",
+          "when": "view == pebble.path && pebble.hasPath",
+          "group": "navigation@0"
+        },
         {
           "command": "pebble.clearChat",
           "when": "view == pebble.chat",
@@ -262,6 +273,27 @@
           "type": "boolean",
           "default": true,
           "description": "Quando crei un file in un progetto con .pebble/, Pebble ti dice che ruolo ha e cosa evitare."
+        },
+        "pebble.path.testCommand": {
+          "type": "string",
+          "default": "node --test --test-reporter=tap",
+          "markdownDescription": "Comando che lancia i test e stampa i risultati in formato TAP, eseguito nella cartella del progetto. Esempi: `node --test --test-reporter=tap \"test/**/*.test.ts\"`, `npx vitest run --reporter=tap`."
+        },
+        "pebble.path.testTimeoutSeconds": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "description": "Tempo massimo per i test lanciati dal percorso, in secondi."
+        },
+        "pebble.path.verifyOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Quando salvi un file del progetto, rilancia i test e aggiorna le caselle del percorso. Non usa il modello e non costa niente."
+        },
+        "pebble.path.requireRedFirst": {
+          "type": "boolean",
+          "default": false,
+          "description": "Un compito si chiude solo se Pebble ha visto i suoi test fallire almeno una volta (ADR-010). Disattivato: il compito si chiude con un avviso."
         }
       }
     },

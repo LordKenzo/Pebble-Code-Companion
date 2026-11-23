@@ -161,7 +161,12 @@ export function activate(context: vscode.ExtensionContext): void {
   }, proposals);
 
   // Vista "Percorso": i compiti di .pebble/percorso.md (ADR-007).
-  const pathView = new PathView(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri);
+  const pathView = new PathView(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, context.workspaceState, () => ({
+    testCommand: config().get("path.testCommand", "node --test --test-reporter=tap"),
+    timeoutSeconds: config().get("path.testTimeoutSeconds", 60),
+    verifyOnSave: config().get("path.verifyOnSave", true),
+    requireRedFirst: config().get("path.requireRedFirst", false),
+  }));
 
   context.subscriptions.push(
     diagnostics,
@@ -169,6 +174,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PathView.id, pathView),
     vscode.commands.registerCommand("pebble.path.reveal", (line: number) => pathView.reveal(line)),
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
+    vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
     vscode.commands.registerCommand("pebble.path.open", () => pathView.reveal(0)),
     vscode.commands.registerCommand("pebble.path.createExample", () => pathView.createExample()),
 
