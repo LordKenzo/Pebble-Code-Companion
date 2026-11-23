@@ -1,0 +1,5 @@
+1 | import { screen } from '@testing-library/react'
+2 | 
+3 | describe('App', () => { it('mostra un titolo', () => { 
+4 | expect(screen.getByText(/Calcolatrice/i))
+5 |  })

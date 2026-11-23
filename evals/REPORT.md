@@ -122,6 +122,20 @@ Passo 6 della roadmap. Il modello restituisce le parti dello scheletro, Pebble c
 
 Correzione: il messaggio porta le firme previste dagli altri compiti del passo, e il prompt chiede di usarle esattamente.
 
+## Prompt v0.8: gli errori dell'editor prima di tutto (caso 23, prova reale)
+
+Dalla prova reale sul progetto `prova` (React + Vite, con qwen3-coder locale). Vitest e Testing Library non erano installati, il compito di installazione si era spuntato per una condizione troppo debole ("esiste package.json"), e il test non compilava. Fumetto e review non ricevevano gli errori dell'editor: il fumetto ha fatto una domanda sul titolo, la review ha sostenuto che mancava un import che c'era.
+
+Correzioni: blocco `<problems>` con gli errori dell'editor nel fumetto e nella review; nel fumetto "Prima sistemiamo il file" con correzioni concrete prima di qualsiasi domanda; condizione `dipendenza nome`; comando dei test scelto dal package.json (Vitest con `--reporter=tap-flat`).
+
+| Prova | Esito | Note |
+|---|---|---|
+| Caso 23 con Claude | ✅ | Installazione, import da vitest, parentesi da chiudere con la riga, termini spiegati per il livello entry. Nessuna domanda, nessun codice di App.tsx |
+| Stesso messaggio con qwen3-coder:30b, fumetto | ✅ con riserve | Con gli errori nel contesto trova installazione e parentesi, ma non segue il formato (numera i punti come "Gradino 1, 2, 3") e scrive il contenuto di App.tsx (zona C) |
+| Stesso messaggio con qwen3-coder:30b, review | ⚠️ | Non contraddice più gli errori, ma propone Jest in un progetto Vite che pianifica Vitest, e restituisce "try" come lista invece che come testo (nell'estensione lo schema strutturato lo impedisce) |
+
+Conclusione: il contesto giusto aiuta molto anche il modello locale, ma per fumetto e passi generati un modello cloud resta più affidabile nel rispettare le zone.
+
 ## Aperto
 
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
