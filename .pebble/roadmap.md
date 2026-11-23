@@ -1,19 +1,36 @@
 # Roadmap
 
+## Fase 1: mentor in chat (v0.1–v0.6)
+
+| # | Passo | Stato |
+|---|---|---|
+| 1 | Casi di valutazione del prompt in `evals/` | ✅ 14 casi, prompt v0.4 |
+| 2 | Formato strutturato per REVIEW, mappato su Diagnostics | ✅ |
+| 3 | `core/policy`: filtro sulle zone con i suoi test | ✅ (aggiornato a tre zone, ADR-003) |
+| 4 | Runner degli eval da riga di comando | ✅ `evals/run.py` con Claude Code |
+| 5 | Estensione minima: review del file → Diagnostics e pannello | ✅ |
+| 6 | `init` da `bootstrap.md` che scrive `.pebble/` | ✅ |
+| 7 | Trigger automatici su nuovo file e salvataggio | ⛔ abbandonato (ADR-006) |
+| 7b | Livello di esperienza e registro della spesa | ✅ |
+| 8 | Prova su un progetto reale | ✅ mini-calc: troppo generico e troppo passivo, da qui la fase 2 |
+
+## Fase 2: il percorso (piano in `docs/piano-pair-engineer.md`)
+
 | # | Passo | Fatto quando |
 |---|---|---|
-| 1 ✅ | **Casi di valutazione del prompt**: 8-10 casi (bootstrap + file + cosa ci si aspetta) in `evals/`, eseguiti a mano con la scheda di `prompts/README.md` | Ogni caso ha un punteggio e il prompt è passato almeno a v0.2 |
-| 2 ✅ | Formato strutturato per REVIEW (note come dati, non solo testo), da mappare su Diagnostics | Il prompt produce note valide in tutti i casi di eval |
-| 3 ✅ | `core/policy`: filtro "niente codice" con i suoi test | I casi "insistenza" e "blocco lungo" sono coperti da test |
-| 4 | Runner degli eval da riga di comando, via API | I casi del passo 1 girano con un comando |
-| 5 ✅ | Estensione minima: comando "Pebble: rivedi il file" → Diagnostics + pannello | Funziona su un progetto reale |
-| 6 ✅ | `/init` da `bootstrap.md` che scrive `.pebble/` | Rigenera questa cartella partendo dal bootstrap |
-| 7 🟡 | Trigger automatici su nuovo file (fatto) e salvataggio (da fare) | Euristica ADR-004 attiva, nessuna review su modifiche banali |
-| 7b ✅ | Livello di esperienza (entry, junior, mid, senior) e registro della spesa con budget | Le risposte cambiano davvero tra entry e senior; costo stimato per review e per mese |
-| 8 | Feedback "utile / rumore" su ogni nota, salvato in locale | Si può calcolare la percentuale di note utili |
+| 0 ✅ | Commit della v0.6 e ADR della nuova direzione (003, 004 superato, 006–009) | `.pebble/` descrive il percorso |
+| 1 | `core/path`: parsing di `percorso.md` ed `evaluate`, con test | Coperti: test verde, test che torna rosso, file mancante, compito a mano, righe sconosciute conservate |
+| 2 | Vista Percorso da un `percorso.md` scritto a mano per il passo 2 di mini-calc | In VS Code vedi i compiti e li spunti a mano, e il file si aggiorna |
+| 3 | Segnali: errori dell'editor e test TAP al salvataggio | Scrivendo `platesFor` su mini-calc, i compiti si spuntano da soli |
+| 4 | MODE: PLAN_STEP: compiti generati dal passo della roadmap, con eval | Il passo 2 di mini-calc genera compiti simili a quelli scritti a mano, con i casi di test e un primo test d'esempio |
+| 5 | Fumetto `⌥P` con i quattro gradini e "Perché conta?", con eval | Sul bug `>`/`>=` parte da una domanda e non scrive mai il corpo |
+| 6 | Prepara il file: MODE: SCAFFOLD, scheletro composto da Pebble con anteprima | `plates.ts` nasce con firma e pseudocodice, senza corpo |
+| 7 | Approfondisci e Quaderno | I concetti del fumetto finiscono in `quaderno.md` |
+| 8 | Prova reale su mini-calc, passi 1–3 | Note su cosa è utile e cosa è rumore |
 
 ## Da dove partire
-**Passo 1, i casi di valutazione.** Il prompt è il prodotto: se i consigli non sono utili su 10 casi scritti a mano, nessuna estensione li renderà utili. È anche il passo più economico per cambiare idea.
+**Passo 1, `core/path`.** È logica pura e si testa senza editor. Fissa il formato di `percorso.md` (ADR-007) prima di costruirci sopra la vista e i segnali.
 
 ## Da decidere più avanti
-- Modello di business (open source, freemium, licenza per team): non cambia l'architettura dei passi 1-5. Rivalutare dopo il passo 5, quando c'è qualcosa da far provare.
+- Prompt, ADR ed eval in inglese, ora che il repo è pubblico.
+- Modello di business: il progetto è open source con licenza MIT; un'eventuale offerta per team non cambia l'architettura.

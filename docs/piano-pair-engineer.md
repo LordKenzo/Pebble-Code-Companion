@@ -1,6 +1,6 @@
 # Piano: Pebble come pair engineer su richiesta
 
-> Proposta del 2026-11-23, dopo la prova su mini-calc e il mockup `mockup/on-demand.html`. Stato: da approvare. Non cambia ancora ADR né roadmap in `.pebble/`.
+> Proposta del 2026-11-23, dopo la prova su mini-calc e il mockup `mockup/on-demand.html`. Approvata: le decisioni sono in `.pebble/decisions/` (ADR-003, ADR-006…009) e i passi in `.pebble/roadmap.md`, fase 2.
 
 ## Cosa vogliamo
 
@@ -46,7 +46,7 @@ Da togliere o spegnere:
   - `noErrors`: il file non ha errori del compilatore;
   - `manual`: lo spunti tu.
 - `evaluate(tasks, signals)`: funzione pura che dice quali compiti sono fatti. Se un test si rompe, il compito torna aperto.
-- Stato su disco in `.pebble/percorso.json`, coerente con ADR-002 (stato in file, versionabile con git).
+- Stato su disco in `.pebble/percorso.md`, una checklist Markdown (`- [ ]`) leggibile e modificabile a mano, coerente con ADR-002 (ADR-007).
 
 ### 2. Segnali locali (`adapters/signals/`)
 - **Errori del compilatore**: si leggono da VS Code con `vscode.languages.getDiagnostics()`. Sono già calcolati dal language server, quindi non serve lanciare `tsc`.
@@ -82,15 +82,16 @@ Da togliere o spegnere:
 
 ### 6. Approfondisci e quaderno
 - "Approfondisci" chiama MODE: HELP con la richiesta di spiegare il concetto, proporre un'abitudine e lasciare un esercizio.
-- Il quaderno sta in `.pebble/quaderno.json` e si vede in una seconda `TreeView`. Ogni concetto ha titolo, sintesi, stato (nuovo, capito, da approfondire) e il compito in cui è nato.
+- Il quaderno sta in `.pebble/quaderno.md` e si vede in una seconda `TreeView`. Ogni concetto ha titolo, sintesi, stato (nuovo, capito, da approfondire) e il compito in cui è nato.
 
 ## Decisioni da aggiornare in `.pebble/`
 
 - **ADR-003**: diventa "tre zone". In più, lo scheletro è composto da Pebble a partire da dati strutturati.
-- **ADR-004**: superato da "Pebble interviene solo su richiesta". L'unica cosa automatica è la verifica locale che spunta i compiti, senza modello.
-- **ADR-006 (nuovo)**: percorso e quaderno in `.pebble/`, come file JSON.
-- **ADR-007 (nuovo)**: segnali presi dagli errori di VS Code e da un comando di test con output TAP.
-- **ADR-008 (nuovo)**: il fumetto usa la Comments API.
+- **ADR-004**: superato da ADR-006. L'unica cosa automatica è la verifica locale che spunta i compiti, senza modello.
+- **ADR-006 (nuovo)**: Pebble interviene solo su richiesta.
+- **ADR-007 (nuovo)**: percorso e quaderno come checklist Markdown in `.pebble/` (nel piano erano JSON, ma contraddiceva ADR-002).
+- **ADR-008 (nuovo)**: segnali presi dagli errori di VS Code e da un comando di test con output TAP.
+- **ADR-009 (nuovo)**: il fumetto usa la Comments API.
 
 ## Roadmap
 
@@ -100,7 +101,7 @@ Ogni passo si può verificare da solo e ne fa partire uno dopo.
 |---|---|---|
 | 0 | Commit della v0.6, aggiornamento degli ADR qui sopra | `.pebble/` descrive la nuova direzione |
 | 1 | `core/path.ts`: modello ed `evaluate`, con test | Coperti i casi: test verde, test che torna rosso, file mancante, compito manuale |
-| 2 | Vista del percorso da un `percorso.json` scritto a mano per il passo 2 di mini-calc | In VS Code vedi i compiti e li spunti a mano |
+| 2 | Vista del percorso da un `percorso.md` scritto a mano per il passo 2 di mini-calc | In VS Code vedi i compiti e li spunti a mano |
 | 3 | Segnali: errori di VS Code e test TAP al salvataggio | Su mini-calc, scrivendo `platesFor`, i compiti si spuntano da soli |
 | 4 | MODE: PLAN_STEP: compiti generati dal passo della roadmap, con eval | Il passo 2 di mini-calc genera compiti simili a quelli scritti a mano |
 | 5 | Fumetto ⌥P con i quattro gradini e "Perché conta?", con eval | Sul bug `>`/`>=` parte da una domanda e non scrive mai il corpo |
