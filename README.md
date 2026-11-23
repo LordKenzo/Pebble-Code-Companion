@@ -136,7 +136,7 @@ Pebble is an early, working prototype, built in the open and dogfooded on itself
 | **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path panel, styled like the mockup. It reads `.pebble/percorso.md`, and tasks tick themselves when you save: Pebble runs your tests (any runner with TAP output), reads the compiler errors VS Code already has, and warns you when a test has never been seen failing. **Also new:** the `⌥P` balloon on the current line: it starts with a question built from your failing tests, climbs the help ladder on request, answers your replies, and offers *why it matters* and a deep dive. When a step is done, **Prepare step N** plans the next one from your code as it is now, and shows it as a diff to accept or discard. **Prepare the file** writes the skeleton of a missing file: imports, types, signatures and pseudocode as comments, with empty bodies; for a test file, one complete example test and the other cases as `test.todo`. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
 | **In design** | The notebook, and tracking drift when files or tests are renamed. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/piano-pair-engineer.md`](docs/piano-pair-engineer.md). |
 
-Heads-up: the prompts, ADRs, evals and internal docs are in Italian for now, because that is the language the project is being built in. English versions will follow.
+Pebble speaks **English and Italian**: set `pebble.language` (`auto` follows VS Code's language). The interface, the files Pebble writes and the model's answers all follow it. The ADRs, evals and internal docs are in Italian for now, because that is the language the project is being built in.
 
 ## Repository layout
 
@@ -144,7 +144,7 @@ Heads-up: the prompts, ADRs, evals and internal docs are in Italian for now, bec
 |---|---|
 | `bootstrap.md` | Pebble's own bootstrap |
 | `.pebble/` | Pebble's own architecture, ADRs and roadmap |
-| `prompts/mentor.md` | The mentor system prompt: the real product |
+| `prompts/mentor.en.md`, `prompts/mentor.md` | The mentor system prompt, in English and Italian: the real product |
 | `evals/` | Prompt evaluation cases, fixtures, the runner and the report |
 | `extension/` | The VS Code extension (TypeScript) |
 | `mockup/` | Interactive mockups: the original live session and the on-demand path |

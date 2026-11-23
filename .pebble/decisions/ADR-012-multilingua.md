@@ -1,0 +1,12 @@
+## ADR-012: Pebble è multilingua, oggi italiano e inglese
+Stato: accettato
+Contesto: Pebble è nato in italiano, ma il repo è pubblico e il lancio punta a una comunità internazionale. Un README in inglese che promette un prodotto che parla solo italiano è il primo ostacolo per chi lo prova. Lo sviluppatore deve poter scegliere la lingua.
+Decisione:
+- **Impostazione `pebble.language`**: `auto` (default, segue la lingua di VS Code: italiano se VS Code è in italiano, altrimenti inglese), `it`, `en`. Cambiarla aggiorna subito il pannello.
+- **Cataloghi in `core/i18n.ts`**: un oggetto per lingua, con la stessa forma. TypeScript e un test verificano che ogni lingua abbia tutte le chiavi. La vista Percorso riceve il suo catalogo insieme al modello, perché nella webview passano dati e non funzioni.
+- **Due prompt allineati**: `prompts/mentor.md` (italiano) e `prompts/mentor.en.md` (inglese), copiati entrambi nell'estensione. Ogni messaggio al modello porta la riga `LINGUA: it|en`, che decide la lingua di ogni testo, compresi i campi dello schema.
+- **Le parole chiave del protocollo restano uguali in tutte le lingue** (`MODE`, `LIVELLO`, `GRADINO`, `PERCHÉ`, `APPROFONDISCI`, `PASSO DA PREPARARE`, `FILE DA PREPARARE`): sono il formato tra estensione e modello, e gli eval restano validi. Il prompt inglese le spiega.
+- **Quello che Pebble scrive nei file** (sezioni di `percorso.md`, scheletri, bootstrap, percorso d'esempio) segue la lingua scelta. Il parser del percorso legge entrambe le lingue (`fare`/`do`, `fatto quando`/`done when`, `a mano`/`manual`…), quindi un percorso scritto in una lingua resta valido nell'altra.
+- I motivi di un compito aperto portano un **codice** (`testMissing`, `fileMissing`…): la vista decide cosa mostrare dal codice, non dalla frase.
+Alternative scartate: tradurre solo l'interfaccia (il modello risponderebbe nella lingua del prompt); un solo prompt con "rispondi in X" (le regole lette in italiano da un modello che scrive in inglese reggono peggio, soprattutto con i modelli locali); `vscode.l10n` per tutto (segue solo la lingua di VS Code, mentre si vuole un'impostazione di Pebble; resta per i titoli dei comandi nel `package.json`).
+Conseguenze: ogni frase nuova va scritta in due lingue. I due prompt vanno tenuti allineati a ogni modifica. Prima tranche: percorso, avvio guidato, fumetto, segnali, testi generati, prompt. Seconda tranche: chat del Mentor, pannello impostazioni, notifiche rimaste, titoli dei comandi.

@@ -136,6 +136,17 @@ Correzioni: blocco `<problems>` con gli errori dell'editor nel fumetto e nella r
 
 Conclusione: il contesto giusto aiuta molto anche il modello locale, ma per fumetto e passi generati un modello cloud resta più affidabile nel rispettare le zone.
 
+## Prompt v0.9: inglese e italiano (ADR-012)
+
+Prompt inglese (`mentor.en.md`) tradotto regola per regola dall'italiano, più la riga `LINGUA:` in tutti i messaggi. Provato con Claude su due casi esistenti, con codice e nomi dei test in italiano e `LINGUA: en`:
+
+| Caso | Esito | Note |
+|---|---|---|
+| 23 file che non compila | ✅ | "Let's fix the file first": installazione, import da vitest, parentesi da chiudere, termini spiegati per il livello entry |
+| 15 gradino 1 | ✅ | Una domanda sul test dei 60 kg e sulla riga del while, senza nominare la soluzione né il concetto |
+
+Aperto: gli eval sono ancora solo in italiano; servono casi in inglese prima del lancio.
+
 ## Aperto
 
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
