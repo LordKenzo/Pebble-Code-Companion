@@ -121,10 +121,17 @@ export interface Signals {
   files?: Record<string, string[]>;
   /** Numero di errori del compilatore per file. */
   errors?: Record<string, number>;
+  /** Nomi dei test che Pebble ha visto fallire almeno una volta (ADR-010). */
+  seenRed?: readonly string[];
+}
+
+export interface EvaluateOptions {
+  /** Con true, un test mai visto rosso non chiude il compito (ADR-010). Default: false, solo avviso. */
+  requireRedFirst?: boolean;
 }
 
 export type TaskState =
-  | { status: "done"; progress?: Progress }
+  | { status: "done"; progress?: Progress; warning?: string }
   | { status: "open"; progress?: Progress; reason: string }
   /** Non si può decidere con i segnali disponibili: vale la casella nel file. */
   | { status: "unknown"; reason: string };
@@ -134,7 +141,7 @@ export interface Progress {
   total: number;
 }
 
-type CondState = { result: "true" | "false" | "unknown"; reason?: string; progress?: Progress };
+type CondState = { result: "true" | "false" | "unknown"; reason?: string; progress?: Progress; warning?: string };
 
 /** Il nome di un test contiene il nome cercato come parola intera: "20 kg" trova "20 kg: nessun disco", non "120 kg". */
 export function testNameMatches(testName: string, wanted: string): boolean {
@@ -156,7 +163,7 @@ export function testNameMatches(testName: string, wanted: string): boolean {
   return false;
 }
 
-function checkCondition(c: Condition, s: Signals): CondState {
+function checkCondition(c: Condition, s: Signals, opts: EvaluateOptions): CondState {
   switch (c.kind) {
     case "manual":
       return { result: "unknown", reason: "si spunta a mano" };
@@ -167,15 +174,24 @@ function checkCondition(c: Condition, s: Signals): CondState {
       let passed = 0;
       const missing: string[] = [];
       const failing: string[] = [];
+      const neverRed: string[] = [];
+      const seen = s.seenRed ? new Set(s.seenRed) : null;
       for (const name of c.names) {
         const found = s.tests.filter((t) => testNameMatches(t.name, name));
         if (found.length === 0) missing.push(name);
-        else if (found.every((t) => t.ok)) passed++;
-        else failing.push(name);
+        else if (found.every((t) => t.ok)) {
+          passed++;
+          if (seen && found.some((t) => !seen.has(t.name))) neverRed.push(name);
+        } else failing.push(name);
       }
+      const quote = (xs: string[]) => xs.map((m) => `"${m}"`).join(", ");
       const progress = { passed, total: c.names.length };
-      if (missing.length) return { result: "false", progress, reason: `test non trovato: ${missing.map((m) => `"${m}"`).join(", ")}` };
-      if (failing.length) return { result: "false", progress, reason: `test rosso: ${failing.map((m) => `"${m}"`).join(", ")}` };
+      if (missing.length) return { result: "false", progress, reason: `test non trovato: ${quote(missing)}` };
+      if (failing.length) return { result: "false", progress, reason: `test rosso: ${quote(failing)}` };
+      if (neverRed.length) {
+        const msg = `verde, ma non l'ho mai visto fallire: ${quote(neverRed)}. Rompi il codice un momento e guarda se il test se ne accorge.`;
+        return opts.requireRedFirst ? { result: "false", progress, reason: msg } : { result: "true", progress, warning: msg };
+      }
       return { result: "true", progress };
     }
     case "file": {
@@ -199,17 +215,31 @@ function checkCondition(c: Condition, s: Signals): CondState {
  * Un compito è fatto se tutte le condizioni sono vere; aperto se almeno una è falsa;
  * altrimenti non si sa, e vale la casella nel file.
  */
-export function evaluate(tasks: readonly Task[], signals: Signals): TaskState[] {
+export function evaluate(tasks: readonly Task[], signals: Signals, opts: EvaluateOptions = {}): TaskState[] {
   return tasks.map((task) => {
     const conds = task.conditions.length ? task.conditions : [{ kind: "manual" } as const];
-    const states = conds.map((c) => checkCondition(c, signals));
+    const states = conds.map((c) => checkCondition(c, signals, opts));
     const progress = states.find((x) => x.progress)?.progress;
     const failed = states.find((x) => x.result === "false");
     if (failed) return { status: "open", reason: failed.reason!, ...(progress && { progress }) };
     const unknown = states.find((x) => x.result === "unknown");
     if (unknown) return { status: "unknown", reason: unknown.reason! };
-    return { status: "done", ...(progress && { progress }) };
+    const warning = states.find((x) => x.warning)?.warning;
+    return { status: "done", ...(progress && { progress }), ...(warning && { warning }) };
   });
+}
+
+/** Aggiunge alla cronologia i test rossi di quest'ultima esecuzione (ADR-010). */
+export function updateSeenRed(prev: readonly string[], results: readonly TestResult[]): string[] {
+  const out = [...prev];
+  const known = new Set(prev);
+  for (const t of results) {
+    if (!t.ok && !known.has(t.name)) {
+      known.add(t.name);
+      out.push(t.name);
+    }
+  }
+  return out;
 }
 
 /**
@@ -304,9 +334,12 @@ export interface TaskView {
   signature: string | null;
   summary: string;
   when: { text: string; invalid: boolean }[];
+  /** Stato dai segnali; assente se non si può decidere (vale la casella). */
+  state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string };
 }
 
-export function buildViewModel(tasks: readonly Task[]): PathViewModel {
+export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[]): PathViewModel {
+  const stateOf = new Map(tasks.map((t, i) => [t.line, states?.[i]] as const));
   const byStep = new Map<string, Task[]>();
   for (const t of tasks) {
     const name = t.step ?? "Senza passo";
@@ -337,10 +370,17 @@ export function buildViewModel(tasks: readonly Task[]): PathViewModel {
           text: describeCondition(c),
           invalid: c.kind === "invalid",
         })),
+        ...viewState(stateOf.get(t.line)),
       })),
     };
   });
   return { done: tasks.filter((t) => t.checked).length, total: tasks.length, currentStep, steps };
+}
+
+function viewState(s: TaskState | undefined): { state?: TaskView["state"] } {
+  if (!s || s.status === "unknown") return {};
+  if (s.status === "done") return { state: { status: "done", ...(s.progress && { progress: s.progress }), ...(s.warning && { warning: s.warning }) } };
+  return { state: { status: "open", reason: s.reason, ...(s.progress && { progress: s.progress }) } };
 }
 
 /** Simboli esportati da un sorgente TypeScript o JavaScript, per il segnale `files`. */

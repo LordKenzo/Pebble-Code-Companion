@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   applyStates, buildViewModel, describeCondition, evaluate, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
-  type Signals,
+  updateSeenRed, type Signals,
 } from "../src/core/path";
 
 const PERCORSO = [
@@ -158,6 +158,48 @@ test("segnali mancanti vogliono dire 'non so', non 'falso'", () => {
 test("una condizione non riconosciuta non spunta né apre il compito", () => {
   const d = parsePath("- [ ] A\n  fatto quando: quando ho voglia");
   assert.deepEqual(evaluate(d.tasks, allGood), [{ status: "unknown", reason: "condizione non riconosciuta: quando ho voglia" }]);
+});
+
+// ---------- prima rosso, poi verde (ADR-010) ----------
+
+test("verde senza mai essere stato rosso: fatto, ma con un avviso", () => {
+  const s: Signals = { ...allGood, seenRed: ["20 kg: nessun disco", "22,5 kg: un 1,25 per lato"] };
+  const st = stateOf("Implementa platesFor", s);
+  assert.equal(st.status, "done");
+  assert.ok(st.status === "done" && st.warning?.includes('"60 kg"'));
+  assert.ok(st.status === "done" && !st.warning?.includes('"20 kg"'));
+});
+
+test("visto rosso e poi verde: fatto, senza avviso", () => {
+  const s: Signals = { ...allGood, seenRed: greenTests.map((t) => t.name) };
+  assert.deepEqual(stateOf("Implementa platesFor", s), { status: "done", progress: { passed: 3, total: 3 } });
+});
+
+test("con requireRedFirst un test mai visto rosso tiene aperto il compito", () => {
+  const s: Signals = { ...allGood, seenRed: [] };
+  const st = evaluate(doc.tasks, s, { requireRedFirst: true })[doc.tasks.indexOf(task("Implementa platesFor"))]!;
+  assert.equal(st.status, "open");
+  assert.ok(st.status === "open" && st.reason.startsWith("verde, ma non l'ho mai visto fallire"));
+});
+
+test("senza cronologia (seenRed assente) nessun avviso", () => {
+  const st = stateOf("Implementa platesFor", allGood);
+  assert.ok(st.status === "done" && st.warning === undefined);
+});
+
+test("updateSeenRed aggiunge solo i rossi nuovi, una volta", () => {
+  const prev = ["a"];
+  const next = updateSeenRed(prev, [{ name: "a", ok: false }, { name: "b", ok: false }, { name: "c", ok: true }, { name: "b", ok: false }]);
+  assert.deepEqual(next, ["a", "b"]);
+  assert.deepEqual(prev, ["a"]);
+});
+
+test("il modello della vista porta lo stato dei compiti", () => {
+  const red: Signals = { ...allGood, tests: [greenTests[0]!, greenTests[1]!, { name: "60 kg: un 20 per lato", ok: false }] };
+  const m = buildViewModel(doc.tasks, evaluate(doc.tasks, red));
+  const impl = m.steps[0]!.tasks.find((t) => t.title === "Implementa platesFor")!;
+  assert.deepEqual(impl.state, { status: "open", reason: 'test rosso: "60 kg"', progress: { passed: 2, total: 3 } });
+  assert.equal(m.steps[0]!.tasks.find((t) => t.title === "Rileggi con Pebble")!.state, undefined);
 });
 
 // ---------- aggiornamento del file ----------
