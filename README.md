@@ -88,7 +88,7 @@ Pebble is not built for speed. If you already know what to write and want it wri
 
 ## How it works
 
-1. **Write a `bootstrap.md`**: what you want to build, your constraints, what you do not know yet.
+1. **Tell Pebble about the project.** Run **Pebble: Start**: answer a few questions and Pebble writes `bootstrap.md` for you, or write it yourself from a guided template. It holds what you want to build, your constraints and what you do not know yet.
 2. **`Pebble: init`** reads it and proposes decisions (ADRs), an architecture, a folder structure and a roadmap. They are saved in `.pebble/` and you can edit them: Pebble respects what is written there.
 3. **Follow the path.** The current step becomes a checklist in the side panel.
 4. **Prepare the file.** Pebble writes the imports, the types and the signature. The pseudocode goes inside the function as comments, and the body stays empty for you:
