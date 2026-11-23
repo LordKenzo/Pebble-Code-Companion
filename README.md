@@ -159,7 +159,7 @@ cd extension
 npm install
 npm test
 npm run package
-code --install-extension pebble-0.7.7.vsix --force
+code --install-extension pebble-0.7.8.vsix --force
 ```
 
 Then run **Pebble: Set API key** from the command palette, or choose a local model in **Pebble: Settings**. Your code is sent to the provider you choose. With a local model it never leaves your machine.

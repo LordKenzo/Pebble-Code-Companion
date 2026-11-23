@@ -43,8 +43,8 @@ Il codice del file viene inviato al provider scelto. Con `local` non esce dal co
 ```
 npm install
 npm test            # test del core (filtro "niente codice", contesto)
-npm run package     # crea pebble-0.7.7.vsix
-code --install-extension pebble-0.7.7.vsix --force
+npm run package     # crea pebble-0.7.8.vsix
+code --install-extension pebble-0.7.8.vsix --force
 ```
 Prova senza VS Code, sui fixture degli eval:
 ```
