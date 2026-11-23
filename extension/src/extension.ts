@@ -216,6 +216,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
     vscode.commands.registerCommand("pebble.path.planNext", () => pathView.planNext()),
     vscode.commands.registerCommand("pebble.scaffoldFile", () => pathView.scaffold()),
+    vscode.commands.registerCommand("pebble.start", () => vscode.commands.executeCommand(`${PathView.id}.focus`)),
     vscode.commands.registerCommand("pebble.path.open", () => pathView.reveal(0)),
     vscode.commands.registerCommand("pebble.path.createExample", () => pathView.createExample()),
 

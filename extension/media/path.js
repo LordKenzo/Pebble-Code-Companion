@@ -122,19 +122,117 @@
     return `<div class="foot">Le caselle si spuntano quando test e compilatore lo confermano: salva un file o ${verify}. Puoi anche spuntarle tu.</div>`;
   }
 
+  // ---------- il sentiero d'avvio: bootstrap, piano, primo passo ----------
+
+  const QUESTIONS = [
+    { key: "name", kind: "line", title: "Come si chiama il progetto?", help: "Un nome di lavoro va benissimo, lo puoi cambiare quando vuoi.", example: "mini-calc" },
+    { key: "what", kind: "text", title: "Cosa vuoi costruire, e per chi?", help: "Poche righe, con parole tue. È la cosa più importante.", example: "Un programma da riga di comando che aiuta a caricare il bilanciere in palestra." },
+    { key: "example", kind: "text", optional: true, title: "Come lo useresti? Un esempio concreto", help: "Un comando, una schermata, un'azione. Una riga per esempio.", example: "mini-calc 1rm 100 5 → massimale stimato" },
+    { key: "stack", kind: "chips", title: "Con quale linguaggio, su quale piattaforma?", help: "Se non lo sai, va bene: diventa uno dei dubbi da chiarire.", options: ["TypeScript su Node", "Python", "Web app con React", "Swift per iOS", "Non lo so ancora"] },
+    { key: "rules", kind: "text", optional: true, title: "Ci sono regole che non si possono sbagliare?", help: "Le regole del dominio: è lì che un errore costa di più. Una per riga.", example: "Bilanciere da 20 kg; dischi da 25 a 1,25 kg, in coppia" },
+    { key: "unknowns", kind: "checks", title: "Cosa non sai ancora?", help: "I dubbi sono il punto di partenza: è proprio lì che Pebble ti aiuta di più." },
+    { key: "level", kind: "levels", title: "Quanta esperienza hai?", help: "Cambia come Pebble ti spiega le cose. Puoi modificarlo nelle impostazioni." },
+  ];
+  const LEVEL_OPTIONS = [
+    ["entry", "Sto imparando", "spiegazioni semplici, ogni termine spiegato"],
+    ["junior", "Ho scritto qualcosa", "il perché, con il nome dei principi"],
+    ["mid", "Sono autonomo", "il giusto, senza ripetere l'ovvio"],
+    ["senior", "Sono esperto", "asciutto: bug, decisioni, compromessi"],
+  ];
+  const saved0 = vscode.getState() || {};
+  let wizard = saved0.wizard || null; // { step, answers }
+  const saveWizard = () => vscode.setState({ ...(vscode.getState() || {}), shownStep, wizard });
+
   function renderEmpty() {
-    root.innerHTML = `
-      <div class="sec"><span>Pebble · percorso</span></div>
-      <div class="empty">
-        <h2>Nessun percorso, per ora</h2>
-        <p>Il percorso trasforma la roadmap in compiti piccoli: cosa fare, la firma da raggiungere, quando è fatto. Vive in <code>.pebble/percorso.md</code>, una checklist che puoi modificare a mano.</p>
-        <pre>## Passo 2 · Dischi per lato
-- [ ] Implementa platesFor
-  firma: platesFor(total: Grams)
-  fatto quando: test "60 kg"</pre>
-        ${model.next ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${model.planning ? "Pebble sta preparando il passo…" : `Prepara il passo ${model.next.n} · ${esc(model.next.title)}`}</button>` : ""}
-        <button class="btn${model.next ? "" : " primary"}" type="button" data-create>Crea un percorso di esempio</button>
+    if (wizard) return renderWizard();
+    const ob = model.onboarding;
+    const stage = (n, done, active, title, text, actions) => `
+      <div class="stage${done ? " done" : ""}${active ? " active" : ""}">
+        <div class="stage-head"><span class="stage-n">${done ? "" : n}</span><b>${title}</b></div>
+        <p>${text}</p>${active || done ? `<div class="actions">${actions}</div>` : ""}
       </div>`;
+    const planBtn = model.next && ob.roadmap
+      ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${model.planning ? "Pebble sta preparando il passo…" : `Prepara il passo ${model.next.n}`}</button>`
+      : "";
+    root.innerHTML = `
+      <div class="sec"><span>Pebble · si parte</span></div>
+      <div class="intro">Tre sassolini per partire. Pebble ti guida e ti propone, il codice lo scrivi tu.</div>
+      <div class="stages">
+        ${stage(1, ob.bootstrap, !ob.bootstrap, "Racconta il progetto",
+          ob.bootstrap ? "Il tuo <code>bootstrap.md</code> c'è." : "Un <code>bootstrap.md</code>: cosa vuoi costruire, i vincoli, cosa non sai ancora.",
+          ob.bootstrap
+            ? `<button class="link" type="button" data-open-bootstrap>Apri bootstrap.md</button>`
+            : `<button class="btn primary" type="button" data-wizard>Rispondi a qualche domanda</button><button class="btn" type="button" data-template>Lo scrivo io nel file</button>`)}
+        ${stage(2, ob.roadmap, ob.bootstrap && !ob.roadmap, "Pebble propone il piano",
+          "Decisioni, architettura e roadmap in <code>.pebble/</code>. Le leggi, le discuti e le salvi tu.",
+          ob.roadmap ? "" : `<button class="btn primary" type="button" data-init>Proponi il piano</button>`)}
+        ${stage(3, false, ob.roadmap, "Il primo passo",
+          "Pebble scompone il passo 1 della roadmap in compiti piccoli, ognuno con quello che si aspetta.",
+          planBtn)}
+      </div>
+      <div class="foot">Preferisci provare subito? <button class="link" type="button" data-create>Crea un percorso di esempio</button></div>`;
+  }
+
+  function renderWizard() {
+    const q = QUESTIONS[wizard.step];
+    const a = wizard.answers;
+    const pct = Math.round(((wizard.step + 1) / QUESTIONS.length) * 100);
+    let field = "";
+    if (q.kind === "line") field = `<input id="f" type="text" value="${esc(a[q.key] || "")}" placeholder="${esc(q.example || "")}">`;
+    if (q.kind === "text") field = `<textarea id="f" rows="4" placeholder="${esc(q.example || "")}">${esc(a[q.key] || "")}</textarea>`;
+    if (q.kind === "chips")
+      field = `<div class="chips">${q.options.map((o) => `<button type="button" class="chip${a.stack === o ? " on" : ""}" data-chip="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+        <input id="f" type="text" value="${esc(q.options.includes(a.stack) ? "" : a.stack || "")}" placeholder="Altro: scrivilo qui">`;
+    if (q.kind === "checks")
+      field = `<div class="checks">${model.onboarding.commonUnknowns.map((u) => `<label><input type="checkbox" data-check="${esc(u)}" ${(a.unknowns || []).includes(u) ? "checked" : ""}> ${esc(u)}</label>`).join("")}</div>
+        <textarea id="f" rows="2" placeholder="Altri dubbi, uno per riga">${esc(a.otherUnknown || "")}</textarea>`;
+    if (q.kind === "levels")
+      field = `<div class="levels">${LEVEL_OPTIONS.map(([id, t, d]) => `<button type="button" class="level${(a.level || model.onboarding.level) === id ? " on" : ""}" data-level="${id}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>`;
+    const last = wizard.step === QUESTIONS.length - 1;
+    root.innerHTML = `
+      <div class="sec"><span>Racconta il progetto</span><b>${wizard.step + 1} di ${QUESTIONS.length}</b></div>
+      <div class="step"><div class="bar"><i data-pct="${pct}"></i></div></div>
+      <div class="wizard">
+        <h2>${esc(q.title)}</h2>
+        <p class="help">${esc(q.help)}</p>
+        ${field}
+        ${q.example && q.kind !== "line" ? `<p class="example">Per esempio: ${esc(q.example)}</p>` : ""}
+        <div class="actions">
+          ${wizard.step > 0 ? `<button class="btn" type="button" data-wiz="back">Indietro</button>` : `<button class="btn" type="button" data-wiz="cancel">Annulla</button>`}
+          <button class="btn primary" type="button" data-wiz="${last ? "finish" : "next"}">${last ? "Crea bootstrap.md" : q.optional ? "Avanti (o salta)" : "Avanti"}</button>
+        </div>
+      </div>`;
+    for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
+    const f = document.getElementById("f");
+    if (f) f.focus();
+  }
+
+  /** Legge il campo della domanda corrente nelle risposte. */
+  function collect() {
+    const q = QUESTIONS[wizard.step];
+    const f = document.getElementById("f");
+    const a = wizard.answers;
+    if (q.kind === "line" || q.kind === "text") a[q.key] = f ? f.value : "";
+    if (q.kind === "chips" && f && f.value.trim()) a.stack = f.value.trim();
+    if (q.kind === "checks") {
+      a.unknowns = [...root.querySelectorAll("[data-check]")].filter((c) => c.checked).map((c) => c.dataset.check);
+      a.otherUnknown = f ? f.value : "";
+    }
+  }
+
+  function finishWizard() {
+    const a = wizard.answers;
+    const unknownStack = a.stack === "Non lo so ancora";
+    const answers = {
+      name: a.name || "", what: a.what || "", example: a.example || "",
+      stack: unknownStack ? "" : a.stack || "", rules: a.rules || "",
+      unknowns: [...(a.unknowns || []), ...(unknownStack ? ["Quale linguaggio e piattaforma usare"] : [])],
+      otherUnknown: a.otherUnknown || "",
+    };
+    vscode.postMessage({ type: "bootstrapWizard", answers, level: a.level || null });
+    wizard = null;
+    saveWizard();
+    render(new Set());
   }
 
   function renderNoTasks() {
@@ -163,15 +261,56 @@
     const stepBtn = e.target.closest("[data-step]");
     if (stepBtn) {
       shownStep = Number(stepBtn.dataset.step);
-      vscode.setState({ shownStep });
+      vscode.setState({ ...(vscode.getState() || {}), shownStep });
       return render(new Set());
     }
     if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });
+    if (e.target.closest("[data-template]")) return vscode.postMessage({ type: "bootstrapTemplate" });
+    if (e.target.closest("[data-open-bootstrap]")) return vscode.postMessage({ type: "openBootstrap" });
+    if (e.target.closest("[data-init]")) return vscode.postMessage({ type: "init" });
+    if (e.target.closest("[data-wizard]")) {
+      wizard = { step: 0, answers: {} };
+      saveWizard();
+      return render(new Set());
+    }
+    const chip = e.target.closest("[data-chip]");
+    if (chip && wizard) {
+      wizard.answers.stack = chip.dataset.chip;
+      saveWizard();
+      return render(new Set());
+    }
+    const lvl = e.target.closest("[data-level]");
+    if (lvl && wizard) {
+      wizard.answers.level = lvl.dataset.level;
+      saveWizard();
+      return render(new Set());
+    }
+    const wiz = e.target.closest("[data-wiz]");
+    if (wiz && wizard) {
+      const act = wiz.dataset.wiz;
+      if (act === "cancel") wizard = null;
+      else {
+        collect();
+        if (act === "back") wizard.step = Math.max(0, wizard.step - 1);
+        if (act === "next") wizard.step = Math.min(QUESTIONS.length - 1, wizard.step + 1);
+        if (act === "finish") return finishWizard();
+      }
+      saveWizard();
+      return render(new Set());
+    }
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
     const sc = e.target.closest("[data-scaffold]");
     if (sc) return vscode.postMessage({ type: "scaffold", path: sc.dataset.scaffold, line: Number(sc.dataset.line) });
     if (e.target.closest("[data-settings]")) return vscode.postMessage({ type: "settings" });
+  });
+
+  root.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && wizard && e.target.tagName === "INPUT" && e.target.type === "text") {
+      e.preventDefault();
+      const next = root.querySelector('[data-wiz="next"], [data-wiz="finish"]');
+      if (next) next.click();
+    }
   });
 
   window.addEventListener("message", (e) => {

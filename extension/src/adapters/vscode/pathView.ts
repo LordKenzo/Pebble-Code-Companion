@@ -7,6 +7,8 @@ import type { MentorModel } from "../../core/ports";
 import { WorkspaceStore } from "../store/workspaceStore";
 import type { ProposalDocs } from "./proposals";
 import { buildScaffoldMessage, composeScaffold, Scaffold } from "../../core/scaffold";
+import { BOOTSTRAP_GUIDE, COMMON_UNKNOWNS, composeBootstrap, type BootstrapAnswers } from "../../core/bootstrap";
+import { LEVELS, type ExperienceLevel as Level } from "../../core/model";
 import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
 import type { ParsedTest } from "../../core/tap";
 import { SignalCollector } from "../signals/collector";
@@ -46,6 +48,14 @@ export interface PathSettings {
   requireRedFirst: boolean;
 }
 
+/** Il sentiero d'avvio: bootstrap, piano in .pebble/, primo passo. */
+interface Onboarding {
+  bootstrap: boolean;
+  roadmap: boolean;
+  commonUnknowns: string[];
+  level: string;
+}
+
 interface CheckInfo {
   /** Nomi dei test trovati nell'ultima esecuzione: servono a spiegare un "test non trovato". */
   names?: string[];
@@ -65,7 +75,11 @@ type FromWebview =
   | { type: "verify" }
   | { type: "settings" }
   | { type: "planNext" }
-  | { type: "scaffold"; path: string; line: number };
+  | { type: "scaffold"; path: string; line: number }
+  | { type: "bootstrapWizard"; answers: BootstrapAnswers; level: string | null }
+  | { type: "bootstrapTemplate" }
+  | { type: "openBootstrap" }
+  | { type: "init" };
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -77,7 +91,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly id = "pebble.path";
 
   private view: vscode.WebviewView | undefined;
-  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null }) | null = null;
+  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding }) | null = null;
+  private hasBootstrap = false;
   private roadmap: string | null = null;
   private planning = false;
   private text: string | null = null;
@@ -104,6 +119,11 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
         watcher.onDidChange(() => void this.refresh()),
         watcher.onDidCreate(() => void this.refresh()),
         watcher.onDidDelete(() => void this.refresh()),
+        ...(() => {
+          // Le tappe del sentiero d'avvio cambiano quando nascono bootstrap.md e la roadmap.
+          const w = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(root, "{bootstrap.md,init.md,.pebble/roadmap.md}"));
+          return [w, w.onDidCreate(() => void this.refresh()), w.onDidChange(() => void this.refresh()), w.onDidDelete(() => void this.refresh())];
+        })(),
         // Le modifiche non ancora salvate contano: la vista segue quello che vedi nell'editor.
         vscode.workspace.onDidChangeTextDocument((e) => {
           if (this.isPathFile(e.document.uri)) this.load(e.document.getText());
@@ -146,6 +166,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "settings") void vscode.commands.executeCommand("workbench.action.openSettings", "pebble.path");
       else if (m.type === "planNext") void this.planNext();
       else if (m.type === "scaffold") void this.scaffold(m.path, m.line);
+      else if (m.type === "bootstrapWizard") void this.writeBootstrap(composeBootstrap(m.answers), m.level);
+      else if (m.type === "bootstrapTemplate") void this.writeBootstrap(BOOTSTRAP_GUIDE, null, true);
+      else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
+      else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
     });
     view.onDidChangeVisibility(() => {
       if (view.visible) this.post();
@@ -158,6 +182,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const uri = this.uri;
     if (!uri) return this.load(null);
     this.roadmap = this.root ? await readText(vscode.Uri.joinPath(this.root, ".pebble", "roadmap.md")) : null;
+    this.hasBootstrap = false;
+    for (const name of ["bootstrap.md", "init.md"]) {
+      if (this.root && (await readText(vscode.Uri.joinPath(this.root, name)))?.trim()) this.hasBootstrap = true;
+    }
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (open) return this.load(open.getText());
     try {
@@ -179,6 +207,12 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       next: next && { n: next.n, title: next.title },
       planning: this.planning,
       roadmapSteps: this.roadmap ? parseRoadmap(this.roadmap).length || null : null,
+      onboarding: {
+        bootstrap: this.hasBootstrap,
+        roadmap: !!this.roadmap?.trim(),
+        commonUnknowns: COMMON_UNKNOWNS,
+        level: vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
+      },
     };
     void vscode.commands.executeCommand("setContext", "pebble.hasPath", text !== null);
     this.decorate();
@@ -356,6 +390,32 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       this.planning = false;
       await this.refresh();
     }
+  }
+
+  // ---------- il sentiero d'avvio ----------
+
+  /** Scrive bootstrap.md (dalla procedura guidata o la traccia) e lo apre. Non sovrascrive senza chiedere. */
+  private async writeBootstrap(content: string, level: string | null, guide = false): Promise<void> {
+    if (!this.root) {
+      void vscode.window.showWarningMessage("Pebble: apri prima la cartella di un progetto.");
+      return;
+    }
+    const uri = vscode.Uri.joinPath(this.root, "bootstrap.md");
+    const existing = await readText(uri);
+    if (existing?.trim()) {
+      if (guide) return void vscode.window.showTextDocument(uri);
+      const ok = await vscode.window.showWarningMessage("bootstrap.md esiste già. Lo sostituisco con le tue risposte?", { modal: true }, "Sostituisci");
+      if (ok !== "Sostituisci") return;
+    }
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
+    if (level && (LEVELS as readonly string[]).includes(level)) {
+      await vscode.workspace.getConfiguration("pebble").update("experienceLevel", level as Level, vscode.ConfigurationTarget.Global);
+    }
+    await vscode.window.showTextDocument(uri, { preview: false });
+    void vscode.window.showInformationMessage(
+      guide ? "Pebble: scrivi il bootstrap con parole tue, poi premi «Proponi il piano»." : "Pebble: ecco il tuo bootstrap. Ritoccalo se vuoi, poi premi «Proponi il piano».",
+    );
+    await this.refresh();
   }
 
   // ---------- prepara il file (ADR-003) ----------

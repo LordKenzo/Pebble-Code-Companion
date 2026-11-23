@@ -114,3 +114,37 @@ button { font: inherit; color: inherit; }
 .empty .btn { align-self: flex-start; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* sentiero d'avvio */
+.intro { padding: 2px 14px 12px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.stages { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 12px; }
+.stage { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.stage p { margin: 0; }
+.stage code { font-family: var(--mono); font-size: 11.5px; color: var(--fg); }
+.stage.active { border-color: var(--mentor-line); background: color-mix(in srgb, var(--mentor) 7%, var(--panel)); }
+.stage.done { opacity: .8; }
+.stage-head { display: flex; align-items: center; gap: 9px; color: var(--fg); font-size: 13px; }
+.stage-head b { font-weight: 600; }
+.stage-n { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--faint); display: grid; place-items: center; font-size: 11px; color: var(--muted); }
+.stage.active .stage-n { border-color: var(--mentor); color: var(--mentor); }
+.stage.done .stage-n { background: var(--ok); border-color: var(--ok); }
+.stage.done .stage-n::after { content: ""; width: 7px; height: 3.5px; border: 2px solid var(--ok-ink); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.stage .actions .btn { font-size: 12px; }
+
+/* procedura guidata */
+.wizard { padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.wizard h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.wizard .help { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.wizard .example { margin: 0; color: var(--faint); font-size: 12px; font-style: italic; }
+.wizard input[type="text"], .wizard textarea { font: inherit; font-size: 13px; color: var(--vscode-input-foreground, var(--fg)); background: var(--vscode-input-background, var(--editor)); border: 1px solid var(--vscode-input-border, var(--line)); border-radius: 5px; padding: 7px 9px; width: 100%; resize: vertical; }
+.wizard input[type="text"]:focus, .wizard textarea:focus { outline: 1px solid var(--vscode-focusBorder, var(--mentor)); outline-offset: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.chip.on, .level.on { border-color: var(--mentor); background: color-mix(in srgb, var(--mentor) 14%, var(--panel)); }
+.checks { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.checks label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.checks input { accent-color: var(--mentor); }
+.levels { display: flex; flex-direction: column; gap: 6px; }
+.level { display: flex; flex-direction: column; gap: 1px; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+.level b { font-size: 12.5px; font-weight: 600; }
+.level span { font-size: 11.5px; color: var(--muted); }

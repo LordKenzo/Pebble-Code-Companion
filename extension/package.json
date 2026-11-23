@@ -26,6 +26,11 @@
   "contributes": {
     "commands": [
       {
+        "command": "pebble.start",
+        "title": "Inizia: racconta il progetto a Pebble",
+        "category": "Pebble"
+      },
+      {
         "command": "pebble.reviewFile",
         "title": "Rivedi il file",
         "category": "Pebble"
