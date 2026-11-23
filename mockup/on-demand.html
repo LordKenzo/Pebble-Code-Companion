@@ -1,0 +1,450 @@
+<title>Pebble su richiesta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a fake VS Code window (activity bar | Pebble path sidebar | editor + test panel) driven by a scene strip above it. Dark-only on purpose, like the editor it imitates; same language as live-session.html. */
+:root{
+  color-scheme: dark;
+  --page:#0e1014; --chrome:#16181d; --panel:#1b1e24; --editor:#1e2128; --raise:#252931;
+  --line:#2b3039; --fg:#d6dae1; --muted:#8b929e; --faint:#5f6672;
+  --mentor:#e3b25c; --mentor-soft:rgba(227,178,92,.10); --mentor-line:rgba(227,178,92,.45);
+  --err:#f07178; --warn:#e6c07b; --ok:#8fd19e; --mine:rgba(130,170,255,.07); --fix:rgba(143,209,158,.10);
+  --k:#c792ea; --s:#c3e88d; --t:#ffcb6b; --f:#82aaff; --n:#f78c6c; --c:#697080;
+  --ui:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--fg);font-family:var(--ui);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header.top h1{font-size:20px;font-weight:600;margin:0;text-wrap:balance}
+header.top h1 span{color:var(--mentor)}
+header.top p{margin:6px 0 0;color:var(--muted);max-width:72ch;line-height:1.55}
+
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.btn{font:inherit;font-size:13px;color:var(--fg);background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--mentor);color:#1a1408;border-color:var(--mentor);font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.pill:focus-visible,.task summary:focus-visible{outline:2px solid var(--mentor);outline-offset:2px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.pill{font:inherit;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.pill .num{font-family:var(--mono);color:var(--faint);margin-right:5px}
+.pill.done{color:var(--fg)}
+.pill.on{color:#1a1408;background:var(--mentor);border-color:var(--mentor)}
+.pill.on .num{color:#5a4318}
+.caption{flex-basis:100%;color:var(--muted);font-size:13px;line-height:1.55;margin:2px 0 0}
+.caption b{color:var(--fg);font-weight:500}
+
+/* window */
+.win{display:grid;grid-template-columns:44px 300px minmax(0,1fr);grid-template-rows:32px minmax(0,1fr) 24px;
+  height:clamp(600px,80vh,820px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--editor)}
+.titlebar{grid-column:1/-1;display:flex;align-items:center;gap:8px;background:var(--chrome);border-bottom:1px solid var(--line);padding:0 12px;font-size:12px;color:var(--muted)}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:var(--line);display:block}
+.titlebar .t{flex:1;text-align:center}
+.act{background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:12px}
+.act svg{width:22px;height:22px;stroke:var(--faint);fill:none;stroke-width:1.6}
+.act .m svg{stroke:var(--mentor)}
+
+/* Pebble path sidebar */
+.side{background:var(--panel);border-right:1px solid var(--line);overflow:auto;display:flex;flex-direction:column;min-width:0}
+.sec{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px 4px;display:flex;justify-content:space-between;gap:8px}
+.sec b{color:var(--mentor);font-weight:500;letter-spacing:.04em}
+.step{padding:2px 14px 10px;font-size:13px;color:var(--fg);line-height:1.45}
+.step small{display:block;color:var(--muted);font-size:12px}
+.bar{height:4px;background:var(--raise);border-radius:4px;margin:8px 0 0;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);transition:width .5s ease}
+.tasks{list-style:none;margin:0;padding:0 6px 14px;display:flex;flex-direction:column;gap:2px}
+.task{border-radius:6px;border:1px solid transparent}
+.task.current{background:var(--raise);border-color:var(--line)}
+.task summary{list-style:none;display:flex;gap:9px;align-items:flex-start;padding:7px 8px;cursor:pointer;font-size:13px;line-height:1.4}
+.task summary::-webkit-details-marker{display:none}
+.box{flex:none;width:16px;height:16px;margin-top:1px;border-radius:4px;border:1.5px solid var(--faint);display:grid;place-items:center;transition:background .3s,border-color .3s}
+.task.done .box{background:var(--ok);border-color:var(--ok)}
+.task.done .box::after{content:"";width:8px;height:4px;border:2px solid #10261a;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.task.done .label{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.task.flash{animation:flash 1.2s ease}
+@keyframes flash{0%{background:rgba(143,209,158,.22)}100%{background:transparent}}
+.meta{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap;padding-left:6px}
+.meta.red{color:var(--err)}.meta.green{color:var(--ok)}
+.detail{padding:0 10px 10px 33px;font-size:12.5px;color:var(--muted);line-height:1.5;display:flex;flex-direction:column;gap:7px}
+.detail p{margin:0}
+.detail code,.balloon code,.caption code,.notes code{font-family:var(--mono);font-size:12px;color:var(--fg);background:var(--editor);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.sig{font-family:var(--mono);font-size:11.5px;color:var(--fg);background:var(--editor);border:1px solid var(--line);border-radius:6px;padding:7px 8px;overflow-x:auto;white-space:pre}
+.when{display:flex;gap:6px;align-items:baseline;font-size:12px}
+.when::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--mentor);transform:translateY(-1px)}
+.detail .btn{align-self:flex-start;font-size:12px;padding:5px 10px}
+.learn{list-style:none;margin:0;padding:0 6px 14px;display:flex;flex-direction:column;gap:2px}
+.learn summary{list-style:none;display:flex;gap:8px;align-items:center;padding:6px 8px;font-size:12.5px;cursor:pointer;border-radius:6px}
+.learn summary::-webkit-details-marker{display:none}
+.learn summary::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--mentor)}
+.learn summary:hover{background:var(--raise)}
+.learn p{margin:0;padding:0 10px 8px 23px;font-size:12px;color:var(--muted);line-height:1.5}
+.tag{margin-left:auto;font-size:10.5px;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 7px;white-space:nowrap}
+.tag.new{color:var(--mentor);border-color:var(--mentor-line)}
+.tag.got{color:var(--ok);border-color:rgba(143,209,158,.4)}
+.deep{background:var(--mentor-soft);border:1px solid var(--mentor-line);border-radius:6px;padding:9px 11px;display:flex;flex-direction:column;gap:6px}
+.hint{color:var(--muted);font-size:12.5px}
+.ask,.c.ask{color:var(--mentor)}
+.side .foot{margin-top:auto;border-top:1px solid var(--line);padding:10px 14px;font-size:12px;color:var(--faint);line-height:1.5}
+kbd{font-family:var(--mono);font-size:11px;color:var(--fg);background:var(--raise);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+
+/* editor */
+.main{display:grid;grid-template-rows:34px minmax(0,1fr) 168px;min-width:0;min-height:0}
+.tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{font-size:12.5px;color:var(--muted);padding:0 14px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--line);white-space:nowrap}
+.tab.on{color:var(--fg);background:var(--editor);box-shadow:inset 0 2px 0 var(--mentor)}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--fg);opacity:.6}
+.code{overflow:auto;padding:10px 0 24px;font-family:var(--mono);font-size:12.5px;line-height:1.65;min-width:0}
+.ln{display:grid;grid-template-columns:44px minmax(0,1fr);white-space:pre}
+.ln .no{color:var(--faint);text-align:right;padding-right:14px;user-select:none}
+.ln.mine{background:var(--mine)}
+.ln.fix{background:var(--fix)}
+.ln.cursor .no{color:var(--fg)}
+.ln.cursor{box-shadow:inset 2px 0 0 var(--mentor)}
+.ln .src{padding-right:16px}
+.sq{text-decoration:underline wavy var(--err);text-underline-offset:3px}
+.k{color:var(--k)}.s{color:var(--s)}.t{color:var(--t)}.f{color:var(--f)}.n{color:var(--n)}.c{color:var(--c);font-style:italic}
+.c.todo{color:var(--mentor);font-style:normal}
+
+/* the balloon: a comment widget under one line, only when invoked */
+.balloon{margin:6px 16px 8px 44px;max-width:620px;font-family:var(--ui);font-size:13px;line-height:1.55;white-space:normal;
+  background:var(--panel);border:1px solid var(--mentor-line);border-radius:8px;position:relative;animation:pop .25s ease}
+.balloon::before{content:"";position:absolute;top:-7px;left:22px;width:12px;height:12px;background:var(--panel);border-left:1px solid var(--mentor-line);border-top:1px solid var(--mentor-line);transform:rotate(45deg)}
+@keyframes pop{from{opacity:.4;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.bhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.bhead strong{color:var(--mentor);font-weight:600}
+.rungs{display:flex;gap:3px;margin-left:auto}
+.rungs i{width:18px;height:4px;border-radius:2px;background:var(--line)}
+.rungs i.on{background:var(--mentor)}
+.bbody{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.bbody p{margin:0}
+.bbody .lvl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.bbody pre{margin:0;font-family:var(--mono);font-size:12px;background:var(--editor);border:1px solid var(--line);border-radius:6px;padding:7px 9px;overflow-x:auto}
+.why{border-left:2px solid var(--line);padding-left:10px;color:var(--muted)}
+.bact{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px}
+.bact .btn{font-size:12px;padding:4px 10px}
+
+/* test panel */
+.term{border-top:1px solid var(--line);background:var(--chrome);display:flex;flex-direction:column;min-height:0}
+.term .th{display:flex;gap:16px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-bottom:1px solid var(--line)}
+.term .th span.on{color:var(--fg);box-shadow:0 1px 0 var(--fg)}
+.term pre{margin:0;padding:8px 14px;font-family:var(--mono);font-size:12px;line-height:1.6;overflow:auto;color:var(--muted);flex:1}
+.term .ok{color:var(--ok)}.term .er{color:var(--err)}.term .fg{color:var(--fg)}
+
+.status{grid-column:1/-1;display:flex;align-items:center;gap:16px;background:var(--chrome);border-top:1px solid var(--line);padding:0 12px;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden}
+.status .pb{color:var(--mentor)}
+.status .sp{flex:1}
+
+.toast{position:absolute;right:16px;bottom:184px;max-width:320px;background:var(--raise);border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:6px;padding:9px 12px;font-size:12.5px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:pop .3s ease}
+.toast b{display:block;color:var(--fg);font-weight:500}
+.toast span{color:var(--muted)}
+.main{position:relative}
+
+/* notes under the window */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.note h3{margin:0 0 6px;font-size:13.5px;font-weight:600}
+.note p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+
+@media (max-width:900px){
+  .win{grid-template-columns:minmax(0,1fr);grid-template-rows:32px auto auto 24px;height:auto}
+  .act{display:none}
+  .side{border-right:0;border-bottom:1px solid var(--line);max-height:none}
+  .main{grid-template-rows:34px minmax(320px,auto) 168px}
+  .side .foot{display:none}
+  .toast{bottom:auto;top:44px;right:12px;left:12px;max-width:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1><span>Pebble</span> su richiesta</h1>
+    <p>Un pair engineer che ti forma mentre lavori. Ti dà un percorso a compiti che si spuntano da soli grazie a test e compilatore. Ti prepara la firma con il pseudocodice da trasformare in codice. Quando premi <kbd>⌥P</kbd> apre un fumetto sotto la riga, che parte da una domanda e ti offre un approfondimento. Il resto del tempo sta zitto. Esempio: passo 2 di mini-calc, i dischi per lato.</p>
+  </header>
+
+  <div class="ctrl">
+    <button class="btn" id="prev" type="button">← Indietro</button>
+    <div class="pills" id="pills" role="tablist" aria-label="Scene"></div>
+    <button class="btn primary" id="next" type="button">Avanti →</button>
+    <p class="caption" id="caption"></p>
+  </div>
+
+  <div class="win">
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><div class="t">mini-calc — Visual Studio Code</div></div>
+    <nav class="act" aria-hidden="true">
+      <div><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg></div>
+      <div class="m"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="5.5"/><ellipse cx="9.5" cy="12.5" rx="2" ry="1.2"/></svg></div>
+    </nav>
+    <aside class="side" aria-label="Percorso di Pebble">
+      <div class="sec"><span>Pebble · percorso</span><b id="count"></b></div>
+      <div class="step">Passo 2 · Dischi per lato<small>roadmap › passo 2 · ADR-003, ADR-004</small><div class="bar"><i id="bar"></i></div></div>
+      <ul class="tasks" id="tasks"></ul>
+      <div id="learnSec" hidden><div class="sec"><span>Quaderno</span><b>cosa stai imparando</b></div><ul class="learn" id="learn"></ul></div>
+      <div class="foot">I compiti si spuntano quando test e <code style="font-family:var(--mono)">tsc</code> lo confermano. Per un aiuto sulla riga: <kbd>⌥P</kbd> o tasto destro → «Pebble, aiutami qui».</div>
+    </aside>
+    <section class="main">
+      <div class="tabs" id="tabs"></div>
+      <div class="code" id="code" aria-live="polite"></div>
+      <div class="term"><div class="th"><span class="on">Test</span><span>Problemi</span><span>Terminale</span></div><pre id="term"></pre></div>
+      <div id="toast"></div>
+    </section>
+    <div class="status"><span>⎇ main</span><span id="stProblems"></span><span class="sp"></span><span class="pb" id="stPebble"></span><span>TypeScript</span></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h3>Il percorso al posto della chat</h3><p>Il passo della roadmap diventa una checklist. Ogni compito dice cosa fare, la firma, e quando si considera fatto.</p></div>
+    <div class="note"><h3>Si spunta da solo</h3><p>Pebble legge i risultati di test runner e <code>tsc</code>. Quando i test del compito passano, il compito si chiude; se si rompono, torna aperto.</p></div>
+    <div class="note"><h3>Firma e pseudocodice, il codice è tuo</h3><p>«Prepara il file» scrive import, tipi, la firma e il pseudocodice come commento dentro la funzione, più una domanda su cui ragionare. Il codice lo scrivi tu.</p></div>
+    <div class="note"><h3>Il fumetto solo se lo chiami</h3><p>Nessun suggerimento mentre scrivi. Con <kbd>⌥P</kbd> si apre sotto la riga, parte da una domanda e sale di un gradino a ogni «Più concreto».</p></div>
+    <div class="note"><h3>Ti forma, non solo ti corregge</h3><p>«Approfondisci» spiega il concetto che c'è dietro l'errore e ti lascia un esercizio. Il quaderno raccoglie i concetti incontrati e li segna come nuovi, capiti o da approfondire.</p></div>
+  </div>
+</div>
+
+<script>
+const BUG = 20;
+const PLATES_SKELETON = [
+  'import type { Grams } from "./units.ts";',
+  'import { ok, type Result } from "./result.ts";',
+  '',
+  'export const BAR: Grams = 20_000;',
+  'export const PLATES: readonly Grams[] = [25_000, 20_000, 15_000, 10_000, 5_000, 2_500, 1_250];',
+  '',
+  'export interface PlateLoad {',
+  '  readonly total: Grams;',
+  '  readonly perSide: readonly Grams[]; // dal più pesante',
+  '}',
+  '',
+  '/** Dischi per lato per un carico già componibile. */',
+  'export function platesFor(total: Grams): Result<PlateLoad> {',
+  '  // TODO(tu) Pseudocodice: trasformalo in codice, una riga alla volta.',
+  '  // 1. se total è sotto BAR → solo bilanciere, con avviso (ADR-004)',
+  '  // 2. resto per lato = (total − BAR) / 2, in grammi interi (ADR-003)',
+  '  // 3. per ogni disco di PLATES, dal più pesante:',
+  '  //      finché il disco ci sta nel resto → aggiungilo e togli il suo peso',
+  '  // 4. alla fine il resto deve essere 0',
+  '  // ? Prima di scrivere: con 142,5 kg quali dischi ti aspetti? Fallo a mano.',
+  '}',
+];
+const PLATES_HEAD = PLATES_SKELETON.slice(0, 13);
+const USER_BODY = [
+  '  if (total < BAR) {',
+  '    return ok({ total: BAR, perSide: [] }, ["sotto il peso del bilanciere"]);',
+  '  }',
+  '  let remaining = (total - BAR) / 2;',
+  '  const perSide: Grams[] = [];',
+  '  for (const plate of PLATES) {',
+  '    while (remaining > plate) {',
+  '      perSide.push(plate);',
+  '      remaining -= plate;',
+  '    }',
+  '  }',
+  '  return ok({ total, perSide });',
+  '}',
+];
+const TEST_FILE = [
+  'import { test } from "node:test";',
+  'import assert from "node:assert/strict";',
+  'import { platesFor } from "../../src/core/plates.ts";',
+  '',
+  '// kg → dischi per lato in kg, solo per leggere meglio i test',
+  'const lato = (kg: number) => perSideKg(platesFor(kg * 1000));',
+  '',
+  'test("20 kg: nessun disco", () => assert.deepEqual(lato(20), []));',
+  'test("22,5 kg: un 1,25 per lato", () => assert.deepEqual(lato(22.5), [1.25]));',
+  'test("60 kg: un 20 per lato", () => assert.deepEqual(lato(60), [20]));',
+  'test("142,5 kg: 25 + 25 + 10 + 1,25", () => assert.deepEqual(lato(142.5), [25, 25, 10, 1.25]));',
+  'test("15 kg: solo bilanciere, con avviso", () => { /* … */ });',
+];
+
+const RUNGS = [
+  { name: "Domanda", html: '<p>Il test dei <b>60 kg</b> riceve [15, 2,5, 1,25]. Per lato restano 20.000 g e il primo disco che provi è il 20: perché il ciclo lo salta?</p><p class="hint">Prova a rispondere seguendo il ciclo a mano, poi premi «Più concreto» se vuoi un aiuto.</p>' },
+  { name: "Direzione precisa", html: '<p>Il problema è la condizione di questa riga. Quando il resto è <b>uguale</b> al disco, il disco viene saltato. Succede con 60 kg (resto 20.000 g, disco da 20) e con 22,5 kg (resto 1.250 g, disco da 1,25).</p>' },
+  { name: "Esempio analogo", html: '<p>Col resto in monete: devi dare 2 € e hai una moneta da 2 €. La moneta «ci sta» anche se è esattamente uguale al resto. La tua condizione deve dire la stessa cosa.</p>' },
+  { name: "La riga esatta", html: '<pre><span class="k">while</span> (remaining <span class="n">&gt;=</span> plate) {</pre><p>Poi aggiungi un test con 70 kg (25 per lato): è il caso in cui l\'uguaglianza capita con il disco più grande.</p>' },
+];
+const WHY = '<p class="why">Un disco saltato non dà errore: produce un carico sbagliato che sembra plausibile. È il rischio che il bootstrap chiede di evitare (bootstrap › Vincoli).</p>';
+const DEEP = `<div class="deep"><span class="lvl">Approfondimento · errore di confine</span>
+  <p>Si chiama <b>errore di confine</b> (in inglese <i>off-by-one</i>): la logica è giusta ma sbaglia proprio sul valore limite, qui l'uguaglianza tra resto e disco. È tra gli errori più comuni con <code>&lt;</code>, <code>&lt;=</code> e con gli indici degli array.</p>
+  <p><b>Abitudine da prendere:</b> per ogni confronto, scrivi un test con il valore esattamente sul confine. I tuoi test da 22,5 e 60 kg l'hanno trovato per questo.</p>
+  <p><b>Osservazione:</b> il tuo ciclo è un <b>algoritmo greedy</b> (goloso): a ogni passo prende il disco più grande che ci sta. Funziona perché ogni disco è un multiplo di 1,25.</p>
+  <p class="ask">? Per te: funzionerebbe ancora se in palestra ci fosse un disco da 7 kg? Prova con 14 kg per lato.</p></div>`;
+
+const TASKS = [
+  { id: "setup", label: "Setup: test e typecheck passano", when: "<code>npm test</code> e <code>tsc --noEmit</code> escono senza errori" },
+  { id: "tests", label: "Scrivi i test dei dischi", when: "trovo 5 test in <code>test/core/plates.test.ts</code>",
+    body: '<p>Casi da coprire: 20, 22,5, 60 e 142,5 kg, più uno sotto i 20 kg. Rossi all\'inizio, è normale.</p>' },
+  { id: "create", label: "Crea src/core/plates.ts", when: "il file esiste ed esporta <code>platesFor</code>",
+    body: '<p>Livello <code>core</code>: niente <code>console</code>, niente <code>process</code> (ADR-001). Grammi interi (ADR-003).</p>', action: "Prepara il file" },
+  { id: "impl", label: "Implementa platesFor", when: "i test di 20, 22,5, 60 e 142,5 kg sono verdi",
+    body: '<div class="sig">platesFor(total: Grams): Result&lt;PlateLoad&gt;</div><p>Togli il bilanciere, dividi per due, scorri i dischi dal più pesante.</p>' },
+  { id: "under", label: "Caso sotto i 20 kg", when: "il test dei 15 kg è verde",
+    body: '<p>Solo bilanciere con avviso, mai dischi negativi (ADR-004).</p>' },
+  { id: "review", label: "Rileggi con Pebble", when: "lo spunti tu, dopo la review del file",
+    body: '<p>Una review sul file finito, rispetto agli ADR e alle buone pratiche.</p>', action: "Rivedi il file" },
+];
+
+const SCENES = [
+  { name: "Il percorso",
+    caption: '<b>Il passo della roadmap diventa una checklist.</b> Setup e test sono già spuntati: Pebble l\'ha visto da <code>npm test</code> e <code>tsc</code>. Il compito attivo dice cosa fare e quando sarà fatto. Prova il pulsante «Prepara il file».',
+    done: ["setup", "tests"], current: "create", meta: { tests: "5 test" },
+    tabs: [["plates.test.ts", true]], code: TEST_FILE.map(t => ({ t })),
+    term: '<span class="fg">$ npm test</span>\n<span class="er">✖ test/core/plates.test.ts</span>\n  Cannot find module \'../../src/core/plates.ts\'\n\nℹ tests 5 · pass 0 · fail 5',
+    problems: "⊗ 1", pebble: "Pebble · in attesa · ⌥P per un aiuto" },
+  { name: "Prepara il file",
+    caption: '<b>Pebble scrive lo scheletro: import, tipi, la firma e, dentro la funzione, il pseudocodice come commento.</b> Lo trasformi tu in codice una riga alla volta. In fondo c\'è una domanda per ragionare prima di scrivere. «Crea plates.ts» si è spuntato da solo, e nel quaderno compare il primo concetto.',
+    done: ["setup", "tests", "create"], current: "impl", flash: "create", meta: { tests: "5 test", impl: "0/4" },
+    tabs: [["plates.ts", true], ["plates.test.ts", false]],
+    code: PLATES_SKELETON.map((t, i) => ({ t, sq: i === 12 })),
+    term: '<span class="fg">$ npm test</span>\n<span class="er">✖ 20 kg: nessun disco</span>\n<span class="er">✖ 22,5 kg: un 1,25 per lato</span>\n<span class="er">✖ 60 kg: un 20 per lato</span>\n<span class="er">✖ 142,5 kg: 25 + 25 + 10 + 1,25</span>\n<span class="er">✖ 15 kg: solo bilanciere, con avviso</span>\nℹ tests 5 · pass 0 · fail 5',
+    problems: "⊗ 1 · la funzione non restituisce un valore", pebble: "Pebble · in attesa · ⌥P per un aiuto" },
+  { name: "Scrivi tu",
+    caption: '<b>Il corpo lo scrivi tu (righe evidenziate). Pebble non interviene.</b> Il caso sotto i 20 kg passa e il suo compito si spunta; «Implementa» è a 1 test verde su 4. Uno dei test che fallisce non dice perché, ed è il momento di chiedere.',
+    done: ["setup", "tests", "create", "under"], current: "impl", flash: "under", meta: { tests: "5 test", impl: "1/4" },
+    tabs: [["plates.ts", true, true], ["plates.test.ts", false]],
+    code: [...PLATES_HEAD.map(t => ({ t })), ...USER_BODY.map(t => ({ t, mine: true }))],
+    term: '<span class="fg">$ npm test</span>\n<span class="ok">✔ 20 kg: nessun disco</span>\n<span class="er">✖ 22,5 kg: un 1,25 per lato</span>  atteso [1.25], ricevuto []\n<span class="er">✖ 60 kg: un 20 per lato</span>  atteso [20], ricevuto [15, 2.5, 1.25]\n<span class="er">✖ 142,5 kg: 25 + 25 + 10 + 1,25</span>  ricevuto [25, 25, 10]\n<span class="ok">✔ 15 kg: solo bilanciere, con avviso</span>\nℹ tests 5 · pass 2 · fail 3',
+    problems: "⊘ nessun problema", pebble: "Pebble · in attesa · ⌥P per un aiuto" },
+  { name: "Lo chiami con ⌥P",
+    caption: '<b>Cursore sulla riga 20, <kbd>⌥P</kbd>: si apre il fumetto, e parte da una domanda.</b> «Più concreto» sale fino alla riga esatta. «Perché conta?» spiega il rischio. «Approfondisci» spiega il concetto che c\'è sotto (errore di confine, algoritmo greedy) e ti lascia una domanda. I concetti finiscono nel quaderno.',
+    done: ["setup", "tests", "create", "under"], current: "impl", meta: { tests: "5 test", impl: "1/4" },
+    tabs: [["plates.ts", true, true], ["plates.test.ts", false]],
+    code: [...PLATES_HEAD.map(t => ({ t })), ...USER_BODY.map(t => ({ t, mine: true }))], balloon: true,
+    term: null, problems: "⊘ nessun problema", pebble: "Pebble · aiuto sulla riga 20" },
+  { name: "Si spunta da sola",
+    caption: '<b>Correggi la riga, salvi, i test passano: «Implementa platesFor» si spunta da solo</b> e il compito successivo si apre. Resta la review finale, che lanci tu quando vuoi.',
+    done: ["setup", "tests", "create", "under", "impl"], current: "review", flash: "impl", meta: { tests: "5 test", impl: "4/4" },
+    tabs: [["plates.ts", true], ["plates.test.ts", false]],
+    code: [...PLATES_HEAD.map(t => ({ t })), ...USER_BODY.map((t, i) => (i === 6 ? { t: t.replace("> plate", ">= plate"), fix: true } : { t }))],
+    term: '<span class="fg">$ npm test</span>\n<span class="ok">✔ 20 kg: nessun disco</span>\n<span class="ok">✔ 22,5 kg: un 1,25 per lato</span>\n<span class="ok">✔ 60 kg: un 20 per lato</span>\n<span class="ok">✔ 142,5 kg: 25 + 25 + 10 + 1,25</span>\n<span class="ok">✔ 15 kg: solo bilanciere, con avviso</span>\nℹ tests 5 · pass 5 · fail 0',
+    problems: "⊘ nessun problema", pebble: "Pebble · 5 di 6 compiti", toast: true },
+];
+
+let scene = 0, rung = 0, showWhy = false, showDeep = false;
+
+/* Quaderno: i concetti incontrati lungo il percorso, da riprendere quando vuoi. */
+const LEARN = [
+  { from: 1, title: "Dal pseudocodice al codice", text: "Una riga di pseudocodice, una o due righe di codice. Cancella il commento quando la riga è fatta." },
+  { from: 3, title: "Errore di confine (off-by-one)", text: "Sbagliare proprio sul valore limite. Si scopre con un test sul confine.", status: { 3: "nuovo", 4: "capito" } },
+  { from: 3, title: "Algoritmo greedy", text: "Prendere a ogni passo la scelta più grande possibile. Funziona solo con certe taglie di dischi.", status: { 3: "nuovo", 4: "da approfondire" } },
+];
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const KW = new Set(["import","type","from","export","const","let","function","return","if","while","for","of","readonly","interface","test"]);
+
+function hl(line) {
+  const re = /(\/\/.*$|\/\*.*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b\d[\d_.]*\b)|([A-Za-z_$][\w$]*)|(\s+|.)/g;
+  let out = "", m;
+  while ((m = re.exec(line))) {
+    const [tok, com, str, num, id] = m;
+    if (com) {
+      const kind = /^\/\/\s*\?/.test(com) ? " ask" : (com.includes("TODO") || /^\/\/\s*(\d\.|\s{3,})/.test(com)) ? " todo" : "";
+      out += `<span class="c${kind}">${esc(com)}</span>`;
+    }
+    else if (str) out += `<span class="s">${esc(str)}</span>`;
+    else if (num) out += `<span class="n">${tok}</span>`;
+    else if (id) {
+      const after = line.slice(re.lastIndex).trimStart();
+      if (KW.has(id)) out += `<span class="k">${id}</span>`;
+      else if (/^[A-Z]/.test(id)) out += `<span class="t">${id}</span>`;
+      else if (after.startsWith("(")) out += `<span class="f">${id}</span>`;
+      else out += esc(id);
+    } else out += esc(tok);
+  }
+  return out || " ";
+}
+
+function balloonHTML() {
+  const r = RUNGS[rung];
+  return `<div class="balloon" role="dialog" aria-label="Aiuto di Pebble sulla riga ${BUG}">
+    <div class="bhead"><strong>Pebble</strong><span>riga ${BUG} · logica (zona C) · test «60 kg» rosso</span>
+      <span class="rungs" aria-label="gradino ${rung + 1} di 4">${RUNGS.map((_, i) => `<i class="${i <= rung ? "on" : ""}"></i>`).join("")}</span></div>
+    <div class="bbody"><span class="lvl">Gradino ${rung + 1} di 4 · ${r.name}</span>${r.html}${showWhy ? WHY : ""}${showDeep ? DEEP : ""}</div>
+    <div class="bact">
+      <button class="btn" type="button" data-b="up" ${rung === 3 ? "disabled" : ""}>Più concreto</button>
+      <button class="btn" type="button" data-b="why">${showWhy ? "Nascondi il perché" : "Perché conta?"}</button>
+      <button class="btn" type="button" data-b="deep">${showDeep ? "Chiudi l'approfondimento" : "Approfondisci"}</button>
+      <button class="btn" type="button" data-b="close">Ho capito</button>
+    </div></div>`;
+}
+
+function render(animate) {
+  const s = SCENES[scene];
+  $("pills").innerHTML = SCENES.map((x, i) =>
+    `<button class="pill ${i === scene ? "on" : i < scene ? "done" : ""}" type="button" role="tab" aria-selected="${i === scene}" data-i="${i}"><span class="num">${i + 1}</span>${x.name}</button>`).join("");
+  $("caption").innerHTML = s.caption;
+  $("prev").disabled = scene === 0;
+  $("next").disabled = scene === SCENES.length - 1;
+
+  const done = new Set(s.done);
+  $("count").textContent = `${done.size} di ${TASKS.length}`;
+  $("bar").style.width = `${(done.size / TASKS.length) * 100}%`;
+  $("tasks").innerHTML = TASKS.map(t => {
+    const isDone = done.has(t.id), cur = t.id === s.current;
+    const meta = s.meta[t.id];
+    const metaCls = !meta ? "" : isDone ? "green" : meta.startsWith("0/") || meta.startsWith("1/") ? "red" : "";
+    return `<li class="task ${isDone ? "done" : ""} ${cur ? "current" : ""} ${animate && s.flash === t.id ? "flash" : ""}">
+      <details ${cur ? "open" : ""}><summary><span class="box" aria-hidden="true"></span><span class="label">${t.label}</span>${meta ? `<span class="meta ${metaCls}">${meta}</span>` : ""}</summary>
+      <div class="detail">${t.body || ""}<span class="when">Si spunta quando ${t.when}</span>${t.action ? `<button class="btn" type="button" data-act="${t.id}">${t.action}</button>` : ""}</div></details></li>`;
+  }).join("");
+
+  const learned = LEARN.filter(l => scene >= l.from);
+  $("learnSec").hidden = learned.length === 0;
+  $("learn").innerHTML = learned.map(l => {
+    const st = l.status && l.status[scene];
+    return `<li><details><summary>${l.title}${st ? `<span class="tag ${st === "nuovo" ? "new" : st === "capito" ? "got" : ""}">${st}</span>` : ""}</summary><p>${l.text}</p></details></li>`;
+  }).join("");
+
+  $("tabs").innerHTML = s.tabs.map(([n, on, dirty]) => `<div class="tab ${on ? "on" : ""}">${n}${dirty ? '<span class="dot"></span>' : ""}</div>`).join("");
+  $("code").innerHTML = s.code.map((l, i) => {
+    const no = i + 1, cursor = s.balloon && no === BUG;
+    const cls = ["ln", l.mine ? "mine" : "", l.fix ? "fix" : "", cursor ? "cursor" : ""].join(" ");
+    const src = l.sq ? `<span class="sq">${hl(l.t)}</span>` : hl(l.t);
+    return `<div class="${cls}"><span class="no">${no}</span><span class="src">${src}</span></div>${cursor ? balloonHTML() : ""}`;
+  }).join("");
+  if (s.term !== null) $("term").innerHTML = s.term;
+  else if (!$("term").innerHTML) $("term").innerHTML = SCENES[2].term;
+  $("stProblems").textContent = s.problems;
+  $("stPebble").textContent = s.pebble;
+  $("toast").innerHTML = s.toast ? '<div class="toast"><b>✔ Implementa platesFor</b><span>4 test su 4 verdi. Prima di andare avanti: aggiungeresti un test che avrebbe trovato il bug ancora prima? Prossimo compito: «Rileggi con Pebble».</span></div>' : "";
+  if (s.balloon && animate) {
+    const b = document.querySelector(".balloon");
+    if (b) b.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+function go(i) {
+  scene = Math.max(0, Math.min(SCENES.length - 1, i));
+  if (scene !== 3) { rung = 0; showWhy = false; showDeep = false; }
+  if (scene === 3 || scene === 4) $("term").innerHTML = (scene === 4 ? SCENES[4] : SCENES[2]).term;
+  render(true);
+}
+
+$("prev").addEventListener("click", () => go(scene - 1));
+$("next").addEventListener("click", () => go(scene + 1));
+$("pills").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) go(+b.dataset.i); });
+$("tasks").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  if (b.dataset.act === "create" && scene === 0) go(1);
+});
+$("code").addEventListener("click", e => {
+  const b = e.target.closest("[data-b]");
+  if (!b) return;
+  if (b.dataset.b === "up" && rung < 3) rung++;
+  else if (b.dataset.b === "why") showWhy = !showWhy;
+  else if (b.dataset.b === "deep") showDeep = !showDeep;
+  else if (b.dataset.b === "close") { go(4); return; }
+  render(false);
+});
+document.addEventListener("keydown", e => {
+  if (e.altKey && (e.key === "p" || e.key === "π" || e.code === "KeyP")) { e.preventDefault(); if (scene === 2) go(3); }
+  if (e.target.closest("button, summary")) return;
+  if (e.key === "ArrowRight") go(scene + 1);
+  if (e.key === "ArrowLeft") go(scene - 1);
+});
+render(false);
+</script>
