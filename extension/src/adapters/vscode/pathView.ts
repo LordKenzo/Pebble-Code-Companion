@@ -1,12 +1,7 @@
 import * as vscode from "vscode";
-import { describeCondition, parsePath, summarizeConditions, withCheckbox, type Task } from "../../core/path";
+import { buildViewModel, parsePath, withCheckbox, type PathViewModel } from "../../core/path";
 
 const PATH_FILE = [".pebble", "percorso.md"] as const;
-
-type Node =
-  | { kind: "step"; name: string; tasks: Task[] }
-  | { kind: "task"; task: Task }
-  | { kind: "detail"; task: Task; label: string; value: string; icon: string };
 
 /** Percorso di esempio, scritto quando il progetto non ne ha ancora uno. */
 export const EXAMPLE_PATH = `# Percorso
@@ -16,39 +11,42 @@ Sotto ogni compito: fare, firma, fatto quando. Le righe che Pebble non riconosce
 
 ## Passo 1 · Setup
 - [ ] Installa TypeScript e i tipi di Node
-  fare: npm install -D typescript @types/node
-  fatto quando: a mano
+  fare: \`npm install -D typescript @types/node\`
+  fatto quando: file package.json
 - [ ] Un primo test che passa
   fare: un test banale in test/, per verificare che il runner parta
   fatto quando: test "il runner funziona"
 `;
 
+type FromWebview =
+  | { type: "ready" }
+  | { type: "toggle"; line: number; checked: boolean }
+  | { type: "reveal"; line: number }
+  | { type: "createExample" };
+
 /**
- * Vista "Percorso" (ADR-001, ADR-007): passi e compiti di .pebble/percorso.md, con le caselle.
- * Spuntare una casella aggiorna solo quella riga del file.
+ * Vista "Percorso" (ADR-001, ADR-007): passi e compiti di .pebble/percorso.md,
+ * con la grafica di mockup/on-demand.html. Spuntare una casella cambia solo quella riga del file.
  */
-export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposable {
+export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly id = "pebble.path";
 
-  private readonly changed = new vscode.EventEmitter<Node | undefined>();
-  readonly onDidChangeTreeData = this.changed.event;
-  private readonly view: vscode.TreeView<Node>;
+  private view: vscode.WebviewView | undefined;
+  private model: (PathViewModel & { hasFile: boolean }) | null = null;
   private readonly disposables: vscode.Disposable[] = [];
-  private tasks: Task[] = [];
-  private steps: Node[] = [];
 
-  constructor(private readonly root: vscode.Uri | undefined) {
-    this.view = vscode.window.createTreeView(PathView.id, { treeDataProvider: this, showCollapseAll: true, manageCheckboxStateManually: true });
-    this.disposables.push(
-      this.view,
-      this.changed,
-      this.view.onDidChangeCheckboxState((e) => void this.onCheckbox(e)),
-    );
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly root: vscode.Uri | undefined,
+  ) {
     if (root) {
       const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(root, PATH_FILE.join("/")));
-      this.disposables.push(watcher, watcher.onDidChange(() => void this.refresh()), watcher.onDidCreate(() => void this.refresh()), watcher.onDidDelete(() => void this.refresh()));
-      // Le modifiche non ancora salvate nell'editor contano: la vista segue quello che vedi.
       this.disposables.push(
+        watcher,
+        watcher.onDidChange(() => void this.refresh()),
+        watcher.onDidCreate(() => void this.refresh()),
+        watcher.onDidDelete(() => void this.refresh()),
+        // Le modifiche non ancora salvate contano: la vista segue quello che vedi nell'editor.
         vscode.workspace.onDidChangeTextDocument((e) => {
           if (e.document.uri.toString() === this.uri?.toString()) this.load(e.document.getText());
         }),
@@ -59,6 +57,26 @@ export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposabl
 
   get uri(): vscode.Uri | undefined {
     return this.root && vscode.Uri.joinPath(this.root, ...PATH_FILE);
+  }
+
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
+    const media = vscode.Uri.joinPath(this.extensionUri, "media");
+    view.webview.options = { enableScripts: true, localResourceRoots: [media] };
+    view.webview.html = html(
+      view.webview.cspSource,
+      view.webview.asWebviewUri(vscode.Uri.joinPath(media, "path.css")),
+      view.webview.asWebviewUri(vscode.Uri.joinPath(media, "path.js")),
+    );
+    view.webview.onDidReceiveMessage((m: FromWebview) => {
+      if (m.type === "ready") this.post();
+      else if (m.type === "toggle") void this.toggle(m.line, m.checked);
+      else if (m.type === "reveal") void this.reveal(m.line);
+      else if (m.type === "createExample") void this.createExample();
+    });
+    view.onDidChangeVisibility(() => view.visible && this.post());
+    view.onDidDispose(() => (this.view = undefined));
+    this.decorate();
   }
 
   async refresh(): Promise<void> {
@@ -74,55 +92,23 @@ export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposabl
   }
 
   private load(text: string | null): void {
-    this.tasks = text === null ? [] : parsePath(text).tasks;
-    const byStep = new Map<string, Task[]>();
-    for (const t of this.tasks) {
-      const name = t.step ?? "Senza passo";
-      byStep.set(name, [...(byStep.get(name) ?? []), t]);
-    }
-    this.steps = [...byStep].map(([name, tasks]) => ({ kind: "step", name, tasks }));
-    const done = this.tasks.filter((t) => t.checked).length;
-    this.view.description = this.tasks.length ? `${done} di ${this.tasks.length}` : undefined;
-    this.view.badge = this.tasks.length && done < this.tasks.length
-      ? { value: this.tasks.length - done, tooltip: `${this.tasks.length - done} compiti da fare` }
-      : undefined;
+    const tasks = text === null ? [] : parsePath(text).tasks;
+    this.model = { ...buildViewModel(tasks), hasFile: text !== null };
     void vscode.commands.executeCommand("setContext", "pebble.hasPath", text !== null);
-    this.changed.fire(undefined);
+    this.decorate();
+    this.post();
   }
 
-  getChildren(node?: Node): Node[] {
-    if (!node) return this.steps;
-    if (node.kind === "step") return node.tasks.map((task) => ({ kind: "task", task }));
-    if (node.kind === "task") return details(node.task);
-    return [];
+  private post(): void {
+    if (this.model) void this.view?.webview.postMessage({ type: "model", model: this.model });
   }
 
-  getTreeItem(node: Node): vscode.TreeItem {
-    if (node.kind === "step") {
-      const done = node.tasks.filter((t) => t.checked).length;
-      const firstOpen = this.steps.find((s) => s.kind === "step" && s.tasks.some((t) => !t.checked));
-      const item = new vscode.TreeItem(node.name, firstOpen === node ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed);
-      item.description = `${done}/${node.tasks.length}`;
-      item.iconPath = new vscode.ThemeIcon(done === node.tasks.length ? "pass-filled" : "milestone");
-      item.contextValue = "pebble.step";
-      return item;
-    }
-    if (node.kind === "task") {
-      const { task } = node;
-      const hasDetails = details(task).length > 0;
-      const item = new vscode.TreeItem(task.title, hasDetails ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-      item.checkboxState = task.checked ? vscode.TreeItemCheckboxState.Checked : vscode.TreeItemCheckboxState.Unchecked;
-      item.description = summarizeConditions(task.conditions);
-      item.tooltip = tooltip(task);
-      item.contextValue = "pebble.task";
-      item.command = { command: "pebble.path.reveal", title: "Apri nel percorso", arguments: [task.line] };
-      return item;
-    }
-    const item = new vscode.TreeItem(node.value, vscode.TreeItemCollapsibleState.None);
-    item.description = node.label;
-    item.iconPath = new vscode.ThemeIcon(node.icon);
-    item.tooltip = `${node.label}: ${node.value}`;
-    return item;
+  /** Titolo e badge della vista: "3 di 9", e quanti compiti restano. */
+  private decorate(): void {
+    if (!this.view || !this.model) return;
+    const { done, total } = this.model;
+    this.view.description = total ? `${done} di ${total}` : undefined;
+    this.view.badge = total && done < total ? { value: total - done, tooltip: `${total - done} compiti da fare` } : undefined;
   }
 
   /** Apre percorso.md sulla riga del compito. */
@@ -130,7 +116,7 @@ export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposabl
     const uri = this.uri;
     if (!uri) return;
     const editor = await vscode.window.showTextDocument(uri, { preview: true });
-    const pos = new vscode.Position(line, 0);
+    const pos = new vscode.Position(Math.min(line, editor.document.lineCount - 1), 0);
     editor.selection = new vscode.Selection(pos, pos);
     editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
   }
@@ -147,33 +133,25 @@ export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposabl
     } catch {
       await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(EXAMPLE_PATH));
     }
-    await vscode.window.showTextDocument(uri);
+    await vscode.window.showTextDocument(uri, { preview: true });
     await this.refresh();
   }
 
   /** Spuntare a mano: cambia solo la riga del compito, poi salva se il file non aveva modifiche in sospeso. */
-  private async onCheckbox(e: vscode.TreeCheckboxChangeEvent<Node>): Promise<void> {
+  private async toggle(line: number, checked: boolean): Promise<void> {
     const uri = this.uri;
     if (!uri) return;
     const doc = await vscode.workspace.openTextDocument(uri);
+    const updated = line < doc.lineCount ? withCheckbox(doc.lineAt(line).text, checked) : null;
+    if (updated === null) {
+      void vscode.window.showWarningMessage("Pebble: il percorso è cambiato mentre lo spuntavi. Ho ricaricato la vista, riprova.");
+      return this.refresh();
+    }
     const wasDirty = doc.isDirty;
     const edit = new vscode.WorkspaceEdit();
-    let stale = false;
-    for (const [node, state] of e.items) {
-      if (node.kind !== "task") continue;
-      const line = node.task.line;
-      const updated = line < doc.lineCount ? withCheckbox(doc.lineAt(line).text, state === vscode.TreeItemCheckboxState.Checked) : null;
-      if (updated === null) {
-        stale = true;
-        continue;
-      }
-      edit.replace(uri, doc.lineAt(line).range, updated);
-    }
-    if (edit.size) {
-      await vscode.workspace.applyEdit(edit);
-      if (!wasDirty) await doc.save();
-    }
-    if (stale) void vscode.window.showWarningMessage("Pebble: il percorso è cambiato mentre lo spuntavi. Ho ricaricato la vista, riprova.");
+    edit.replace(uri, doc.lineAt(line).range, updated);
+    await vscode.workspace.applyEdit(edit);
+    if (!wasDirty) await doc.save();
     await this.refresh();
   }
 
@@ -182,22 +160,14 @@ export class PathView implements vscode.TreeDataProvider<Node>, vscode.Disposabl
   }
 }
 
-function details(task: Task): Node[] {
-  const out: Node[] = [];
-  if (task.todo) out.push({ kind: "detail", task, label: "fare", value: task.todo, icon: "tasklist" });
-  if (task.signature) out.push({ kind: "detail", task, label: "firma", value: task.signature, icon: "symbol-method" });
-  for (const c of task.conditions) {
-    out.push({ kind: "detail", task, label: "fatto quando", value: describeCondition(c), icon: c.kind === "invalid" ? "warning" : "pass" });
-  }
-  return out;
-}
-
-function tooltip(task: Task): vscode.MarkdownString {
-  const md = new vscode.MarkdownString(undefined, true);
-  md.appendMarkdown(`**${task.title}**\n\n`);
-  if (task.todo) md.appendMarkdown(`${task.todo}\n\n`);
-  if (task.signature) md.appendCodeblock(task.signature, "ts");
-  const when = task.conditions.length ? task.conditions.map(describeCondition).join("; ") : "a mano";
-  md.appendMarkdown(`\n_Si spunta quando:_ ${when}`);
-  return md;
+function html(cspSource: string, css: vscode.Uri, js: vscode.Uri): string {
+  const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
+  return `<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="${css}">
+</head><body><div id="root" aria-live="polite"></div>
+<script nonce="${nonce}" src="${js}"></script>
+</body></html>`;
 }

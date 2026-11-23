@@ -278,7 +278,8 @@
       "pebble": [
         {
           "id": "pebble.path",
-          "name": "Percorso"
+          "name": "Percorso",
+          "type": "webview"
         },
         {
           "type": "webview",
@@ -286,14 +287,7 @@
           "name": "Mentor"
         }
       ]
-    },
-    "viewsWelcome": [
-      {
-        "view": "pebble.path",
-        "contents": "Il percorso trasforma la roadmap in compiti che si spuntano man mano. Vive in .pebble/percorso.md.\n[Crea un percorso di esempio](command:pebble.path.createExample)",
-        "when": "!pebble.hasPath"
-      }
-    ]
+    }
   },
   "scripts": {
     "sync-prompt": "node scripts/sync-prompt.mjs",
