@@ -110,6 +110,18 @@ Correzione nel prompt: nel compito dei test i casi sono nomi esatti tra virgolet
 
 Run: `runs/2026-11-23_2057`, `runs/2026-11-23_2058`, `runs/2026-11-23_2059`.
 
+## Prompt v0.7: "Prepara il file", MODE: SCAFFOLD (casi 21, 22)
+
+Passo 6 della roadmap. Il modello restituisce le parti dello scheletro, Pebble compone il testo con `composeScaffold` e scarta ogni parte con logica: costanti non letterali, tipi con corpi, firme con corpo, più di un test completo.
+
+| Caso | Esito | Note |
+|---|---|---|
+| 21 scheletro di src/core/plates.ts | ✅ | Import con `.ts`, costanti in grammi dal bootstrap, `PlateLoad`, firma di `platesFor`, sei passi di pseudocodice con gli ADR, domanda "calcola a mano 142,5 kg". Nessuna parte scartata |
+| 22 file di test, primo giro | ⚠️ | Un solo test d'esempio e gli altri come `test.todo`, ma chiamava `platesPerSide`: il nome previsto (`platesFor`) stava in un altro compito del passo e `plates.ts` non esisteva ancora |
+| 22 dopo la correzione | ✅ | Con `FIRME PREVISTE NEL PASSO` usa `platesFor`. Esempio sul caso dei 15 kg (avviso), gli altri quattro casi come `test.todo`. Nessuna parte scartata |
+
+Correzione: il messaggio porta le firme previste dagli altri compiti del passo, e il prompt chiede di usarle esattamente.
+
 ## Aperto
 
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).

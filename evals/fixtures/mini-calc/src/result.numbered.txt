@@ -1,0 +1,12 @@
+1 | /** Esito di un calcolo (ADR-004): ok, eventualmente con avvisi, oppure non valido. */
+2 | export type Result<T> =
+3 |   | { readonly ok: true; readonly value: T; readonly warnings: readonly string[] }
+4 |   | { readonly ok: false; readonly error: string };
+5 | 
+6 | export function ok<T>(value: T, warnings: readonly string[] = []): Result<T> {
+7 |   return { ok: true, value, warnings };
+8 | }
+9 | 
+10 | export function invalid<T = never>(error: string): Result<T> {
+11 |   return { ok: false, error };
+12 | }
