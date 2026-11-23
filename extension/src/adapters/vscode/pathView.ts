@@ -25,7 +25,7 @@ Sotto ogni compito: fare, firma, fatto quando. Le righe che Pebble non riconosce
   fare: \`npm install -D typescript @types/node\`
   fatto quando: file package.json
 - [ ] Un primo test che passa
-  fare: un test banale in test/, per verificare che il runner parta
+  fare: un test banale che si chiama "il runner funziona", per verificare che il runner parta
   fatto quando: test "il runner funziona"
 `;
 
@@ -47,6 +47,8 @@ export interface PathSettings {
 }
 
 interface CheckInfo {
+  /** Nomi dei test trovati nell'ultima esecuzione: servono a spiegare un "test non trovato". */
+  names?: string[];
   at?: string;
   running: boolean;
   tests?: number;
@@ -190,6 +192,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       info.at = run.at.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
       info.tests = run.tests.length;
       info.failed = run.tests.filter((t) => !t.ok).length;
+      info.names = run.tests.map((t) => t.name).slice(0, 8);
       if (run.error) info.error = run.error;
     }
     return info;
@@ -337,12 +340,15 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       const choice = await vscode.window.showInformationMessage(
         `Pebble propone ${data.tasks.length} compiti per il passo ${step.n} · ${step.title}. ${extra}`,
         "Accetta",
+        "Revisiona e modifica",
         "Scarta",
       );
       if (choice === "Accetta") {
         await this.writePath(proposed);
         void vscode.window.showInformationMessage(`Pebble: passo ${step.n} aggiunto al percorso.`);
         this.schedule(true, 300);
+      } else if (choice === "Revisiona e modifica") {
+        await reviewInEditor(uri, proposed, "Il nuovo passo è nel percorso");
       }
     } catch (err) {
       void vscode.window.showErrorMessage(`Pebble non è riuscito a preparare il passo: ${err instanceof Error ? err.message : String(err)}`);
@@ -389,8 +395,13 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       const choice = await vscode.window.showInformationMessage(
         `Pebble propone lo scheletro di ${rel}: firme e pseudocodice, il codice lo scrivi tu.${note}`,
         "Crea il file",
+        "Revisiona e modifica",
         "Scarta",
       );
+      if (choice === "Revisiona e modifica") {
+        await reviewInEditor(uri, text, "Lo scheletro è nell'editor");
+        return;
+      }
       if (choice !== "Crea il file") return;
       await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
       await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
@@ -467,6 +478,29 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     clearTimeout(this.timer);
     for (const d of this.disposables) d.dispose();
   }
+}
+
+/**
+ * "Revisiona e modifica": la proposta entra nell'editor come modifica non salvata.
+ * Salvare la conferma, annullare o chiudere senza salvare la scarta. Per un file nuovo si apre
+ * un documento senza titolo già associato al percorso giusto: salvandolo, il file nasce lì.
+ */
+async function reviewInEditor(uri: vscode.Uri, content: string, what: string): Promise<void> {
+  let exists = true;
+  try {
+    await vscode.workspace.fs.stat(uri);
+  } catch {
+    exists = false;
+  }
+  const target = exists ? uri : uri.with({ scheme: "untitled" });
+  const doc = await vscode.workspace.openTextDocument(target);
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(target, new vscode.Range(0, 0, doc.lineCount, 0), content);
+  await vscode.workspace.applyEdit(edit);
+  await vscode.window.showTextDocument(doc, { preview: false });
+  void vscode.window.showInformationMessage(
+    `${what}, non ancora salvato. Modificalo come vuoi e salva (⌘S / Ctrl+S) per confermare; per scartarlo annulla (⌘Z) o chiudi senza salvare.`,
+  );
 }
 
 async function readText(uri: vscode.Uri): Promise<string | null> {
