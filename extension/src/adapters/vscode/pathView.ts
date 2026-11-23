@@ -133,6 +133,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
           if (!this.settings().verifyOnSave || this.isPathFile(doc.uri) || !this.inProject(doc.uri)) return;
           this.schedule(true, 900);
         }),
+        // Appena la cartella diventa attendibile, i test si possono lanciare.
+        vscode.workspace.onDidGrantWorkspaceTrust(() => this.schedule(true, 300)),
         // Gli errori dell'editor cambiano spesso: rivaluta senza rilanciare i test.
         vscode.languages.onDidChangeDiagnostics(() => {
           if (this.text !== null) this.schedule(false, 600);

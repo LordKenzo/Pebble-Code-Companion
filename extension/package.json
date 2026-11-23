@@ -14,6 +14,16 @@
   "engines": {
     "vscode": "^1.100.0"
   },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In modalità con restrizioni Pebble funziona (percorso, fumetto, review), ma non lancia il comando dei test: eseguirebbe codice della cartella. Considera attendibile la cartella per far spuntare i compiti in automatico.",
+      "restrictedConfigurations": [
+        "pebble.path.testCommand"
+      ]
+    },
+    "virtualWorkspaces": false
+  },
   "categories": [
     "Linters",
     "Education",
@@ -439,12 +449,5 @@
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
-  },
-  "capabilities": {
-    "untrustedWorkspaces": {
-      "supported": false,
-      "description": "Pebble legge i file del progetto e li invia al modello scelto: funziona solo nelle cartelle di cui ti fidi."
-    },
-    "virtualWorkspaces": false
   }
 }

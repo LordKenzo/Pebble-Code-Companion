@@ -76,6 +76,15 @@ export class SignalCollector {
 
   /** Lancia il comando dei test nella cartella del progetto e legge l'output TAP. */
   private runTests(): Promise<TestRun> {
+    // In una cartella non attendibile niente comandi: eseguirebbero codice che non hai approvato.
+    if (!vscode.workspace.isTrusted) {
+      return Promise.resolve({
+        at: new Date(),
+        durationMs: 0,
+        tests: [],
+        error: "la cartella è in modalità con restrizioni, quindi non lancio i test. Considerala attendibile (Gestisci attendibilità dell'area di lavoro) e riprova",
+      });
+    }
     const { testCommand, timeoutSeconds } = this.settings();
     const started = Date.now();
     return new Promise((resolve) => {
