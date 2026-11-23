@@ -1,0 +1,11 @@
+ 1 | {
+ 2 |   "name": "mini-calc",
+ 3 |   "type": "module",
+ 4 |   "private": true,
+ 5 |   "engines": { "node": ">=22.18" },
+ 6 |   "scripts": {
+ 7 |     "test": "node --test \"test/**/*.test.ts\"",
+ 8 |     "typecheck": "tsc --noEmit"
+ 9 |   },
+10 |   "devDependencies": { "@types/node": "^24.0.0", "typescript": "^5.9.0" }
+11 | }

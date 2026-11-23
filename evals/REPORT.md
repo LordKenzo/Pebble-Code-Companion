@@ -96,6 +96,20 @@ Correzione nel prompt: la riga Concetto solo dal gradino 2; al gradino 1 la doma
 
 Aperto: la lunghezza a livello entry tende a sforare; da ricontrollare con gpt-6-sol nell'estensione, perché questi eval girano con Claude.
 
+## Prompt v0.6: il prossimo passo, MODE: PLAN_STEP (caso 20)
+
+Passo 4 della roadmap: Pebble scompone il prossimo passo dal codice com'è adesso (ADR-011). Il caso usa mini-calc con il setup già fatto e chiede il passo 2.
+
+| Prova | Esito | Note |
+|---|---|---|
+| Primo giro | ⚠️ caso rotto | Il percorso incollato nel caso conteneva "## Passo 1", e il runner taglia la sezione Input alla prima riga che inizia con "## ". Spostato in un fixture incluso |
+| Secondo giro | ✅ con riserve | Non ripropone il setup, aggiunge il modulo `units` mancante (ADR-003), test prima dell'implementazione, casi anomali come esiti (ADR-004), finale "Rileggi con Pebble". Ma i nomi nelle condizioni ("22,5 kg in grammi") non comparivano tra i casi del compito dei test: il compito sarebbe rimasto su "test non trovato" |
+| Terzo giro, dopo la correzione | ✅ | Nomi esatti dei test tra virgolette nel compito dei test, condizioni con la loro parte iniziale. Verificato con `planToSection` e `testNameMatches`: nessuna condizione scartata, ogni nome nelle condizioni corrisponde a un caso elencato |
+
+Correzione nel prompt: nel compito dei test i casi sono nomi esatti tra virgolette, che iniziano con il dato del caso; le condizioni `test "…"` usano la parte prima dei due punti.
+
+Run: `runs/2026-11-23_2057`, `runs/2026-11-23_2058`, `runs/2026-11-23_2059`.
+
 ## Aperto
 
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
