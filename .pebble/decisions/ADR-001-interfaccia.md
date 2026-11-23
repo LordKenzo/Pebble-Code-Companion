@@ -6,3 +6,5 @@ Alternative scartate: solo chat participant (dipendenza da Copilot, nessuna pres
 Conseguenze: un po' più di UI da costruire. In cambio Pebble funziona anche senza Copilot e le note stanno dove si lavora, nell'editor.
 
 Aggiornamento 2026-11-23: il "pannello laterale proprio" è una vista nella barra delle attività (icona Pebble) a forma di conversazione, come nel mockup. Le review compaiono lì e nelle Diagnostics; la spesa resta in un pannello dell'editor.
+
+Aggiornamento 2026-11-23 (sera): con il percorso, l'interfaccia principale diventa la vista "Percorso" nella barra laterale, una lista nativa con caselle di spunta. Accanto c'è il "Quaderno", e il fumetto sulla riga usa la Comments API (ADR-009). Diagnostics e conversazione restano, ma la conversazione passa in secondo piano.
