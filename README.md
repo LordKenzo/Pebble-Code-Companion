@@ -96,6 +96,24 @@ Every note says where it comes from: one of your ADRs, your `bootstrap.md`, or `
 6. **Stuck? `⌥P`.** Climb the ladder as far as you need.
 7. **Review.** When a file is done, ask Pebble to review it against your decisions and best practices.
 
+## A look at it
+
+Sketches of the experience, not screenshots: the extension is a moving prototype, and these show the idea it is heading for.
+
+**The Path.** The current step as a checklist. Each task says what to do, the signature to aim for and what Pebble expects, and ticks itself when your tests and the compiler agree.
+
+<p align="center"><img src="assets/sketches/path.png" alt="Sketch of the Path panel: a checklist of tasks for step 2, one task open with its signature, what Pebble expects and a Prepare the file button; annotations explain that tasks tick themselves when tests pass" width="820"></p>
+
+**Ask with Alt+P.** A balloon right under your line. It starts with a question built from your failing test, and climbs one rung at a time only when you ask.
+
+<p align="center"><img src="assets/sketches/balloon.png" alt="Sketch of the help balloon under line 20 of plates.ts: rung 1 of 4, a question about the failing 60 kg test, buttons for More concrete, Why it matters, Deep dive and Got it, and a box to type an answer" width="820"></p>
+
+**Prepare the file.** Imports, types, the signature and the pseudocode as comments. The body stays empty: that part is yours.
+
+<p align="center"><img src="assets/sketches/prepare-file.png" alt="Sketch of a prepared file: imports, a constant, an interface and the platesFor signature, with numbered pseudocode comments inside an empty body" width="820"></p>
+
+The sketches are drawn with [rough.js](https://roughjs.com) from [`assets/sketches/sketches.html`](assets/sketches/sketches.html).
+
 ## Status
 
 Pebble is an early, working prototype, built in the open and dogfooded on itself. This repository's own `bootstrap.md` and `.pebble/` were produced by Pebble.

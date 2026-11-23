@@ -1,0 +1,208 @@
+<!doctype html>
+<!--
+  Schizzi del README: tre disegni a mano (rough.js + Architects Daughter, OFL), bianco e nero con l'ambra di Pebble.
+  Per rigenerarli: apri questa pagina con ?s=path | balloon | file e fai uno screenshot del canvas
+  (la pagina imposta la dimensione della finestra giusta in window.SIZE). Il seme è fisso: escono sempre uguali.
+-->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=block">
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<style>html,body{margin:0;background:#fdfcf8}canvas{display:block}</style>
+</head><body><canvas id="c"></canvas>
+<script>
+const INK = "#1f1f1f", SOFT = "#6b6b6b", PAPER = "#fdfcf8", AMBER = "#d4952b", RED = "#c8473f", GREEN = "#3f8f5a";
+const FONT = "'Architects Daughter', 'Comic Sans MS', cursive";
+const which = new URLSearchParams(location.search).get("s") || "path";
+const SIZES = { path: [1180, 760], balloon: [1180, 660], file: [1180, 560] };
+const [W, H] = SIZES[which];
+window.SIZE = SIZES[which];
+
+const canvas = document.getElementById("c");
+const dpr = window.devicePixelRatio || 1;
+canvas.width = W * dpr; canvas.height = H * dpr;
+canvas.style.width = W + "px"; canvas.style.height = H + "px";
+const ctx = canvas.getContext("2d");
+ctx.scale(dpr, dpr);
+const rc = rough.canvas(canvas);
+let seed = 7;
+const o = (extra = {}) => ({ roughness: 1.1, bowing: 0.8, strokeWidth: 1.7, stroke: INK, seed: seed++, ...extra });
+
+const rect = (x, y, w, h, opt = {}) => rc.rectangle(x, y, w, h, o(opt));
+const line = (x1, y1, x2, y2, opt = {}) => rc.line(x1, y1, x2, y2, o(opt));
+function text(s, x, y, size = 18, color = INK, align = "left", weight = "") {
+  ctx.font = `${weight} ${size}px ${FONT}`; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = "alphabetic";
+  ctx.fillText(s, x, y);
+  return ctx.measureText(s).width;
+}
+function strike(s, x, y, size) {
+  ctx.font = `${size}px ${FONT}`;
+  const w = ctx.measureText(s).width;
+  text(s, x, y, size, SOFT);
+  line(x - 2, y - size * 0.32, x + w + 2, y - size * 0.36, { stroke: SOFT, strokeWidth: 1.4, roughness: 0.8 });
+}
+function checkbox(x, y, checked) {
+  rect(x, y, 20, 20, { strokeWidth: 1.6, ...(checked ? { fill: GREEN, fillStyle: "solid", stroke: GREEN } : {}) });
+  if (checked) rc.linearPath([[x + 4, y + 10], [x + 9, y + 15], [x + 17, y + 4]], o({ stroke: PAPER, strokeWidth: 2.6, roughness: 0.6 }));
+}
+function arrow(points, color = SOFT) {
+  rc.curve(points, o({ stroke: color, strokeWidth: 1.5, roughness: 0.9 }));
+  const [a, b] = [points[points.length - 2], points[points.length - 1]];
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (const d of [-0.45, 0.45]) line(b[0], b[1], b[0] - 13 * Math.cos(ang + d), b[1] - 13 * Math.sin(ang + d), { stroke: color, strokeWidth: 1.5, roughness: 0.6 });
+}
+function note(lines, x, y, color = INK, size = 19) {
+  lines.forEach((l, i) => text(l, x, y + i * (size + 7), size, color));
+}
+function button(label, x, y, w, primary = false) {
+  rect(x, y, w, 34, primary ? { fill: AMBER, fillStyle: "hachure", hachureGap: 5, fillWeight: 1.4, stroke: AMBER } : {});
+  text(label, x + w / 2, y + 23, 17, primary ? INK : INK, "center");
+}
+function title(s) { text(s, W - 40, 46, 30, INK, "right"); }
+
+document.fonts.load(`20px ${FONT}`).then(() => {
+  ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+  ({ path: drawPath, balloon: drawBalloon, file: drawFile })[which]();
+  document.title = "ready";
+});
+
+// ---------- 1. The Path panel ----------
+function drawPath() {
+  title("The Path");
+  const X = 50, Y = 40, PW = 470;
+  rect(X, Y, PW, 680, { strokeWidth: 2 });
+  text("PEBBLE · PATH", X + 22, Y + 38, 16, SOFT);
+  text("5 of 9", X + PW - 22, Y + 38, 18, AMBER, "right");
+  text("Step 2 · Plates per side", X + 22, Y + 74, 22);
+  text("roadmap › step 2 of 7 · ADR-003, ADR-004", X + 22, Y + 100, 15, SOFT);
+  rect(X + 22, Y + 116, PW - 44, 10, { strokeWidth: 1.3 });
+  rect(X + 22, Y + 116, (PW - 44) * 0.55, 10, { fill: GREEN, fillStyle: "solid", stroke: GREEN, strokeWidth: 1 });
+
+  let y = Y + 160;
+  checkbox(X + 24, y - 16, true); strike("Write the plate tests", X + 58, y, 19); text("file", X + PW - 24, y, 15, SOFT, "right");
+  y += 40;
+  checkbox(X + 24, y - 16, true); strike("Create src/core/plates.ts", X + 58, y, 19); text("file", X + PW - 24, y, 15, SOFT, "right");
+
+  // compito attivo
+  y += 26;
+  const cardY = y;
+  rect(X + 12, cardY, PW - 24, 286, { strokeWidth: 2.2 });
+  y += 36;
+  checkbox(X + 24, y - 16, false); text("Implement platesFor", X + 58, y, 20); text("1/4", X + PW - 28, y, 18, RED, "right");
+  note(["subtract the bar, halve it,", "then the heaviest plate first"], X + 58, y + 32, SOFT, 16);
+  rect(X + 58, y + 70, PW - 96, 34, { strokeWidth: 1.3 });
+  text("platesFor(total: Grams): Result<PlateLoad>", X + 70, y + 93, 15);
+  text("WHAT I EXPECT", X + 58, y + 132, 13, SOFT);
+  rc.circle(X + 64, y + 152, 9, o({ fill: AMBER, fillStyle: "solid", stroke: AMBER }));
+  note(["4 green tests named “20 kg”,", "“22.5 kg”, “60 kg”, “142.5 kg”"], X + 78, y + 158, INK, 16);
+  button("Prepare the file", X + 58, y + 200, 160, true);
+  button("Open in path", X + 230, y + 200, 140);
+
+  y = cardY + 286 + 40;
+  checkbox(X + 24, y - 16, false); text("Below 20 kg", X + 58, y, 19); text("1/1 !", X + PW - 24, y, 17, AMBER, "right");
+  y += 40;
+  checkbox(X + 24, y - 16, false); text("Review with Pebble", X + 58, y, 19); text("by hand", X + PW - 24, y, 15, SOFT, "right");
+  line(X + 12, y + 26, X + PW - 12, y + 26, { stroke: SOFT, strokeWidth: 1.2 });
+  text("Checked at 21:40 · 5 tests, 3 red ·", X + 22, y + 58, 15, SOFT);
+  text("Check now", X + 270, y + 58, 15, AMBER);
+
+  // annotazioni: le frecce arrivano dal bordo destro del pannello, senza attraversare il testo
+  const A = 600, E = X + PW + 10;
+  note(["ticks itself when", "your tests pass"], A, 190);
+  arrow([[A - 10, 186], [A - 40, 190], [E, 194]]);
+  note(["1 of 4 tests green:", "it stays open until they all are"], A, 296);
+  arrow([[A - 10, 292], [A - 40, 296], [E, 298]]);
+  note(["the signature to aim for.", "the body is yours."], A, 384);
+  arrow([[A - 10, 380], [A - 40, 384], [E, 388]]);
+  note(["it says what it expects,", "before anything goes wrong"], A, 458);
+  arrow([[A - 10, 454], [A - 40, 456], [E, 456]]);
+  note(["“!” means green, but never", "seen failing: break it once", "and watch the test catch it"], A, 584, AMBER);
+  arrow([[A - 10, 580], [A - 40, 584], [E, 588]], AMBER);
+  note(["your tests run on every save.", "no model, no cost"], A, 680);
+  arrow([[A - 10, 676], [A - 40, 682], [E, 684]]);
+}
+
+// ---------- 2. The ⌥P balloon ----------
+function drawBalloon() {
+  title("Ask with Alt+P");
+  const X = 40, Y = 70, EW = 690;
+  rect(X, Y, EW, 560, { strokeWidth: 2 });
+  text("plates.ts", X + 18, Y + 28, 15, SOFT);
+  line(X, Y + 40, X + EW, Y + 40, { strokeWidth: 1.2, stroke: SOFT });
+  const code = (n, s, y, hl) => {
+    if (hl) rect(X + 6, y - 20, 6, 26, { fill: AMBER, fillStyle: "solid", stroke: AMBER, strokeWidth: 1 });
+    text(String(n), X + 42, y, 16, SOFT, "right");
+    text(s, X + 60, y, 17, hl ? INK : "#333");
+  };
+  code(17, "let remaining = (total - BAR) / 2;", Y + 76);
+  code(18, "const perSide: Grams[] = [];", Y + 104);
+  code(19, "for (const plate of PLATES) {", Y + 132);
+  code(20, "  while (remaining > plate) {", Y + 160, true);
+
+  // il fumetto
+  const BX = X + 60, BY = Y + 184, BW = EW - 90, BH = 262;
+  rc.linearPath([[BX + 30, BY], [BX + 44, BY - 16], [BX + 58, BY]], o({ stroke: AMBER, strokeWidth: 2 }));
+  rect(BX, BY, BW, BH, { stroke: AMBER, strokeWidth: 2.2 });
+  text("Pebble", BX + 18, BY + 32, 18, AMBER);
+  for (let i = 0; i < 4; i++) rect(BX + 96 + i * 26, BY + 20, 20, 9, { stroke: AMBER, strokeWidth: 1.4, ...(i === 0 ? { fill: AMBER, fillStyle: "solid" } : {}) });
+  text("line 20 · 3 tests red", BX + BW - 18, BY + 32, 15, SOFT, "right");
+  line(BX, BY + 46, BX + BW, BY + 46, { stroke: SOFT, strokeWidth: 1 });
+  text("RUNG 1 OF 4 · A QUESTION", BX + 18, BY + 74, 13, SOFT);
+  note([
+    "The 60 kg test gets [15, 2.5, 1.25].",
+    "With 20 000 g left and the 20 kg plate next,",
+    "is the while condition true or false?",
+  ], BX + 18, BY + 104, INK, 18);
+  const by = BY + 186;
+  text("↑ More concrete", BX + 18, by, 16, AMBER);
+  text("?  Why it matters", BX + 170, by, 16, AMBER);
+  text("Deep dive", BX + 330, by, 16, AMBER);
+  text("✓ Got it", BX + 440, by, 16, AMBER);
+  rect(BX + 18, by + 22, BW - 36, 40, { strokeWidth: 1.3, stroke: SOFT });
+  text("Type your answer…", BX + 32, by + 48, 16, SOFT);
+  code(21, "    perSide.push(plate);", BY + BH + 36);
+  code(22, "    remaining -= plate;", BY + BH + 64);
+
+  // annotazioni
+  const A = 790;
+  note(["cursor on a line,", "press Alt+P (Option+P on a Mac)"], A, 216);
+  arrow([[A - 10, 212], [A - 60, 222], [X + EW - 230, Y + 156]]);
+  note(["it starts with a question,", "built from your failing test"], A, 330);
+  arrow([[A - 10, 324], [A - 60, 320], [BX + BW - 30, BY + 110]]);
+  note(["climb one rung at a time,", "up to the exact line.", "never the whole function"], A, 440, AMBER);
+  arrow([[A - 10, 436], [A - 50, 440], [BX + 545, by - 6]], AMBER);
+  note(["or answer it: Pebble tells", "you if you got it, and lets", "you fix it yourself"], A, 566);
+  arrow([[A - 10, 562], [A - 60, 552], [BX + BW - 20, by + 44]]);
+}
+
+// ---------- 3. Prepare the file ----------
+function drawFile() {
+  title("Prepare the file");
+  const X = 40, Y = 70, EW = 720;
+  rect(X, Y, EW, 450, { strokeWidth: 2 });
+  text("src/core/plates.ts", X + 18, Y + 28, 15, SOFT);
+  line(X, Y + 40, X + EW, Y + 40, { strokeWidth: 1.2, stroke: SOFT });
+  const rows = [
+    ["import { type Grams } from \"./units.ts\";", "#333"],
+    ["export const BAR: Grams = 20_000;", "#333"],
+    ["export interface PlateLoad { total; perSide }", "#333"],
+    ["", ""],
+    ["export function platesFor(total: Grams): Result<PlateLoad> {", INK],
+    ["  // TODO(you) Pseudocode: one line at a time.", AMBER],
+    ["  // 1. below BAR → bar only, with a warning", AMBER],
+    ["  // 2. per side = (total − BAR) / 2", AMBER],
+    ["  // 3. heaviest plate first, while it fits", AMBER],
+    ["  // ? which plates for 142.5 kg? work it out by hand", AMBER],
+    ["}", INK],
+  ];
+  rows.forEach(([s, c], i) => s && text(s, X + 22, Y + 76 + i * 33, 17, c));
+
+  const A = 810;
+  note(["types, constants and the", "signature: proposed by Pebble"], A, 120);
+  arrow([[A - 10, 116], [A - 120, 120], [X + 460, Y + 112]]);
+  note(["the pseudocode goes inside,", "as comments"], A, 250, AMBER);
+  arrow([[A - 10, 246], [A - 60, 250], [X + 560, Y + 240]], AMBER);
+  note(["the body stays empty:", "you write it"], A, 370);
+  arrow([[A - 10, 366], [A - 110, 470], [X + 380, Y + 432], [X + 48, Y + 402]]);
+  note(["shown as a diff first:", "Accept · Review and edit · Discard"], A, 480, SOFT, 17);
+}
+</script></body></html>
