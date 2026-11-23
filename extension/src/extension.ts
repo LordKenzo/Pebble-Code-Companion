@@ -3,6 +3,7 @@ import { createMentor, type ProviderId, type ProviderSettings } from "./adapters
 import type { Effort } from "./adapters/llm/claude";
 import { ChatView } from "./adapters/vscode/chatView";
 import { MentorSession } from "./adapters/vscode/mentorSession";
+import { PathView } from "./adapters/vscode/pathView";
 import { ReviewPanel } from "./adapters/vscode/panel";
 import { ProposalDocs } from "./adapters/vscode/proposals";
 import { SpendLedger } from "./adapters/vscode/spendLedger";
@@ -159,8 +160,16 @@ export function activate(context: vscode.ExtensionContext): void {
     workspaceState: context.workspaceState,
   }, proposals);
 
+  // Vista "Percorso": i compiti di .pebble/percorso.md (ADR-007).
+  const pathView = new PathView(vscode.workspace.workspaceFolders?.[0]?.uri);
+
   context.subscriptions.push(
     diagnostics,
+    pathView,
+    vscode.commands.registerCommand("pebble.path.reveal", (line: number) => pathView.reveal(line)),
+    vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
+    vscode.commands.registerCommand("pebble.path.open", () => pathView.reveal(0)),
+    vscode.commands.registerCommand("pebble.path.createExample", () => pathView.createExample()),
 
     vscode.window.registerWebviewViewProvider(ChatView.id, chatView, { webviewOptions: { retainContextWhenHidden: true } }),
 

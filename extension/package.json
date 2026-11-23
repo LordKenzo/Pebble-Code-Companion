@@ -6,7 +6,10 @@
   "publisher": "lordkenzo",
   "license": "MIT",
   "icon": "media/icon.png",
-  "galleryBanner": { "color": "#14182a", "theme": "dark" },
+  "galleryBanner": {
+    "color": "#14182a",
+    "theme": "dark"
+  },
   "private": true,
   "engines": {
     "vscode": "^1.100.0"
@@ -84,6 +87,28 @@
         "title": "Apri il mentor",
         "category": "Pebble",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "pebble.path.refresh",
+        "title": "Ricarica il percorso",
+        "category": "Pebble",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "pebble.path.open",
+        "title": "Apri percorso.md",
+        "category": "Pebble",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "pebble.path.createExample",
+        "title": "Crea un percorso di esempio",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.path.reveal",
+        "title": "Apri il compito nel percorso",
+        "category": "Pebble"
       }
     ],
     "menus": {
@@ -103,6 +128,22 @@
           "command": "pebble.openSettings",
           "when": "view == pebble.chat",
           "group": "navigation@2"
+        },
+        {
+          "command": "pebble.path.open",
+          "when": "view == pebble.path && pebble.hasPath",
+          "group": "navigation@1"
+        },
+        {
+          "command": "pebble.path.refresh",
+          "when": "view == pebble.path",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "pebble.path.reveal",
+          "when": "false"
         }
       ]
     },
@@ -236,12 +277,23 @@
     "views": {
       "pebble": [
         {
+          "id": "pebble.path",
+          "name": "Percorso"
+        },
+        {
           "type": "webview",
           "id": "pebble.chat",
           "name": "Mentor"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "pebble.path",
+        "contents": "Il percorso trasforma la roadmap in compiti che si spuntano man mano. Vive in .pebble/percorso.md.\n[Crea un percorso di esempio](command:pebble.path.createExample)",
+        "when": "!pebble.hasPath"
+      }
+    ]
   },
   "scripts": {
     "sync-prompt": "node scripts/sync-prompt.mjs",
