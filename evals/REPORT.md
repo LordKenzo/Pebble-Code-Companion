@@ -77,6 +77,25 @@ Cambiamenti:
 
 Limite: gli eval girano con Claude (`claude -p`), mentre la prova su mini-calc usava gpt-6-sol. Va ripetuta nell'estensione con il provider che usi.
 
+## Prompt v0.5: il fumetto, MODE: HELP (`runs/2026-11-23_2025`, `_2026`)
+
+Passo 2b della roadmap: il rischio più alto (fare domande utili invece di dare risposte) verificato prima di costruire l'interfaccia. Tre bug reali di mini-calc con l'output dei test rossi (fixture in `fixtures/mini-calc/src/`):
+- `>` invece di `>=` nel ciclo dei dischi;
+- kg in virgola mobile: `175 * (70 / 100)` dà 122,49999999999999 e il carico scende a 120;
+- il caso sotto i 20 kg mancante.
+
+| Caso | Esito | Note |
+|---|---|---|
+| 15 gradino 1, cursore sulla riga sbagliata | ✅ dopo correzione | Prima: ottima domanda sui 22,5 kg, ma la riga finale "Concetto: errore di confine" rivelava la risposta. Dopo: domanda sul valore 20.000 alla riga del while, senza concetto |
+| 16 gradino 4 | ✅ | Una riga di codice (`>=`), spiega l'output dei 60 kg. Propone un test di proprietà ("la somma dei dischi torna al totale"), migliore di quello atteso |
+| 17 gradino 1, virgola mobile | ✅ dopo correzione | La domanda chiede di stampare `targetKg` "cifra per cifra". Prima della correzione rivelava "aritmetica in virgola mobile" nella riga Concetto |
+| 18 gradino 2, entry | ✅ con riserve | Direzione chiara, termini spiegati, cita ADR-004 e suggerisce di guardare `result.ts`. Circa 120 parole contro le 90 indicate |
+| 19 approfondimento | ✅ con riserve | Concetto, abitudine ed esercizio (spedizione gratuita da 50 €) ben fatti, nessuna correzione. Circa 160 parole contro 140; non nota l'algoritmo greedy |
+
+Correzione nel prompt: la riga Concetto solo dal gradino 2; al gradino 1 la domanda può dire dove guardare, non cosa c'è di sbagliato.
+
+Aperto: la lunghezza a livello entry tende a sforare; da ricontrollare con gpt-6-sol nell'estensione, perché questi eval girano con Claude.
+
 ## Aperto
 
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
