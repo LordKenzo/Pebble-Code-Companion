@@ -1,6 +1,10 @@
-# Pebble :: The Code Path Companion
+<p align="center">
+  <img src="assets/banner.jpg" alt="Pebble, the Code Path Companion: a trail of glowing pebbles through a dark forest at night">
+</p>
 
-**Pebble walks the path with you. You write the code.**
+# <img src="assets/logo.png" alt="" width="40" align="top"> Pebble :: The Code Path Companion
+
+**Walk the path. You write the code.**
 
 Pebble is a pair engineer that lives in your editor. It turns what you want to build into a path of small steps. It prepares each file with signatures and pseudocode, and checks your progress with your own tests and compiler. When you get stuck and ask, it helps you think instead of handing you the answer.
 
