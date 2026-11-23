@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import * as vscode from "vscode";
 import { findExports, type Signals, type Task } from "../../core/path";
+import { DEFAULT_TEST_COMMAND, detectTestCommand, packageDependencies } from "../../core/runner";
 import { parseTap, type ParsedTest } from "../../core/tap";
 
 export interface TestRun {
@@ -24,6 +25,8 @@ const MAX_OUTPUT = 4 * 1024 * 1024;
  */
 export class SignalCollector {
   private lastRun: TestRun | undefined;
+  /** Il comando usato davvero nell'ultima esecuzione (scelto dalle impostazioni o dal package.json). */
+  lastCommand: string | undefined;
 
   constructor(
     private readonly root: vscode.Uri,
@@ -45,6 +48,10 @@ export class SignalCollector {
       }
     }
 
+    const needsDeps = tasks.some((t) => t.conditions.some((c) => c.kind === "dependency"));
+    const manifest = await this.read(vscode.Uri.joinPath(this.root, "package.json"));
+    const dependencies = needsDeps ? packageDependencies(manifest) : undefined;
+
     const files: Record<string, string[]> = {};
     const errors: Record<string, number> = {};
     for (const rel of paths) {
@@ -55,11 +62,12 @@ export class SignalCollector {
       errors[rel] = vscode.languages.getDiagnostics(uri).filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length;
     }
 
-    if (needsTests && runTests) this.lastRun = await this.runTests();
+    if (needsTests && runTests) this.lastRun = await this.runTests(manifest);
     const run = needsTests ? this.lastRun : undefined;
     return {
       files,
       errors,
+      ...(dependencies && { dependencies }),
       ...(run && !run.error && { tests: run.tests }),
     };
   }
@@ -75,7 +83,7 @@ export class SignalCollector {
   }
 
   /** Lancia il comando dei test nella cartella del progetto e legge l'output TAP. */
-  private runTests(): Promise<TestRun> {
+  private runTests(manifest: string | null): Promise<TestRun> {
     // In una cartella non attendibile niente comandi: eseguirebbero codice che non hai approvato.
     if (!vscode.workspace.isTrusted) {
       return Promise.resolve({
@@ -85,7 +93,15 @@ export class SignalCollector {
         error: "la cartella è in modalità con restrizioni, quindi non lancio i test. Considerala attendibile (Gestisci attendibilità dell'area di lavoro) e riprova",
       });
     }
-    const { testCommand, timeoutSeconds } = this.settings();
+    const { timeoutSeconds } = this.settings();
+    // Se lo sviluppatore non ha scelto un comando, Pebble lo ricava dal package.json (Vitest, node:test…).
+    let testCommand = this.settings().testCommand;
+    if (testCommand === DEFAULT_TEST_COMMAND) {
+      const choice = detectTestCommand(manifest);
+      if (choice.kind === "missing") return Promise.resolve({ at: new Date(), durationMs: 0, tests: [], error: choice.hint });
+      testCommand = choice.command;
+    }
+    this.lastCommand = testCommand;
     const started = Date.now();
     return new Promise((resolve) => {
       let out = "";

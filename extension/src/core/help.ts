@@ -1,5 +1,5 @@
-import { numberLines } from "./context";
-import type { ExperienceLevel, ProjectContext } from "./model";
+import { formatProblems, numberLines } from "./context";
+import type { ExperienceLevel, Problem, ProjectContext } from "./model";
 import { projectBlocks } from "./modes";
 import type { TestResult } from "./path";
 
@@ -40,6 +40,8 @@ export interface HelpRequest {
   history: string[];
   task?: HelpTask;
   tests?: (TestResult & { detail?: string })[];
+  /** Errori dell'editor sul file: se ci sono, il fumetto sistema prima quelli. */
+  problems?: Problem[];
 }
 
 const HELP_LEVEL: Record<ExperienceLevel, string> = {
@@ -84,6 +86,7 @@ export function buildHelpMessage(req: HelpRequest): string {
     task,
     block("file", numberLines(req.file.content), ` path="${req.file.path}"`),
     `<cursor line="${req.line}">`,
+    formatProblems(req.problems),
     req.tests?.length ? block("tests", formatTests(req.tests)) : "",
     req.history.length ? block("history", req.history.join("\n")) : "",
     ask.kind === "reply" ? block("reply", ask.text) : "",

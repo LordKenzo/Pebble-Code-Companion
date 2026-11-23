@@ -1,4 +1,4 @@
-import type { ExperienceLevel, FileUnderReview, ProjectContext } from "./model";
+import type { ExperienceLevel, FileUnderReview, Problem, ProjectContext } from "./model";
 
 /** Numera le righe come le vede l'utente nell'editor, così le note puntano alla riga giusta. */
 export function numberLines(content: string): string {
@@ -43,9 +43,20 @@ export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, l
       ? `Nota: nel progetto mancano ${missing.join(" e ")}. Ancora le note a "generale" e non inventare decisioni.\n`
       : "",
     block("file", numberLines(file.content), ` path="${file.path}" language="${file.languageId}"`),
+    formatProblems(file.problems),
     "Le righe del file sono numerate (`N | codice`): usa quei numeri in `line` ed `endLine`. Rispondi compilando lo schema richiesto.",
     LEVEL_HINTS[level],
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/**
+ * Gli errori dell'editor in un blocco <problems>: "riga 3 · errore · ts: Cannot find name 'describe'".
+ * Vuoto se non ce ne sono. Vengono prima della logica: un file che non compila non si discute.
+ */
+export function formatProblems(problems: readonly Problem[] | undefined): string {
+  if (!problems?.length) return "";
+  const lines = problems.slice(0, 20).map((p) => `riga ${p.line} · ${p.severity}${p.source ? ` · ${p.source}` : ""}: ${p.message.split("\n")[0]!.trim()}`);
+  return `<problems>\n${lines.join("\n")}\n</problems>`;
 }

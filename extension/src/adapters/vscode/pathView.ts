@@ -223,7 +223,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
 
   private checkInfo(): CheckInfo {
     const run = this.collector?.last;
-    const info: CheckInfo = { running: this.running, command: this.settings().testCommand };
+    const info: CheckInfo = { running: this.running, command: this.collector?.lastCommand ?? this.settings().testCommand };
     if (run) {
       info.at = run.at.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
       info.tests = run.tests.length;

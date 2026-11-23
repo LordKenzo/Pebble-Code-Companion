@@ -1,3 +1,4 @@
+import { editorProblems } from "./problems";
 import * as vscode from "vscode";
 import { estimateCost, formatUsd, type Price } from "../../core/cost";
 import {
@@ -364,7 +365,7 @@ export class MentorSession {
         mentor,
         store,
         system,
-        { path: file.path, content: file.content, languageId: file.doc.languageId },
+        { path: file.path, content: file.content, languageId: file.doc.languageId, problems: editorProblems(file.doc.uri) },
         this.deps.level(),
         this.deps.priceFor(mentor),
       );

@@ -6,6 +6,7 @@ import { stripLongCode } from "../../core/policy";
 import type { MentorModel } from "../../core/ports";
 import type { TestResult } from "../../core/path";
 import { WorkspaceStore } from "../store/workspaceStore";
+import { editorProblems } from "./problems";
 
 export interface HelpDeps {
   mentor(): Promise<MentorModel>;
@@ -183,6 +184,7 @@ export class HelpBalloon implements vscode.Disposable {
         history: st.history,
         ...(task && { task }),
         ...(tests && { tests }),
+        problems: editorProblems(thread.uri),
       });
       const mentor = await this.deps.mentor();
       const { text, usage } = await mentor.chat(await this.deps.systemPrompt(), message);

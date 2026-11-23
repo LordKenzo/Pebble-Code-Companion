@@ -35,6 +35,16 @@ export interface FileUnderReview {
   path: string;
   content: string;
   languageId: string;
+  /** Errori e avvisi che l'editor mostra già (compilatore, linter): i fatti più concreti sul file. */
+  problems?: Problem[];
+}
+
+export interface Problem {
+  /** Riga, contata da 1. */
+  line: number;
+  message: string;
+  severity: "errore" | "avviso";
+  source?: string;
 }
 
 /** Livello di esperienza dello sviluppatore: cambia cosa segnala Pebble e come lo spiega. */
