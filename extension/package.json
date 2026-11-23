@@ -115,10 +115,40 @@
         "title": "Verifica il percorso con test e compilatore",
         "category": "Pebble",
         "icon": "$(beaker)"
+      },
+      {
+        "command": "pebble.helpHere",
+        "title": "Pebble, aiutami qui",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.help.reply",
+        "title": "Rispondi"
+      },
+      {
+        "command": "pebble.help.up",
+        "title": "Più concreto"
+      },
+      {
+        "command": "pebble.help.why",
+        "title": "Perché conta?"
+      },
+      {
+        "command": "pebble.help.deep",
+        "title": "Approfondisci"
+      },
+      {
+        "command": "pebble.help.close",
+        "title": "Ho capito",
+        "icon": "$(check)"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "command": "pebble.helpHere",
+          "group": "pebble@0"
+        },
         {
           "command": "pebble.reviewFile",
           "group": "pebble"
@@ -155,6 +185,55 @@
         {
           "command": "pebble.path.reveal",
           "when": "false"
+        },
+        {
+          "command": "pebble.help.reply",
+          "when": "false"
+        },
+        {
+          "command": "pebble.help.up",
+          "when": "false"
+        },
+        {
+          "command": "pebble.help.why",
+          "when": "false"
+        },
+        {
+          "command": "pebble.help.deep",
+          "when": "false"
+        },
+        {
+          "command": "pebble.help.close",
+          "when": "false"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "pebble.help.reply",
+          "group": "inline@1",
+          "when": "commentController == pebble.help"
+        },
+        {
+          "command": "pebble.help.up",
+          "group": "inline@2",
+          "when": "commentController == pebble.help"
+        },
+        {
+          "command": "pebble.help.why",
+          "group": "inline@3",
+          "when": "commentController == pebble.help"
+        },
+        {
+          "command": "pebble.help.deep",
+          "group": "inline@4",
+          "when": "commentController == pebble.help"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "pebble.help.close",
+          "group": "inline",
+          "when": "commentController == pebble.help"
         }
       ]
     },
@@ -163,6 +242,12 @@
         "command": "pebble.reviewFile",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "pebble.helpHere",
+        "key": "alt+p",
+        "mac": "alt+p",
         "when": "editorTextFocus"
       }
     ],

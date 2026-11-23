@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
-import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState } from "../../core/path";
+import type { HelpTask } from "../../core/help";
+import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
+import type { ParsedTest } from "../../core/tap";
 import { SignalCollector } from "../signals/collector";
 
 const PATH_FILE = [".pebble", "percorso.md"] as const;
@@ -242,6 +244,21 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
 
   private inProject(uri: vscode.Uri): boolean {
     return !!this.root && uri.scheme === "file" && uri.fsPath.startsWith(this.root.fsPath) && !/[\\/](node_modules|\.git|out|dist)[\\/]/.test(uri.fsPath);
+  }
+
+  /**
+   * Contesto per il fumetto (ADR-009): il compito del passo corrente che cita il file aperto,
+   * altrimenti il compito attivo; più gli ultimi risultati dei test, se sono partiti.
+   */
+  helpContext(filePath: string): { task?: HelpTask; tests?: ParsedTest[] } {
+    const run = this.collector?.last;
+    const tests = run && !run.error ? run.tests : undefined;
+    const step = this.model?.steps[this.model.currentStep];
+    const open = step?.tasks.filter((t) => !t.checked) ?? [];
+    const mentions = (t: TaskView) => [t.title, t.todo ?? "", ...t.when.map((w) => w.text)].some((s) => s.includes(filePath));
+    const t = open.find(mentions) ?? open.find((x) => x.current) ?? open[0];
+    const task = t && { title: t.title, todo: t.todo, signature: t.signature, when: t.when.map((w) => w.text) };
+    return { ...(task && { task }), ...(tests && { tests }) };
   }
 
   // ---------- azioni ----------
