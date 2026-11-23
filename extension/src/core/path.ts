@@ -17,6 +17,7 @@ export type Condition =
   | { kind: "tests"; names: string[] }
   | { kind: "file"; path: string; exports: string[] }
   | { kind: "noErrors"; path: string }
+  | { kind: "dependency"; names: string[] }
   | { kind: "manual" }
   | { kind: "invalid"; raw: string };
 
@@ -93,6 +94,12 @@ export function parseCondition(raw: string): Condition {
     return names.length ? { kind: "tests", names } : { kind: "invalid", raw };
   }
 
+  const dep = /^(?:dipendenz[ae]|dependenc(?:y|ies))\s+(.+)$/i.exec(s);
+  if (dep) {
+    const names = dep[1]!.split(/[\s,]+/).map((n) => n.replace(/^["'«]|["'»]$/g, "")).filter(Boolean);
+    return names.length ? { kind: "dependency", names } : { kind: "invalid", raw };
+  }
+
   const noErrors = /^(?:nessun errore in|no errors in)\s+(\S+)$/i.exec(s);
   if (noErrors) return { kind: "noErrors", path: noErrors[1]! };
 
@@ -121,6 +128,8 @@ export interface Signals {
   files?: Record<string, string[]>;
   /** Numero di errori del compilatore per file. */
   errors?: Record<string, number>;
+  /** Dipendenze dichiarate nel manifest del progetto (package.json: dependencies e devDependencies). */
+  dependencies?: readonly string[];
   /** Nomi dei test che Pebble ha visto fallire almeno una volta (ADR-010). */
   seenRed?: readonly string[];
 }
@@ -201,6 +210,13 @@ function checkCondition(c: Condition, s: Signals, opts: EvaluateOptions): CondSt
       const absent = c.exports.filter((e) => !exported.includes(e));
       return absent.length ? { result: "false", reason: `${c.path} non esporta ${absent.join(", ")}` } : { result: "true" };
     }
+    case "dependency": {
+      if (!s.dependencies) return { result: "unknown", reason: "dipendenze non ancora controllate" };
+      const missing = c.names.filter((n) => !s.dependencies!.includes(n));
+      return missing.length
+        ? { result: "false", reason: `manca la dipendenza ${missing.join(", ")} (npm install -D ${missing.join(" ")})` }
+        : { result: "true" };
+    }
     case "noErrors": {
       if (!s.errors || !s.files) return { result: "unknown", reason: "errori non ancora controllati" };
       if (!s.files[c.path]) return { result: "false", reason: `manca ${c.path}` };
@@ -279,6 +295,8 @@ export function describeCondition(c: Condition): string {
       return c.exports.length ? `${c.path} esporta ${c.exports.join(", ")}` : `esiste ${c.path}`;
     case "noErrors":
       return `nessun errore in ${c.path}`;
+    case "dependency":
+      return `${c.names.join(", ")} tra le dipendenze`;
     case "manual":
       return "a mano";
     case "invalid":
@@ -305,6 +323,10 @@ export function explainCondition(c: Condition): { text: string; example?: string
         : { text: `Il file ${c.path} (basta che esista).` };
     case "noErrors":
       return { text: `Nessun errore di TypeScript in ${c.path}: niente sottolineature rosse nell'editor.` };
+    case "dependency":
+      return c.names.length === 1
+        ? { text: `${c.names[0]} installato nel progetto, cioè presente in package.json.`, example: `npm install -D ${c.names[0]}` }
+        : { text: `${c.names.join(", ")} installati nel progetto, cioè presenti in package.json.`, example: `npm install -D ${c.names.join(" ")}` };
     case "manual":
       return { text: "Lo spunti tu, quando ti sembra fatto." };
     case "invalid":
@@ -324,6 +346,8 @@ export function summarizeConditions(conditions: readonly Condition[]): string {
           return "file";
         case "noErrors":
           return "0 errori";
+        case "dependency":
+          return "dipendenze";
         case "manual":
           return "a mano";
         case "invalid":

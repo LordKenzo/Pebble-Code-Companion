@@ -68,3 +68,16 @@ test("un messaggio d'errore lunghissimo viene accorciato", () => {
   assert.ok(t!.detail!.length <= 601);
   assert.ok(t!.detail!.endsWith("…"));
 });
+
+// Output reale di `npx vitest run --reporter=tap-flat` (Vitest 3), percorsi anonimizzati.
+const VITEST_TAP = readFileSync(join(__dirname, "..", "..", "test", "fixtures", "vitest-tap-flat.txt"), "utf8");
+
+test("output reale di Vitest tap-flat: nomi completi, senza il commento # time, senza i saltati", () => {
+  const r = parseTap(VITEST_TAP);
+  assert.deepEqual(r.map((t) => [t.name, t.ok]), [
+    ["src/a.test.ts > Pagina iniziale > mostra il titolo Calcolatrice", false],
+    ["src/a.test.ts > Pagina iniziale > ha un pulsante", true],
+  ]);
+  assert.match(r[0]!.detail!, /expected 'Vite' to be 'Calcolatrice'/);
+  assert.match(r[0]!.detail!, /atteso Calcolatrice, ricevuto Vite/);
+});

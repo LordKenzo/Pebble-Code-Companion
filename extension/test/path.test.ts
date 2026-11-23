@@ -327,3 +327,12 @@ test("trova le esportazioni di un file TypeScript", () => {
   ].join("\n");
   assert.deepEqual(findExports(src).sort(), ["BAR", "Calculator", "Grams", "PlateLoad", "Shape", "helper", "platesFor", "renamed"].sort());
 });
+
+test("condizione sulle dipendenze: installate o no", () => {
+  assert.deepEqual(parseCondition("dipendenza vitest, @testing-library/react jsdom"), { kind: "dependency", names: ["vitest", "@testing-library/react", "jsdom"] });
+  const d = parsePath("- [ ] Installa i test\n  fatto quando: dipendenza vitest jsdom");
+  assert.deepEqual(evaluate(d.tasks, { dependencies: ["react", "vitest"] }), [{ status: "open", reason: "manca la dipendenza jsdom (npm install -D jsdom)" }]);
+  assert.deepEqual(evaluate(d.tasks, { dependencies: ["vitest", "jsdom"] }), [{ status: "done" }]);
+  assert.equal(evaluate(d.tasks, {})[0]!.status, "unknown");
+  assert.deepEqual(explainCondition({ kind: "dependency", names: ["vitest"] }), { text: "vitest installato nel progetto, cioè presente in package.json.", example: "npm install -D vitest" });
+});

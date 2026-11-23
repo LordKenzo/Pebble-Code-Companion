@@ -1,0 +1,13 @@
+TAP version 13
+1..3
+not ok 1 - src/a.test.ts > Pagina iniziale > mostra il titolo Calcolatrice # time=3.70ms
+    ---
+    error:
+        name: "AssertionError"
+        message: "expected 'Vite' to be 'Calcolatrice' // Object.is equality"
+    at: "/progetto/src/a.test.ts:3:62"
+    actual: "Vite"
+    expected: "Calcolatrice"
+    ...
+ok 2 - src/a.test.ts > Pagina iniziale > ha un pulsante # time=0.10ms
+ok 3 - src/a.test.ts > saltato # SKIP

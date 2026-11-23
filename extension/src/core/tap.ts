@@ -50,11 +50,15 @@ export function parseTap(output: string): ParsedTest[] {
   return results;
 }
 
-/** "84,9 kg \# diventa 82,5 # SKIP motivo" → nome senza escape e direttiva. */
+/**
+ * "84,9 kg \# diventa 82,5 # SKIP motivo" → nome senza escape e direttiva.
+ * Tutto quello che segue un "#" non escapato è un commento TAP (es. "# time=3ms" di Vitest): non fa parte del nome.
+ */
 function splitDirective(raw: string): { name: string; directive: "skip" | "todo" | null } {
-  const m = /^(.*?)(?:^|(?<!\\)\s)#\s*(SKIP|TODO)\b.*$/i.exec(raw);
+  const m = /^(.*?)(?:^|(?<!\\)\s)#\s*(.*)$/.exec(raw);
   const name = unescape((m ? m[1]! : raw).trim());
-  return { name, directive: m ? (m[2]!.toLowerCase() as "skip" | "todo") : null };
+  const word = m ? /^(SKIP|TODO)\b/i.exec(m[2]!)?.[1]?.toLowerCase() : undefined;
+  return { name, directive: (word as "skip" | "todo" | undefined) ?? null };
 }
 
 const unescape = (s: string) => s.replace(/\\#/g, "#").replace(/\\\\/g, "\\");
