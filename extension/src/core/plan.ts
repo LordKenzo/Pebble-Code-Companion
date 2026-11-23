@@ -41,12 +41,24 @@ export function parseRoadmap(markdown: string): RoadmapStep[] {
     if (!m) continue;
     const n = Number(m[1]);
     if (steps.some((s) => s.n === n)) continue;
-    const text = m[2]!.trim();
+    // "1. 1. Impostare…": a volte il testo ha già il suo numero; si toglie.
+    const text = m[2]!.trim().replace(/^(\d+[.)]\s+)+/, "");
     const bold = /\*\*(.+?)\*\*/.exec(text);
-    const title = (bold ? bold[1]! : text.split(/[:.]/)[0]!).replace(/[*✅🟡⛔]/g, "").trim().slice(0, 60);
-    steps.push({ n, title, text: text.replace(/\*\*/g, "") });
+    steps.push({ n, title: stepTitle(bold ? bold[1]! : text), text: text.replace(/\*\*/g, "") });
   }
   return steps;
+}
+
+/** Titolo breve: fino al primo ";", ": ", ". " o " (", e al massimo circa 48 caratteri tagliati su una parola. */
+export function stepTitle(raw: string): string {
+  const cut = raw.replace(/[*✅🟡⛔]/g, "").split(/;|:\s|\.\s|\.$|\s\(|\s[—–]\s/)[0]!.trim();
+  if (cut.length <= 48) return cut;
+  const short = cut.slice(0, 48);
+  let t = short.slice(0, short.lastIndexOf(" ") > 20 ? short.lastIndexOf(" ") : 48).trim();
+  // Non finire su una parola vuota: "…delle formule e…" diventa "…delle formule…".
+  const filler = /\s+(e|ed|o|di|da|a|in|il|lo|la|i|gli|le|per|con|su|tra|fra|del|della|dei|delle|che)$/i;
+  while (filler.test(t)) t = t.replace(filler, "");
+  return `${t}…`;
 }
 
 /** Numeri dei passi già nel percorso, dai titoli "## Passo 2 · …". */

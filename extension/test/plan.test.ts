@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, plannedStepNumbers, type PlanStep } from "../src/core/plan";
+import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, plannedStepNumbers, stepTitle, type PlanStep } from "../src/core/plan";
 import { parsePath } from "../src/core/path";
 
 const ROADMAP_LIST = `# Roadmap
@@ -18,6 +18,13 @@ const ROADMAP_TABLE = `| # | Passo | Fatto quando |
 |---|---|---|
 | 1 ✅ | **Casi di valutazione** del prompt | ok |
 | 2 | Formato strutturato per REVIEW | ok |`;
+
+test("roadmap con la numerazione doppia scritta dall'INIT: titoli leggibili", () => {
+  const md = "1. 1. Impostare TypeScript e node:test; verificare che compilazione e un primo test passino (ADR-004).\n2. 2. Definire il contratto delle formule e verificare Epley, Brzycki e i limiti delle ripetizioni (ADR-002).";
+  const steps = parseRoadmap(md);
+  assert.deepEqual(steps.map((s) => [s.n, s.title]), [[1, "Impostare TypeScript e node:test"], [2, "Definire il contratto delle formule…"]]);
+  assert.match(steps[1]!.text, /^Definire il contratto/);
+});
 
 test("legge la roadmap numerata e quella a tabella", () => {
   assert.deepEqual(parseRoadmap(ROADMAP_LIST).map((s) => [s.n, s.title]), [[1, "Setup"], [2, "Dischi per lato"], [3, "Arrotondamento"]]);
@@ -96,4 +103,10 @@ test("il messaggio contiene percorso, elenco dei file, contenuti e il passo da p
   assert.match(m, /<file path="package.json">\n1 \| \{ "name": "x" \}\n<\/file>/);
   assert.doesNotMatch(m, /<file path="README.md">/);
   assert.match(m, /PASSO DA PREPARARE: 2 · Dischi per lato\nDischi per lato: per un carico/);
+});
+
+test("titolo breve di un passo", () => {
+  assert.equal(stepTitle("Setup"), "Setup");
+  assert.equal(stepTitle("Dischi per lato: per un carico già componibile"), "Dischi per lato");
+  assert.equal(stepTitle("Collegare i comandi `1rm` e `carichi`; verificare output"), "Collegare i comandi `1rm` e `carichi`");
 });

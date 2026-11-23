@@ -73,7 +73,7 @@ export function initPlanToMarkdown(p: InitPlan): string {
     p.reading,
     `### Decisioni proposte\n${adrs}`,
     `### Architettura\n${p.layers}\n\n\`\`\`\n${p.folders.replace(/^```\w*\n?|```$/g, "").trim()}\n\`\`\``,
-    `### Roadmap\n${p.roadmap.map((s, i) => `${i + 1}. ${s}`).join("\n")}`,
+    `### Roadmap\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}`,
     `### Da dove partire\n${p.start}`,
     p.question ? `**Domanda:** ${p.question}` : "",
   ]
@@ -93,7 +93,7 @@ export function initPlanToFiles(p: InitPlan, date: string): { path: string; cont
     },
     {
       path: ".pebble/roadmap.md",
-      content: `# Roadmap\n\n${header}\n${p.roadmap.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\n## Da dove partire\n\n${p.start}\n${
+      content: `# Roadmap\n\n${header}\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}\n\n## Da dove partire\n\n${p.start}\n${
         p.question ? `\n## Domanda aperta\n\n${p.question}\n` : ""
       }`,
     },
