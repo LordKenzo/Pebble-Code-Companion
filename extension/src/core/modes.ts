@@ -31,7 +31,7 @@ function block(tag: string, body: string | null | undefined, attrs = ""): string
   return body && body.trim() ? `<${tag}${attrs}>\n${body.trim()}\n</${tag}>\n` : "";
 }
 
-function projectBlocks(ctx: ProjectContext): string {
+export function projectBlocks(ctx: ProjectContext): string {
   const decisions = ctx.decisions.map((d) => `### ${d.name}\n${d.content.trim()}`).join("\n\n");
   return [block("bootstrap", ctx.bootstrap), block("architecture", ctx.architecture), block("decisions", decisions), block("roadmap", ctx.roadmap)]
     .filter(Boolean)
