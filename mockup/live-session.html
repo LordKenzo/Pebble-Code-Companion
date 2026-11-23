@@ -1,0 +1,549 @@
+<title>Mentor Live Session</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a fake VS Code window (explorer | editor | mentor panel) driven by a step timeline above it. Deliberately dark-only, like the editor it imitates. */
+:root{
+  color-scheme: dark;
+  --page:#0e1014; --chrome:#16181d; --panel:#1b1e24; --editor:#1e2128; --raise:#252931;
+  --line:#2b3039; --fg:#d6dae1; --muted:#8b929e; --faint:#5f6672;
+  --mentor:#e3b25c; --mentor-soft:rgba(227,178,92,.12);
+  --err:#f07178; --warn:#e6c07b; --info:#7fb4e6; --ok:#8fd19e;
+  --k:#c792ea; --s:#c3e88d; --t:#ffcb6b; --f:#82aaff; --n:#f78c6c; --c:#697080; --h:#89ddff;
+  --ui:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--fg);font-family:var(--ui);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header.top{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+header.top h1{font-size:20px;font-weight:600;margin:0;text-wrap:balance}
+header.top h1 span{color:var(--mentor)}
+header.top p{margin:4px 0 0;color:var(--muted);max-width:68ch;line-height:1.5}
+
+/* controls */
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.btn{font:inherit;font-size:13px;color:var(--fg);background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--mentor);color:#1a1408;border-color:var(--mentor);font-weight:600}
+.btn:focus-visible,.pill:focus-visible{outline:2px solid var(--mentor);outline-offset:2px}
+.btn:disabled{opacity:.4;cursor:default}
+.pills{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.pill{font:inherit;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.pill .num{font-family:var(--mono);color:var(--faint);margin-right:5px}
+.pill.done{color:var(--fg)}
+.pill.on{color:#1a1408;background:var(--mentor);border-color:var(--mentor)}
+.pill.on .num{color:#5a4318}
+.caption{flex-basis:100%;color:var(--muted);font-size:13px;line-height:1.5;margin:2px 0 0}
+.caption b{color:var(--fg);font-weight:500}
+
+/* window */
+.win{display:grid;grid-template-columns:44px 220px minmax(0,1fr) minmax(320px,390px);grid-template-rows:32px minmax(0,1fr) 24px;
+  height:clamp(560px,78vh,800px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--editor)}
+.titlebar{grid-column:1/-1;display:flex;align-items:center;gap:8px;background:var(--chrome);border-bottom:1px solid var(--line);padding:0 12px;font-size:12px;color:var(--muted)}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:var(--line);display:block}
+.titlebar .t{flex:1;text-align:center}
+.act{background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:12px}
+.act svg{width:22px;height:22px;stroke:var(--faint);fill:none;stroke-width:1.6}
+.act .on svg{stroke:var(--fg)}
+.act .m{position:relative}
+.act .m svg{stroke:var(--mentor)}
+.act .m::after{content:"";position:absolute;right:-3px;top:-2px;width:7px;height:7px;border-radius:50%;background:var(--mentor)}
+
+.explorer{background:var(--panel);border-right:1px solid var(--line);overflow:auto;font-size:13px}
+.sec{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px 6px}
+.tree{list-style:none;margin:0;padding:0 0 12px}
+.tree li{display:flex;align-items:center;gap:6px;padding:3px 10px;white-space:nowrap;color:var(--fg)}
+.tree li.dir{color:var(--muted)}
+.tree li.active{background:var(--raise)}
+.tree li .ic{width:14px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.tree li .tag{margin-left:auto;font-size:10px;font-family:var(--mono);padding:0 5px;border-radius:3px}
+.tag.new{color:var(--ok);border:1px solid rgba(143,209,158,.35)}
+.tag.gen{color:var(--mentor);border:1px solid rgba(227,178,92,.35)}
+.tree li.appear{animation:appear .5s ease}
+@keyframes appear{from{background:var(--mentor-soft)}to{background:transparent}}
+
+.editor{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--editor)}
+.tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
+.tab{font-size:12.5px;padding:8px 14px;color:var(--muted);border-right:1px solid var(--line);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tab.on{color:var(--fg);background:var(--editor);box-shadow:inset 0 1px 0 var(--mentor)}
+.tab .dirty{width:7px;height:7px;border-radius:50%;background:var(--fg);opacity:.7}
+.crumb{font-size:12px;color:var(--faint);padding:5px 16px;border-bottom:1px solid var(--line);flex:none;display:flex;justify-content:space-between;gap:10px}
+.crumb .saved{color:var(--ok);font-family:var(--mono);font-size:11px}
+.code{flex:1;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.65;padding:10px 0 40px;min-height:0}
+.ln{display:grid;grid-template-columns:44px max-content;white-space:pre}
+.ln .g{color:var(--faint);text-align:right;padding-right:16px;user-select:none}
+.ln.hasd .g{color:var(--fg)}
+.sq-err{text-decoration:underline wavy var(--err);text-underline-offset:4px;text-decoration-skip-ink:none}
+.sq-warn{text-decoration:underline wavy var(--warn);text-underline-offset:4px;text-decoration-skip-ink:none}
+.sq-info{text-decoration:underline wavy var(--info);text-underline-offset:4px;text-decoration-skip-ink:none}
+.lens{font-family:var(--ui);font-size:12px;margin-left:28px;opacity:.9;animation:fade .4s ease}
+.lens.err{color:var(--err)}.lens.warn{color:var(--warn)}.lens.info{color:var(--info)}
+.k{color:var(--k)}.s{color:var(--s)}.t{color:var(--t)}.f{color:var(--f)}.n{color:var(--n)}.c{color:var(--c);font-style:italic}.h{color:var(--h);font-weight:500}.b{color:var(--mentor)}
+.caret{display:inline-block;width:2px;height:1.15em;vertical-align:-3px;background:var(--fg);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.empty-hint{color:var(--faint);font-family:var(--ui);font-size:12px;padding:6px 60px}
+
+/* mentor */
+.mentor{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--panel);border-left:1px solid var(--line)}
+.mhead{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex:none}
+.mhead .name{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mentor);font-weight:600}
+.mhead .rule{margin-left:auto;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.feed{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0;scroll-behavior:smooth}
+.card{background:var(--editor);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px;line-height:1.55}
+.card.fresh{animation:rise .45s ease}
+@keyframes rise{from{transform:translateY(6px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:.9}}
+.ch{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.ch .kind{color:var(--mentor);font-weight:600;letter-spacing:.02em}
+.ch .file{font-family:var(--mono);font-size:11px;margin-left:auto;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cb{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.cb p{margin:0}
+.cb ul,.cb ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+.cb code{font-family:var(--mono);font-size:12px;background:var(--raise);padding:1px 5px;border-radius:4px}
+.cb pre{margin:0;font-family:var(--mono);font-size:12px;background:var(--raise);border-radius:6px;padding:8px 10px;overflow-x:auto;color:var(--muted)}
+.cb pre b{color:var(--fg);font-weight:500}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint)}
+.sig{border:1px dashed rgba(227,178,92,.45);border-radius:6px;padding:8px 10px;background:var(--mentor-soft)}
+.sig .lbl{color:var(--mentor)}
+.sig code{background:transparent;padding:0;color:var(--fg)}
+.note{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;padding:8px 0;border-top:1px solid var(--line)}
+.note:first-child{border-top:0;padding-top:0}
+.sev{font-size:10.5px;font-family:var(--mono);padding:1px 6px;border-radius:4px;height:fit-content;white-space:nowrap}
+.sev.err{color:var(--err);background:rgba(240,113,120,.12)}
+.sev.warn{color:var(--warn);background:rgba(230,192,123,.12)}
+.sev.info{color:var(--info);background:rgba(127,180,230,.12)}
+.sev.ok{color:var(--ok);background:rgba(143,209,158,.12)}
+.note .why{color:var(--muted)}
+.note .try{color:var(--fg)}
+.note .try::before{content:"Prova: ";color:var(--mentor)}
+.q{border-left:2px solid var(--mentor);padding:4px 0 4px 10px;color:var(--fg)}
+.q .lbl{color:var(--mentor);display:block;margin-bottom:2px}
+.tests{list-style:none;padding:0 !important}
+.tests li{display:flex;gap:8px;align-items:baseline}
+.tests li .sev{flex:none}
+.check{list-style:none;padding:0 !important}
+.check li{display:flex;gap:8px}
+.check li::before{content:"□";color:var(--mentor);font-family:var(--mono)}
+.user{align-self:flex-end;max-width:85%;background:var(--raise);border:1px solid var(--line);border-radius:10px 10px 2px 10px;padding:7px 11px;font-size:13px}
+.user code{font-family:var(--mono);color:var(--mentor)}
+.user.fresh{animation:rise .35s ease}
+.minput{flex:none;border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;align-items:center}
+.minput .box{flex:1;min-width:0;background:var(--editor);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.minput .box.typing{color:var(--fg)}
+.minput .cmds{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap}
+.thinking{display:flex;gap:4px;align-items:center;color:var(--muted);font-size:12px}
+.thinking i{width:5px;height:5px;border-radius:50%;background:var(--mentor);animation:pulse 1s infinite}
+.thinking i:nth-child(2){animation-delay:.15s}.thinking i:nth-child(3){animation-delay:.3s}
+@keyframes pulse{50%{opacity:.25}}
+
+.status{grid-column:1/-1;display:flex;align-items:center;gap:14px;background:#2a2116;color:var(--mentor);font-size:11.5px;padding:0 12px;white-space:nowrap;overflow:hidden}
+.status .sp{flex:1}
+.status .e{color:var(--err)}.status .w{color:var(--warn)}.status .i{color:var(--info)}
+
+footer.note-foot{color:var(--faint);font-size:12px;line-height:1.5}
+
+@media (max-width:1080px){
+  .win{grid-template-columns:44px minmax(0,1fr) minmax(300px,360px)}
+  .explorer{display:none}
+}
+@media (max-width:760px){
+  .win{grid-template-columns:minmax(0,1fr);grid-template-rows:32px 360px 520px 24px;height:auto}
+  .act{display:none}
+  .mentor{border-left:0;border-top:1px solid var(--line)}
+  .minput .cmds{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;scroll-behavior:auto !important}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1><span>Mentor</span> · sessione di live coding</h1>
+      <p>Simulazione di un'estensione VS Code che fa da senior engineer: imposta il progetto partendo da <code style="font-family:var(--mono)">bootstrap.md</code>, rivede ogni file al salvataggio e consiglia i test. Il codice lo scrivi tu.</p>
+    </div>
+  </header>
+
+  <div class="ctrl" role="group" aria-label="Controlli della simulazione">
+    <button class="btn" id="prev" type="button">◀ Indietro</button>
+    <button class="btn primary" id="play" type="button">▶ Riproduci</button>
+    <button class="btn" id="next" type="button">Avanti ▶</button>
+    <div class="pills" id="pills"></div>
+    <p class="caption" id="caption"></p>
+  </div>
+
+  <div class="win">
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><div class="t">prenota — Visual Studio Code</div><div style="width:45px"></div></div>
+    <nav class="act" aria-hidden="true">
+      <div class="on"><svg viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/></svg></div>
+      <div><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div>
+      <div><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 8v8M18 10c0 4-6 3-12 6"/></svg></div>
+      <div class="m"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></div>
+    </nav>
+    <aside class="explorer">
+      <div class="sec">Esplora · prenota</div>
+      <ul class="tree" id="tree"></ul>
+    </aside>
+    <section class="editor">
+      <div class="tabs" id="tabs"></div>
+      <div class="crumb"><span id="crumb"></span><span class="saved" id="saved"></span></div>
+      <div class="code" id="code" aria-live="off"></div>
+    </section>
+    <aside class="mentor">
+      <div class="mhead"><span class="name">Mentor</span><span class="rule">Solo indicazioni · niente codice</span></div>
+      <div class="feed" id="feed" aria-live="polite"></div>
+      <div class="minput"><div class="box" id="ibox">Chiedi al mentor…</div><span class="cmds">/review /tests /next</span></div>
+    </aside>
+    <div class="status" id="status"></div>
+  </div>
+
+  <footer class="note-foot">Mockup illustrativo: progetto, codice e risposte sono d'esempio. Usa le frecce ← → per spostarti tra i passi.</footer>
+</div>
+
+<script>
+const BOOTSTRAP = `# Prenota — bootstrap
+
+## Cosa devo fare
+API per prenotare i corsi di uno studio fitness.
+Gli iscritti prenotano e cancellano.
+Lo staff gestisce corsi e capienza.
+
+## Vincoli
+- Node + TypeScript, database Postgres
+- Cancellazione gratuita fino a 12 ore prima
+- Lista d'attesa quando il corso è pieno
+
+## Non so ancora
+- Come strutturare le cartelle
+- Se usare un ORM
+- Da dove cominciare`;
+
+const V1 = `import { Pool } from 'pg'
+
+const db = new Pool()
+
+export class Booking {
+  async create(courseId: string, memberId: string) {
+    const res = await db.query('SELECT * FROM courses WHERE id = $1', [courseId])
+    const course = res.rows[0]
+    if (course.booked >= course.capacity) {
+      throw new Error('full')
+    }
+    await db.query('INSERT INTO bookings VALUES ($1, $2)', [courseId, memberId])
+  }
+
+  canCancel(startsAt: Date) {
+    return startsAt.getTime() - Date.now() > 12 * 60 * 60 * 1000
+  }
+}`;
+
+const V2 = `import type { Booking, Course, Member } from './types'
+import { BookingError } from './errors'
+
+export const CANCEL_WINDOW_HOURS = 12
+
+export function book(course: Course, member: Member): Booking | BookingError {
+  if (course.booked >= course.capacity) {
+    return BookingError.courseFull(course.id)
+  }
+  return { courseId: course.id, memberId: member.id, status: 'confirmed' }
+}
+
+export function canCancel(startsAt: Date, now: Date): boolean {
+  const hoursLeft = (startsAt.getTime() - now.getTime()) / 3_600_000
+  return hoursLeft >= CANCEL_WINDOW_HOURS
+}`;
+
+const TREE0 = [
+  {d:0,dir:1,n:"prenota"},
+  {d:1,n:"bootstrap.md",f:"bootstrap.md"},
+];
+const MENTOR_FILES = [
+  {d:1,dir:1,n:".mentor",tag:"gen"},
+  {d:2,n:"architecture.md",tag:"gen"},
+  {d:2,dir:1,n:"decisions"},
+  {d:3,n:"ADR-001-esagonale.md",tag:"gen"},
+  {d:3,n:"ADR-002-dominio-puro.md",tag:"gen"},
+  {d:3,n:"ADR-003-niente-orm.md",tag:"gen"},
+];
+const SRC = (extra=[]) => [
+  {d:1,dir:1,n:"src"},
+  {d:2,dir:1,n:"domain"},
+  ...extra,
+  {d:3,n:"booking.ts",f:"booking.ts"},
+];
+
+const STEPS = [
+  { label:"Bootstrap", file:"bootstrap.md", code:BOOTSTRAP, lang:"md",
+    caption:"<b>Si parte da bootstrap.md.</b> Descrivi il progetto in linguaggio naturale. Il mentor propone architettura, decisioni e da dove iniziare, e le salva in .mentor/ per ricordarle.",
+    tree:[...TREE0, ...MENTOR_FILES], newIn:["gen"], tabs:["bootstrap.md"], status:{e:0,w:0,i:0,adr:3}, think:1200 },
+  { label:"Nuovo file", file:"booking.ts", code:"", lang:"ts",
+    caption:"<b>Crei src/domain/booking.ts.</b> Prima che tu scriva una riga, il mentor ti dice che ruolo ha il file nell'architettura, cosa deve fare e cosa evitare. Al massimo una firma come spunto.",
+    tree:[...TREE0, ...MENTOR_FILES, ...SRC()], newIn:["booking.ts"], tabs:["bootstrap.md","booking.ts"], status:{e:0,w:0,i:0,adr:3}, think:900 },
+  { label:"Salvataggio e review", file:"booking.ts", code:V1, lang:"ts", type:true,
+    diags:{1:["err","ADR-002: il dominio non deve conoscere Postgres"],10:["warn","'Corso pieno' è un esito previsto, non un'eccezione"],16:["info","Tempo implicito: passa now come parametro"]},
+    caption:"<b>Scrivi la prima versione e salvi.</b> Il mentor rivede il file rispetto alle decisioni del progetto: sottolineature nell'editor e spiegazioni nel pannello, con il perché e una direzione. Nessuna patch.",
+    tree:[...TREE0, ...MENTOR_FILES, ...SRC()], tabs:["bootstrap.md","booking.ts"], status:{e:1,w:1,i:1,adr:3}, think:1300 },
+  { label:"Correzione e test", file:"booking.ts", code:V2, lang:"ts", type:true,
+    diags:{6:["info","bootstrap.md prevede la lista d'attesa: dove la gestisci?"]},
+    caption:"<b>Riscrivi seguendo le indicazioni.</b> La review conferma che l'architettura è rispettata, segnala un requisito del bootstrap ancora scoperto e propone quali test scrivere, partendo dai casi limite.",
+    tree:[...TREE0, ...MENTOR_FILES, ...SRC([{d:3,n:"errors.ts",tag:"new"},{d:3,n:"types.ts",tag:"new"}])], newIn:["errors.ts","types.ts"], tabs:["bootstrap.md","booking.ts"], status:{e:0,w:0,i:1,adr:3}, think:1300 },
+  { label:"/next", file:"booking.ts", code:V2, lang:"ts", ask:"/next",
+    diags:{6:["info","bootstrap.md prevede la lista d'attesa: dove la gestisci?"]},
+    caption:"<b>Chiedi il passo successivo.</b> Il mentor guarda la roadmap e lo stato del codice, indica cosa fare dopo e ti fa una domanda di design prima che tu inizi.",
+    tree:[...TREE0, ...MENTOR_FILES, ...SRC([{d:3,n:"errors.ts"},{d:3,n:"types.ts"}])], tabs:["bootstrap.md","booking.ts"], status:{e:0,w:0,i:1,adr:3}, think:1100 },
+  { label:"\"Scrivilo tu\"", file:"booking.ts", code:V2, lang:"ts", ask:"Scrivimi tu l'adapter Postgres",
+    diags:{6:["info","bootstrap.md prevede la lista d'attesa: dove la gestisci?"]},
+    caption:"<b>Chiedi il codice.</b> Il mentor non lo scrive: resta tuo, o di un altro tool. In cambio ti dà la checklist di un senior, compresa la race condition sull'ultimo posto che è facile non vedere.",
+    tree:[...TREE0, ...MENTOR_FILES, ...SRC([{d:3,n:"errors.ts"},{d:3,n:"types.ts"}])], tabs:["bootstrap.md","booking.ts"], status:{e:0,w:0,i:1,adr:4}, think:1100 },
+];
+
+const FEED = [
+  [ // 0
+    {m:`<div class="card"><div class="ch"><span class="kind">Piano di progetto</span><span class="file">bootstrap.md</span></div><div class="cb">
+      <p>Ho letto il bootstrap. Prima di scrivere codice ti propongo tre decisioni:</p>
+      <ol>
+        <li><b>Architettura esagonale leggera</b>: <code>domain</code>, <code>application</code>, <code>infra</code>, <code>http</code>. Le dipendenze puntano verso il dominio.</li>
+        <li><b>Dominio puro</b>: capienza, 12 ore e lista d'attesa sono funzioni senza I/O. Si testano in millisecondi, senza database.</li>
+        <li><b>Niente ORM per ora</b>: con 4 tabelle, SQL esplicito nell'adapter. Rivalutiamo se lo schema cresce.</li>
+      </ol>
+      <pre><b>src/</b>
+  <b>domain/</b>       regole, tipi, errori
+  <b>application/</b>  casi d'uso: prenota, cancella
+  <b>infra/</b>        Postgres, orologio
+  <b>http/</b>         route e validazione input</pre>
+      <p>Ho salvato le scelte in <code>.mentor/decisions</code> (ADR-001…003): le userò per rivedere ogni file.</p>
+      <div class="q"><span class="lbl">Da dove partire</span><code>src/domain/booking.ts</code>. È il cuore del sistema e non dipende da niente.</div>
+    </div></div>`}
+  ],
+  [ // 1
+    {m:`<div class="card"><div class="ch"><span class="kind">Nuovo file</span><span class="file">src/domain/booking.ts</span></div><div class="cb">
+      <p><span class="lbl">Ruolo</span><br>Le regole di prenotazione. Livello dominio (ADR-002).</p>
+      <p><span class="lbl">Dovrebbe</span></p>
+      <ul><li>decidere se una prenotazione è valida</li><li>dire se una prenotazione si può ancora cancellare gratis</li></ul>
+      <p><span class="lbl">Non dovrebbe</span></p>
+      <ul><li>parlare con Postgres</li><li>sapere che esiste HTTP</li><li>leggere da solo l'orologio di sistema</li></ul>
+      <div class="sig"><span class="lbl">Spunto · solo la firma</span><br><code>book(course, member) → Booking | BookingError</code></div>
+      <p style="color:var(--muted)">Il corpo lo scrivi tu. Ti rivedo al primo salvataggio.</p>
+    </div></div>`}
+  ],
+  [ // 2
+    {m:`<div class="card"><div class="ch"><span class="kind">Review al salvataggio</span><span class="file">booking.ts · 3 note</span></div><div class="cb">
+      <div class="note"><span class="sev err">riga 1</span><div><b>Il dominio importa <code>pg</code>.</b> <span class="why">Viola ADR-002: la regola sulla capienza non si può più testare senza database.</span><div class="try">fai arrivare al dominio il corso già caricato; la query va in un adapter dentro <code>infra/</code>.</div></div></div>
+      <div class="note"><span class="sev warn">riga 10</span><div><b><code>throw new Error('full')</code></b> <span class="why">costringe chi chiama a confrontare stringhe. Il corso pieno è un caso normale, non un guasto.</span><div class="try">un tipo di ritorno che rappresenti anche il rifiuto.</div></div></div>
+      <div class="note"><span class="sev info">riga 16</span><div><b><code>Date.now()</code></b> <span class="why">nasconde una dipendenza dal tempo: i test sulle 12 ore dipenderanno dall'ora in cui li lanci.</span><div class="try">ricevi <code>now</code> come parametro.</div></div></div>
+      <div class="q"><span class="lbl">Domanda</span>Il bootstrap dice "fino a 12 ore prima". Chi cancella esattamente a 12 ore paga? Oggi il codice dice di sì (<code>&gt;</code>).</div>
+    </div></div>`}
+  ],
+  [ // 3
+    {m:`<div class="card"><div class="ch"><span class="kind">Review al salvataggio</span><span class="file">booking.ts</span></div><div class="cb">
+      <div class="note"><span class="sev ok">ADR-002</span><div><b>Rispettato.</b> <span class="why"><code>book</code> e <code>canCancel</code> sono funzioni pure: zero dipendenze esterne. Il limite delle 12 ore ora è incluso (<code>&gt;=</code>).</span></div></div>
+      <div class="note"><span class="sev info">riga 6</span><div><b>Requisito scoperto.</b> <span class="why">Il bootstrap prevede la lista d'attesa, ma <code>book</code> sa solo rifiutare.</span><div class="try">decidi se "in lista d'attesa" è un terzo esito di <code>book</code> o un caso d'uso separato. Scrivi la scelta in un ADR.</div></div></div>
+    </div></div>`},
+    {m:`<div class="card"><div class="ch"><span class="kind">Test consigliati</span><span class="file">booking.test.ts</span></div><div class="cb">
+      <ul class="tests">
+        <li><span class="sev ok">base</span>conferma la prenotazione quando ci sono posti liberi</li>
+        <li><span class="sev warn">limite</span>rifiuta con courseFull quando booked è uguale a capacity</li>
+        <li><span class="sev warn">limite</span>consente la cancellazione esattamente a 12 ore dall'inizio</li>
+        <li><span class="sev warn">limite</span>nega la cancellazione a 11 ore e 59 minuti</li>
+        <li><span class="sev info">bordo</span>calcola bene le ore a cavallo del cambio d'ora legale</li>
+      </ul>
+      <p style="color:var(--muted)">Comincia dai due test sulle 12 ore: coprono proprio la riga che hai appena cambiato.</p>
+    </div></div>`}
+  ],
+  [ // 4
+    {u:`<code>/next</code>`},
+    {m:`<div class="card"><div class="ch"><span class="kind">Prossimo passo</span><span class="file">roadmap · 2 di 7</span></div><div class="cb">
+      <ol>
+        <li>In <code>domain/</code> definisci l'interfaccia <code>BookingRepository</code>: cosa serve al dominio, non come si ottiene.</li>
+        <li>Poi il caso d'uso <code>application/bookCourse</code>: carica, chiama <code>book</code>, salva.</li>
+        <li>Solo dopo l'adapter Postgres in <code>infra/</code>.</li>
+      </ol>
+      <div class="q"><span class="lbl">Prima di iniziare, pensaci</span>Se domani ogni studio vuole la sua finestra di cancellazione, dove vive <code>CANCEL_WINDOW_HOURS</code>? La risposta cambia la firma di <code>canCancel</code>, quindi conviene deciderlo ora.</div>
+    </div></div>`}
+  ],
+  [ // 5
+    {u:`Scrivimi tu l'adapter Postgres`},
+    {m:`<div class="card"><div class="ch"><span class="kind">Richiesta di codice</span></div><div class="cb">
+      <p>Questo non lo scrivo: il codice resta tuo, o del generatore che preferisci. Ecco cosa deve rispettare perché passi la review:</p>
+      <ul class="check">
+        <li>implementa <code>BookingRepository</code> e nient'altro</li>
+        <li>nessuna regola di business: la capienza la decide il dominio</li>
+        <li>due iscritti sull'ultimo posto nello stesso istante: serve una transazione con lock sulla riga del corso</li>
+        <li>converti le righe SQL in tipi di dominio al confine, non oltre</li>
+        <li>un test di integrazione sul caso concorrente</li>
+      </ul>
+      <p style="color:var(--muted)">Ho aggiunto ADR-004 "Concorrenza sulle prenotazioni". Quando salvi il file, lo rivedo.</p>
+    </div></div>`}
+  ],
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function hlTS(line){
+  const re=/(\/\/.*$)|('(?:[^'\\]|\\.)*')|\b(import|from|export|const|class|async|await|if|return|function|new|throw|type)\b|\b(boolean|string)\b|\b([A-Z][A-Za-z]*)\b|\b([a-z][A-Za-z]*)(?=\()|\b(\d[\d_]*)\b/g;
+  let out="",last=0;
+  for(const m of line.matchAll(re)){
+    out+=esc(line.slice(last,m.index));
+    const cls=m[1]?"c":m[2]?"s":m[3]?"k":(m[4]||m[5])?"t":m[6]?"f":"n";
+    out+=`<span class="${cls}">${esc(m[0])}</span>`;
+    last=m.index+m[0].length;
+  }
+  return out+esc(line.slice(last));
+}
+function hlMD(line){
+  if(/^#/.test(line)) return `<span class="h">${esc(line)}</span>`;
+  if(/^- /.test(line)) return `<span class="b">-</span>${esc(line.slice(1))}`;
+  return esc(line);
+}
+
+function renderCode(text, lang, diags, caret){
+  const lines=text.split("\n");
+  const hl=lang==="md"?hlMD:hlTS;
+  let html=lines.map((l,i)=>{
+    const d=diags&&diags[i+1];
+    let body=hl(l);
+    if(d){
+      const lead=l.match(/^\s*/)[0].length;
+      body=esc(l.slice(0,lead))+`<span class="sq-${d[0]}">${hl(l.slice(lead))}</span><span class="lens ${d[0]}">● ${esc(d[1])}</span>`;
+    }
+    if(caret&&i===lines.length-1) body+=`<span class="caret"></span>`;
+    return `<div class="ln${d?" hasd":""}"><span class="g">${i+1}</span><span>${body}</span></div>`;
+  }).join("");
+  if(!text && caret) html+=`<div class="empty-hint">File vuoto. Il mentor ha già lasciato indicazioni nel pannello a destra →</div>`;
+  $("code").innerHTML=html;
+}
+
+function renderTree(s, animate){
+  const fresh=new Set(animate?(s.newIn||[]):[]);
+  $("tree").innerHTML=s.tree.map(e=>{
+    const isFresh=fresh.has(e.n)||(e.tag&&fresh.has(e.tag));
+    const ic=e.dir?"▾":(e.n.endsWith(".md")?"M":"TS");
+    const tag=e.tag==="gen"?`<span class="tag gen">mentor</span>`:(e.tag==="new"||(e.f==="booking.ts"&&s===STEPS[1]))?`<span class="tag new">nuovo</span>`:"";
+    return `<li class="${e.dir?"dir":""}${e.f===s.file?" active":""}${isFresh?" appear":""}" style="padding-left:${10+e.d*14}px"><span class="ic">${ic}</span>${esc(e.n)}${tag}</li>`;
+  }).join("");
+}
+
+function renderChrome(s, dirty){
+  $("tabs").innerHTML=s.tabs.map(t=>`<div class="tab${t===s.file?" on":""}">${esc(t)}${t===s.file&&dirty?'<span class="dirty"></span>':""}</div>`).join("");
+  $("crumb").textContent=s.file==="bootstrap.md"?"prenota › bootstrap.md":"prenota › src › domain › booking.ts";
+  const st=s.status;
+  $("status").innerHTML=`<span>⎇ main</span><span>✦ Mentor attivo</span><span class="e">⊗ ${st.e}</span><span class="w">⚠ ${st.w}</span><span class="i">ⓘ ${st.i}</span><span class="sp"></span><span>ADR ${st.adr}</span><span>${s.lang==="md"?"Markdown":"TypeScript"}</span>`;
+}
+
+function renderFeed(upto, freshStep){
+  const parts=[];
+  for(let i=0;i<=upto;i++){
+    for(const item of FEED[i]){
+      const fr=i===freshStep?" fresh":"";
+      if(item.u) parts.push(`<div class="user${fr}">${item.u}</div>`);
+      else parts.push(item.m.replace('class="card"',`class="card${fr}"`));
+    }
+  }
+  $("feed").innerHTML=parts.join("");
+  $("feed").scrollTop=$("feed").scrollHeight;
+}
+function showThinking(upto){
+  renderFeed(upto-1,-1);
+  const prev=FEED[upto].find(x=>x.u);
+  if(prev) $("feed").insertAdjacentHTML("beforeend",`<div class="user fresh">${prev.u}</div>`);
+  const label=STEPS[upto].type?"Rivedo il file rispetto agli ADR…":upto===0?"Leggo bootstrap.md…":"Ci penso…";
+  $("feed").insertAdjacentHTML("beforeend",`<div class="thinking"><i></i><i></i><i></i><span>${label}</span></div>`);
+  $("feed").scrollTop=$("feed").scrollHeight;
+}
+
+let cur=0, token=0, playing=false, playTimer=null;
+const wait=(ms,t)=>new Promise(r=>setTimeout(()=>r(t===token),reduce?0:ms));
+
+async function go(i, animate){
+  i=Math.max(0,Math.min(STEPS.length-1,i));
+  const t=++token; cur=i;
+  const s=STEPS[i];
+  renderPills(); $("caption").innerHTML=s.caption;
+  $("prev").disabled=i===0; $("next").disabled=i===STEPS.length-1;
+  renderTree(s, animate);
+  $("ibox").textContent="Chiedi al mentor…"; $("ibox").classList.remove("typing");
+  $("saved").textContent="";
+
+  if(!animate||reduce){
+    renderChrome(s,false);
+    renderCode(s.code,s.lang,s.diags,i===1);
+    renderFeed(i,-1);
+    if(s.type) $("saved").textContent="✓ salvato";
+    return true;
+  }
+
+  // animated path
+  if(s.type){
+    renderChrome(s,true);
+    renderFeed(i-1,-1);
+    const from=STEPS[i-1].code===s.code?"":"";
+    let n=0; const full=s.code;
+    while(n<full.length){
+      n=Math.min(full.length,n+5);
+      renderCode(full.slice(0,n),s.lang,null,true);
+      const el=$("code"); el.scrollTop=el.scrollHeight;
+      if(!await wait(14,t)) return false;
+    }
+    if(!await wait(450,t)) return false;
+    $("saved").textContent="⌘S  ✓ salvato";
+    renderChrome(s,false);
+    renderCode(full,s.lang,null,false);
+    showThinking(i);
+    if(!await wait(s.think,t)) return false;
+    renderCode(full,s.lang,s.diags,false);
+    $("code").scrollTop=0;
+    renderFeed(i,i);
+    return true;
+  }
+
+  renderChrome(s,false);
+  renderCode(s.code,s.lang,s.diags,i===1);
+  if(s.ask){
+    renderFeed(i-1,-1);
+    const box=$("ibox"); box.classList.add("typing"); box.textContent="";
+    for(let k=1;k<=s.ask.length;k++){ box.textContent=s.ask.slice(0,k); if(!await wait(38,t)) return false; }
+    if(!await wait(350,t)) return false;
+    box.textContent="Chiedi al mentor…"; box.classList.remove("typing");
+  }
+  showThinking(i);
+  if(!await wait(s.think,t)) return false;
+  renderFeed(i,i);
+  return true;
+}
+
+function renderPills(){
+  $("pills").innerHTML=STEPS.map((s,i)=>`<button type="button" class="pill${i===cur?" on":i<cur?" done":""}" data-i="${i}"><span class="num">${i+1}</span>${esc(s.label)}</button>`).join("");
+}
+$("pills").addEventListener("click",e=>{const b=e.target.closest(".pill"); if(b){stop(); go(+b.dataset.i,true);}});
+$("prev").onclick=()=>{stop(); go(cur-1,false);};
+$("next").onclick=()=>{stop(); go(cur+1,true);};
+$("play").onclick=()=>playing?stop():play();
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"){stop(); go(cur+1,true);}
+  if(e.key==="ArrowLeft"){stop(); go(cur-1,false);}
+});
+
+function stop(){ playing=false; clearTimeout(playTimer); $("play").textContent="▶ Riproduci"; }
+async function play(){
+  playing=true; $("play").textContent="❚❚ Pausa";
+  let i = cur>=STEPS.length-1 ? 0 : cur+1;
+  if(cur>=STEPS.length-1){ go(0,false); }
+  while(playing && i<STEPS.length){
+    const ok=await go(i,true);
+    if(!ok||!playing) return;
+    await new Promise(r=>playTimer=setTimeout(r,reduce?1500:4200));
+    if(!playing) return;
+    i++;
+  }
+  stop();
+}
+
+go(0,false);
+</script>
