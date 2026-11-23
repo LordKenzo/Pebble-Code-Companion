@@ -56,6 +56,8 @@ You write the tests, and Pebble is at your side for every one of them:
 ### Your tests tick the boxes
 A task closes itself when your tests and your compiler say so: no manual bookkeeping, and no pretending. If a test breaks later, the task opens again.
 
+A ticked box means *your tests pass*, not *your code is correct*. A test that checks nothing would pass too. So Pebble remembers whether it has ever seen each test fail. If a test went green without ever being red, the task still ticks, but Pebble tells you so and suggests breaking the code for a moment to watch the test catch it.
+
 ### Quiet until called
 No pop-ups while you type, and no Clippy. Press `⌥P` on a line and a balloon opens right there, under your code. Close it and Pebble goes back to silence.
 
@@ -72,6 +74,14 @@ Behind most bugs there is a concept: an off-by-one error, a greedy algorithm, a 
 
 ### Anchored to your project, honest about the rest
 Every note says where it comes from: one of your ADRs, your `bootstrap.md`, or `best practice` when it is simply how the ecosystem works. Project decisions come first. Best practices are always flagged, never passed off as your rules.
+
+## Who it's for
+
+- **People learning to program**, who want a project of their own and not a tutorial, with someone at their side who explains the why.
+- **Junior developers** starting their first real projects, who want to learn architecture, tests and decisions while they build.
+- **Anyone picking up a new language or stack**, who knows how to program but not yet how things are done there.
+
+Pebble is not built for speed. If you already know what to write and want it written fast, a coding agent is the better tool, and Pebble will stay out of your way. You can delete the path, ignore the balloon, and keep only the reviews.
 
 ## How it works
 
@@ -120,8 +130,8 @@ Pebble is an early, working prototype, built in the open and dogfooded on itself
 
 | | |
 |---|---|
-| **Works today** (extension v0.6) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
-| **In design** | The path with self-ticking tasks, *Prepare the file*, the `⌥P` balloon with the help ladder, deep dives and the notebook. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/piano-pair-engineer.md`](docs/piano-pair-engineer.md). |
+| **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path view, which reads `.pebble/percorso.md` and lets you tick tasks by hand. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
+| **In design** | Tasks that tick themselves from your tests and compiler, *Prepare the file*, the `⌥P` balloon with the help ladder, deep dives and the notebook. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/piano-pair-engineer.md`](docs/piano-pair-engineer.md). |
 
 Heads-up: the prompts, ADRs, evals and internal docs are in Italian for now, because that is the language the project is being built in. English versions will follow.
 
