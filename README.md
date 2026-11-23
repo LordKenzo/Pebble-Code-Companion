@@ -58,6 +58,9 @@ A task closes itself when your tests and your compiler say so: no manual bookkee
 
 A ticked box means *your tests pass*, not *your code is correct*. A test that checks nothing would pass too. So Pebble remembers whether it has ever seen each test fail. If a test went green without ever being red, the task still ticks, but Pebble tells you so and suggests breaking the code for a moment to watch the test catch it.
 
+### The path grows with you
+Code changes the plan: you find a case nobody thought of, rename a file, change your mind, make a new decision. So Pebble lights the path one step at a time. Only the current step is broken into tasks; when it is done, Pebble plans the next one from the code as it is now. Discoveries along the way, like a test the balloon suggested, become tasks with one click. Pebble never rewrites the path behind your back: every change is a proposal you accept or discard. The tasks you finished stay in the file. They are the pebbles behind you, the story of how you got here.
+
 ### Quiet until called
 No pop-ups while you type, and no Clippy. Press `⌥P` on a line and a balloon opens right there, under your code. Close it and Pebble goes back to silence.
 
