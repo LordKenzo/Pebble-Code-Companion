@@ -110,3 +110,15 @@ test("titolo breve di un passo", () => {
   assert.equal(stepTitle("Dischi per lato: per un carico già componibile"), "Dischi per lato");
   assert.equal(stepTitle("Collegare i comandi `1rm` e `carichi`; verificare output"), "Collegare i comandi `1rm` e `carichi`");
 });
+
+test("in inglese: chiavi del percorso, titolo del passo e intestazione", () => {
+  const { markdown } = planToSection(plan, step2, "en");
+  assert.equal(markdown.split("\n")[0], "## Step 2 · Dischi per lato");
+  assert.match(markdown, /\n  do: grammi interi/);
+  assert.match(markdown, /\n  signature: platesFor/);
+  assert.match(markdown, /\n  done when: manual\n$/);
+  // il parser li rilegge: stesso percorso, in un'altra lingua
+  assert.deepEqual(parsePath(markdown).tasks.map((t) => t.conditions.map((c) => c.kind)), [["file"], ["tests", "noErrors"], ["manual"]]);
+  assert.equal(insertStep(null, markdown, 2, "en")!.split("\n")[0], "# Path");
+  assert.equal(nextStep(parseRoadmap(ROADMAP_LIST), "# Path\n\n## Step 1 · Setup\n- [x] a\n")?.n, 2);
+});

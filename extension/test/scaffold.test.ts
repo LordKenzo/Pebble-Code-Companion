@@ -137,3 +137,8 @@ test("il messaggio dice quale file preparare e se è di test", () => {
   const withSigs = buildScaffoldMessage({ bootstrap: null, architecture: null, decisions: [] }, "test/a.test.ts", undefined, [], "mid", ["platesFor(total: Grams): Result<PlateLoad>"]);
   assert.match(withSigs, /FIRME PREVISTE NEL PASSO:\n- platesFor\(total: Grams\): Result<PlateLoad>\nFILE DA PREPARARE/);
 });
+
+test("in inglese: i commenti dello scheletro", () => {
+  const { text } = composeScaffold(plates, "src/core/plates.ts", "en");
+  assert.match(text, /\/\/ TODO\(you\) Pseudocode: turn it into code, one line at a time\./);
+});

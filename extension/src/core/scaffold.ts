@@ -1,3 +1,4 @@
+import { languageLine, SCAFFOLD_TEXT, type Lang } from "./i18n";
 import { z } from "zod";
 import { numberLines } from "./context";
 import type { ExperienceLevel, ProjectContext } from "./model";
@@ -46,7 +47,8 @@ export const isTestFile = (path: string) => /(\.|_)(test|spec)\.[cm]?[jt]sx?$|(^
 const clean = (s: string) => s.replace(/\*\//g, "* /").replace(/\s*\n\s*/g, " ").trim();
 const jsdoc = (doc: string | null, indent = "") => (doc?.trim() ? `${indent}/** ${clean(doc)} */\n` : "");
 
-export function composeScaffold(s: Scaffold, path: string): { text: string; dropped: string[] } {
+export function composeScaffold(s: Scaffold, path: string, lang: Lang = "it"): { text: string; dropped: string[] } {
+  const T = SCAFFOLD_TEXT[lang];
   const dropped: string[] = [];
   const out: string[] = [];
   const testFile = isTestFile(path);
@@ -93,7 +95,7 @@ export function composeScaffold(s: Scaffold, path: string): { text: string; drop
     }
     const steps = f.pseudocode.map(clean).filter(Boolean);
     out.push(`${jsdoc(f.doc)}${sig} {`);
-    out.push("  // TODO(tu) Pseudocodice: trasformalo in codice, una riga alla volta.");
+    out.push(`  // ${T.todo}`);
     steps.forEach((step, i) => out.push(`  // ${/^\d+[.)]/.test(step) ? step : `${i + 1}. ${step}`}`));
     if (f.question?.trim()) out.push(`  // ? ${clean(f.question)}`);
     out.push("}", "");
@@ -108,14 +110,14 @@ export function composeScaffold(s: Scaffold, path: string): { text: string; drop
       if (lines.length > MAX_EXAMPLE_LINES || /\btest\s*\(|\bdescribe\s*\(|\bit\s*\(/.test(body)) {
         dropped.push(`test d'esempio troppo lungo o annidato`);
       } else {
-        out.push(`// Un primo test completo, come esempio dello stile. Gli altri li scrivi tu.`);
+        out.push(`// ${T.exampleTest}`);
         out.push(`test(${JSON.stringify(clean(s.exampleTest.name))}, () => {`);
         out.push(...lines.map((l) => (l.trim() ? `  ${l.replace(/^\s{0,2}/, "")}` : "")));
         out.push("});", "");
       }
     }
     for (const name of s.testCases.map(clean).filter(Boolean)) {
-      out.push(usesNodeTest ? `test.todo(${JSON.stringify(name)});` : `// TODO(tu) test: ${name}`);
+      out.push(usesNodeTest ? `test.todo(${JSON.stringify(name)});` : `// ${T.todoTest(name)}`);
     }
     if (s.testCases.length) out.push("");
   } else if (s.exampleTest || s.testCases.length) {
@@ -140,6 +142,7 @@ export function buildScaffoldMessage(
   level: ExperienceLevel,
   /** Firme previste dagli altri compiti del passo: i test devono chiamare quei nomi, anche se il file non esiste ancora. */
   stepSignatures: readonly string[] = [],
+  lang: Lang = "it",
 ): string {
   const taskBlock = task
     ? `<task>\n${[task.title, task.todo && `fare: ${task.todo}`, task.signature && `firma: ${task.signature}`, ...task.when.map((w) => `fatto quando: ${w}`)].filter(Boolean).join("\n")}\n</task>`
@@ -157,6 +160,7 @@ export function buildScaffoldMessage(
     stepSignatures.length ? `FIRME PREVISTE NEL PASSO:\n${stepSignatures.map((x) => `- ${x}`).join("\n")}` : "",
     `FILE DA PREPARARE: ${path}${isTestFile(path) ? " (file di test)" : ""}`,
     "Rispondi compilando lo schema.",
+    languageLine(lang),
   ]
     .filter(Boolean)
     .join("\n");

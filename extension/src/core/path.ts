@@ -13,6 +13,8 @@
  * Il parsing è tollerante: le righe che non riconosce restano nel file e vengono ignorate.
  */
 
+import { PATH_TEXT, type Lang } from "./i18n";
+
 export type Condition =
   | { kind: "tests"; names: string[] }
   | { kind: "file"; path: string; exports: string[] }
@@ -137,11 +139,16 @@ export interface Signals {
 export interface EvaluateOptions {
   /** Con true, un test mai visto rosso non chiude il compito (ADR-010). Default: false, solo avviso. */
   requireRedFirst?: boolean;
+  /** Lingua dei motivi (ADR-012). Default: italiano. */
+  lang?: Lang;
 }
+
+/** Perché un compito è aperto, in forma che la vista sa riconoscere senza leggere la frase. */
+export type ReasonCode = "testMissing" | "testRed" | "neverRed" | "fileMissing" | "fileNoExport" | "errors" | "dependency";
 
 export type TaskState =
   | { status: "done"; progress?: Progress; warning?: string }
-  | { status: "open"; progress?: Progress; reason: string }
+  | { status: "open"; progress?: Progress; reason: string; code?: ReasonCode; path?: string }
   /** Non si può decidere con i segnali disponibili: vale la casella nel file. */
   | { status: "unknown"; reason: string };
 
@@ -150,7 +157,7 @@ export interface Progress {
   total: number;
 }
 
-type CondState = { result: "true" | "false" | "unknown"; reason?: string; progress?: Progress; warning?: string };
+type CondState = { result: "true" | "false" | "unknown"; reason?: string; progress?: Progress; warning?: string; code?: ReasonCode; path?: string };
 
 /** Il nome di un test contiene il nome cercato come parola intera: "20 kg" trova "20 kg: nessun disco", non "120 kg". */
 export function testNameMatches(testName: string, wanted: string): boolean {
@@ -173,13 +180,14 @@ export function testNameMatches(testName: string, wanted: string): boolean {
 }
 
 function checkCondition(c: Condition, s: Signals, opts: EvaluateOptions): CondState {
+  const T = PATH_TEXT[opts.lang ?? "it"];
   switch (c.kind) {
     case "manual":
-      return { result: "unknown", reason: "si spunta a mano" };
+      return { result: "unknown", reason: T.manual };
     case "invalid":
-      return { result: "unknown", reason: `condizione non riconosciuta: ${c.raw}` };
+      return { result: "unknown", reason: T.invalid(c.raw) };
     case "tests": {
-      if (!s.tests) return { result: "unknown", reason: "test non ancora lanciati" };
+      if (!s.tests) return { result: "unknown", reason: T.testsNotRun };
       let passed = 0;
       const missing: string[] = [];
       const failing: string[] = [];
@@ -193,35 +201,32 @@ function checkCondition(c: Condition, s: Signals, opts: EvaluateOptions): CondSt
           if (seen && found.some((t) => !seen.has(t.name))) neverRed.push(name);
         } else failing.push(name);
       }
-      const quote = (xs: string[]) => xs.map((m) => `"${m}"`).join(", ");
       const progress = { passed, total: c.names.length };
-      if (missing.length) return { result: "false", progress, reason: `test non trovato: ${quote(missing)}` };
-      if (failing.length) return { result: "false", progress, reason: `test rosso: ${quote(failing)}` };
+      if (missing.length) return { result: "false", progress, reason: T.testMissing(missing), code: "testMissing" };
+      if (failing.length) return { result: "false", progress, reason: T.testRed(failing), code: "testRed" };
       if (neverRed.length) {
-        const msg = `verde, ma non l'ho mai visto fallire: ${quote(neverRed)}. Rompi il codice un momento e guarda se il test se ne accorge.`;
-        return opts.requireRedFirst ? { result: "false", progress, reason: msg } : { result: "true", progress, warning: msg };
+        const msg = T.neverRed(neverRed);
+        return opts.requireRedFirst ? { result: "false", progress, reason: msg, code: "neverRed" } : { result: "true", progress, warning: msg };
       }
       return { result: "true", progress };
     }
     case "file": {
-      if (!s.files) return { result: "unknown", reason: "file non ancora controllati" };
+      if (!s.files) return { result: "unknown", reason: T.filesNotChecked };
       const exported = s.files[c.path];
-      if (!exported) return { result: "false", reason: `manca ${c.path}` };
+      if (!exported) return { result: "false", reason: T.fileMissing(c.path), code: "fileMissing", path: c.path };
       const absent = c.exports.filter((e) => !exported.includes(e));
-      return absent.length ? { result: "false", reason: `${c.path} non esporta ${absent.join(", ")}` } : { result: "true" };
+      return absent.length ? { result: "false", reason: T.fileNoExport(c.path, absent), code: "fileNoExport", path: c.path } : { result: "true" };
     }
     case "dependency": {
-      if (!s.dependencies) return { result: "unknown", reason: "dipendenze non ancora controllate" };
+      if (!s.dependencies) return { result: "unknown", reason: T.depsNotChecked };
       const missing = c.names.filter((n) => !s.dependencies!.includes(n));
-      return missing.length
-        ? { result: "false", reason: `manca la dipendenza ${missing.join(", ")} (npm install -D ${missing.join(" ")})` }
-        : { result: "true" };
+      return missing.length ? { result: "false", reason: T.depMissing(missing), code: "dependency" } : { result: "true" };
     }
     case "noErrors": {
-      if (!s.errors || !s.files) return { result: "unknown", reason: "errori non ancora controllati" };
-      if (!s.files[c.path]) return { result: "false", reason: `manca ${c.path}` };
+      if (!s.errors || !s.files) return { result: "unknown", reason: T.errorsNotChecked };
+      if (!s.files[c.path]) return { result: "false", reason: T.fileMissing(c.path), code: "fileMissing", path: c.path };
       const n = s.errors[c.path] ?? 0;
-      return n === 0 ? { result: "true" } : { result: "false", reason: `${n} ${n === 1 ? "errore" : "errori"} in ${c.path}` };
+      return n === 0 ? { result: "true" } : { result: "false", reason: T.errorsIn(n, c.path), code: "errors", path: c.path };
     }
   }
 }
@@ -237,7 +242,9 @@ export function evaluate(tasks: readonly Task[], signals: Signals, opts: Evaluat
     const states = conds.map((c) => checkCondition(c, signals, opts));
     const progress = states.find((x) => x.progress)?.progress;
     const failed = states.find((x) => x.result === "false");
-    if (failed) return { status: "open", reason: failed.reason!, ...(progress && { progress }) };
+    if (failed) {
+      return { status: "open", reason: failed.reason!, ...(progress && { progress }), ...(failed.code && { code: failed.code }), ...(failed.path && { path: failed.path }) };
+    }
     const unknown = states.find((x) => x.result === "unknown");
     if (unknown) return { status: "unknown", reason: unknown.reason! };
     const warning = states.find((x) => x.warning)?.warning;
@@ -284,23 +291,22 @@ export function withCheckbox(line: string | undefined, checked: boolean): string
   return line.replace(/\[( |x|X)\]/, checked ? "[x]" : "[ ]");
 }
 
-/** Testo leggibile di una condizione, per la vista del percorso. */
-export function describeCondition(c: Condition): string {
+/** Testo leggibile di una condizione, per la vista del percorso e per il contesto del modello. */
+export function describeCondition(c: Condition, lang: Lang = "it"): string {
+  const T = PATH_TEXT[lang];
   switch (c.kind) {
     case "tests":
-      return c.names.length === 1
-        ? `passa un test che si chiama "${c.names[0]}"`
-        : `passano i test che si chiamano ${c.names.map((n) => `"${n}"`).join(", ")}`;
+      return T.descTests(c.names);
     case "file":
-      return c.exports.length ? `${c.path} esporta ${c.exports.join(", ")}` : `esiste ${c.path}`;
+      return T.descFile(c.path, c.exports);
     case "noErrors":
-      return `nessun errore in ${c.path}`;
+      return T.descNoErrors(c.path);
     case "dependency":
-      return `${c.names.join(", ")} tra le dipendenze`;
+      return T.descDependency(c.names);
     case "manual":
-      return "a mano";
+      return T.descManual;
     case "invalid":
-      return `non riconosciuta: ${c.raw}`;
+      return T.descInvalid(c.raw);
   }
 }
 
@@ -308,50 +314,49 @@ export function describeCondition(c: Condition): string {
  * Cosa si aspetta Pebble, spiegato a chi legge il compito per la prima volta.
  * Per i test c'è un esempio di come si scrive il nome: è il nome che conta, non quello che il test verifica.
  */
-export function explainCondition(c: Condition): { text: string; example?: string } {
+export function explainCondition(c: Condition, lang: Lang = "it"): { text: string; example?: string } {
+  const T = PATH_TEXT[lang];
   switch (c.kind) {
     case "tests":
       return c.names.length === 1
-        ? { text: `Un test verde che si chiama "${c.names[0]}" (basta che il nome contenga queste parole).`, example: `test("${c.names[0]}", () => { … })` }
-        : {
-            text: `${c.names.length} test verdi, uno per caso, con questi nomi: ${c.names.map((n) => `"${n}"`).join(", ")} (basta che il nome li contenga).`,
-            example: `test("${c.names[0]}: …", () => { … })`,
-          };
+        ? { text: T.expTests1(c.names[0]!), example: `test("${c.names[0]}", () => { … })` }
+        : { text: T.expTestsN(c.names), example: `test("${c.names[0]}: …", () => { … })` };
     case "file":
       return c.exports.length
-        ? { text: `Il file ${c.path}, che esporta ${c.exports.join(", ")}.`, example: c.exports.map((e) => `export … ${e}`).join("\n") }
-        : { text: `Il file ${c.path} (basta che esista).` };
+        ? { text: T.expFileExports(c.path, c.exports), example: c.exports.map((e) => `export … ${e}`).join("\n") }
+        : { text: T.expFile(c.path) };
     case "noErrors":
-      return { text: `Nessun errore di TypeScript in ${c.path}: niente sottolineature rosse nell'editor.` };
+      return { text: T.expNoErrors(c.path) };
     case "dependency":
       return c.names.length === 1
-        ? { text: `${c.names[0]} installato nel progetto, cioè presente in package.json.`, example: `npm install -D ${c.names[0]}` }
-        : { text: `${c.names.join(", ")} installati nel progetto, cioè presenti in package.json.`, example: `npm install -D ${c.names.join(" ")}` };
+        ? { text: T.expDependency1(c.names[0]!), example: `npm install -D ${c.names[0]}` }
+        : { text: T.expDependencyN(c.names), example: `npm install -D ${c.names.join(" ")}` };
     case "manual":
-      return { text: "Lo spunti tu, quando ti sembra fatto." };
+      return { text: T.expManual };
     case "invalid":
-      return { text: `Questa condizione in percorso.md non la capisco: "${c.raw}". Scrivila come test "nome", file percorso, nessun errore in percorso oppure a mano.` };
+      return { text: T.expInvalid(c.raw) };
   }
 }
 
 /** Riassunto breve accanto al titolo del compito: "3 test · 0 errori", "a mano". */
-export function summarizeConditions(conditions: readonly Condition[]): string {
-  if (conditions.length === 0) return "a mano";
+export function summarizeConditions(conditions: readonly Condition[], lang: Lang = "it"): string {
+  const T = PATH_TEXT[lang];
+  if (conditions.length === 0) return T.sumManual;
   return conditions
     .map((c) => {
       switch (c.kind) {
         case "tests":
-          return `${c.names.length} test`;
+          return T.sumTests(c.names.length);
         case "file":
-          return "file";
+          return T.sumFile;
         case "noErrors":
-          return "0 errori";
+          return T.sumNoErrors;
         case "dependency":
-          return "dipendenze";
+          return T.sumDependency;
         case "manual":
-          return "a mano";
+          return T.sumManual;
         case "invalid":
-          return "condizione da correggere";
+          return T.sumInvalid;
       }
     })
     .join(" · ");
@@ -391,14 +396,14 @@ export interface TaskView {
   /** "Cosa mi aspetto": le condizioni spiegate, con un esempio quando serve. */
   expect: { text: string; example?: string; invalid: boolean }[];
   /** Stato dai segnali; assente se non si può decidere (vale la casella). */
-  state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string };
+  state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string; code?: ReasonCode; path?: string };
 }
 
-export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[]): PathViewModel {
+export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[], lang: Lang = "it"): PathViewModel {
   const stateOf = new Map(tasks.map((t, i) => [t.line, states?.[i]] as const));
   const byStep = new Map<string, Task[]>();
   for (const t of tasks) {
-    const name = t.step ?? "Senza passo";
+    const name = t.step ?? PATH_TEXT[lang].noStep;
     byStep.set(name, [...(byStep.get(name) ?? []), t]);
   }
   const groups = [...byStep];
@@ -421,12 +426,12 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
         current: t.line === activeLine,
         todo: t.todo,
         signature: t.signature,
-        summary: summarizeConditions(t.conditions),
+        summary: summarizeConditions(t.conditions, lang),
         when: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({
-          text: describeCondition(c),
+          text: describeCondition(c, lang),
           invalid: c.kind === "invalid",
         })),
-        expect: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({ ...explainCondition(c), invalid: c.kind === "invalid" })),
+        expect: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({ ...explainCondition(c, lang), invalid: c.kind === "invalid" })),
         files: [...new Set(t.conditions.flatMap((c) => (c.kind === "file" || c.kind === "noErrors" ? [c.path] : [])))],
         ...viewState(stateOf.get(t.line)),
       })),
@@ -438,7 +443,7 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
 function viewState(s: TaskState | undefined): { state?: TaskView["state"] } {
   if (!s || s.status === "unknown") return {};
   if (s.status === "done") return { state: { status: "done", ...(s.progress && { progress: s.progress }), ...(s.warning && { warning: s.warning }) } };
-  return { state: { status: "open", reason: s.reason, ...(s.progress && { progress: s.progress }) } };
+  return { state: { status: "open", reason: s.reason, ...(s.progress && { progress: s.progress }), ...(s.code && { code: s.code }), ...(s.path && { path: s.path }) } };
 }
 
 /** Simboli esportati da un sorgente TypeScript o JavaScript, per il segnale `files`. */

@@ -1,3 +1,4 @@
+import { languageLine, type Lang } from "./i18n";
 import { z } from "zod";
 import { LEVEL_HINTS, numberLines } from "./context";
 import type { ExperienceLevel, ProjectContext } from "./model";
@@ -38,13 +39,14 @@ export function projectBlocks(ctx: ProjectContext): string {
     .join("\n");
 }
 
-export function buildInitMessage(bootstrap: string, level: ExperienceLevel): string {
+export function buildInitMessage(bootstrap: string, level: ExperienceLevel, lang: Lang = "it"): string {
   return [
     "MODE: INIT",
     `LIVELLO: ${level}`,
     block("bootstrap", bootstrap),
     "Rispondi compilando lo schema richiesto. Testo in Markdown semplice, nessun blocco di codice tranne l'albero delle cartelle.",
     LEVEL_HINTS[level],
+    languageLine(lang),
   ]
     .filter(Boolean)
     .join("\n");
@@ -168,7 +170,7 @@ export function buildTextMessage(
   mode: TextMode,
   ctx: ProjectContext,
   level: ExperienceLevel,
-  opts: { file?: OpenFile; question?: string; history?: Turn[] } = {},
+  opts: { file?: OpenFile; question?: string; history?: Turn[]; lang?: Lang } = {},
 ): string {
   const history = (opts.history ?? [])
     .slice(-8)
@@ -184,6 +186,7 @@ export function buildTextMessage(
     opts.question ? `Domanda dello sviluppatore:\n${opts.question}` : "",
     FORMAT_HINT,
     LEVEL_HINTS[level],
+    languageLine(opts.lang ?? "it"),
   ]
     .filter(Boolean)
     .join("\n");

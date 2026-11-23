@@ -118,7 +118,7 @@ test("test verdi, file esportato e nessun errore: compito fatto", () => {
 test("un test che torna rosso riapre il compito, con il progresso", () => {
   const s: Signals = { ...allGood, tests: [greenTests[0]!, greenTests[1]!, { name: "60 kg: un 20 per lato", ok: false }] };
   assert.deepEqual(stateOf("Implementa platesFor", s), {
-    status: "open", reason: 'test rosso: "60 kg"', progress: { passed: 2, total: 3 },
+    status: "open", reason: 'test rosso: "60 kg"', progress: { passed: 2, total: 3 }, code: "testRed",
   });
   // il compito era spuntato nel file, ma i segnali vincono
   assert.equal(stateOf("Scrivi i test dei dischi", s).status, "open");
@@ -127,20 +127,20 @@ test("un test che torna rosso riapre il compito, con il progresso", () => {
 test("un test che non esiste lascia il compito aperto e lo dice", () => {
   const s: Signals = { ...allGood, tests: greenTests.slice(0, 2) };
   assert.deepEqual(stateOf("Implementa platesFor", s), {
-    status: "open", reason: 'test non trovato: "60 kg"', progress: { passed: 2, total: 3 },
+    status: "open", reason: 'test non trovato: "60 kg"', progress: { passed: 2, total: 3 }, code: "testMissing",
   });
 });
 
 test("file mancante o senza l'esportazione: aperto", () => {
-  assert.deepEqual(stateOf("Crea src/core/plates.ts", { ...allGood, files: {} }), { status: "open", reason: "manca src/core/plates.ts" });
+  assert.deepEqual(stateOf("Crea src/core/plates.ts", { ...allGood, files: {} }), { status: "open", reason: "manca src/core/plates.ts", code: "fileMissing", path: "src/core/plates.ts" });
   assert.deepEqual(stateOf("Crea src/core/plates.ts", { ...allGood, files: { "src/core/plates.ts": ["BAR"] } }), {
-    status: "open", reason: "src/core/plates.ts non esporta platesFor",
+    status: "open", reason: "src/core/plates.ts non esporta platesFor", code: "fileNoExport", path: "src/core/plates.ts",
   });
 });
 
 test("errori del compilatore: aperto, anche se i test sono verdi", () => {
   assert.deepEqual(stateOf("Implementa platesFor", { ...allGood, errors: { "src/core/plates.ts": 2 } }), {
-    status: "open", reason: "2 errori in src/core/plates.ts", progress: { passed: 3, total: 3 },
+    status: "open", reason: "2 errori in src/core/plates.ts", progress: { passed: 3, total: 3 }, code: "errors", path: "src/core/plates.ts",
   });
 });
 
@@ -198,7 +198,7 @@ test("il modello della vista porta lo stato dei compiti", () => {
   const red: Signals = { ...allGood, tests: [greenTests[0]!, greenTests[1]!, { name: "60 kg: un 20 per lato", ok: false }] };
   const m = buildViewModel(doc.tasks, evaluate(doc.tasks, red));
   const impl = m.steps[0]!.tasks.find((t) => t.title === "Implementa platesFor")!;
-  assert.deepEqual(impl.state, { status: "open", reason: 'test rosso: "60 kg"', progress: { passed: 2, total: 3 } });
+  assert.deepEqual(impl.state, { status: "open", reason: 'test rosso: "60 kg"', progress: { passed: 2, total: 3 }, code: "testRed" });
   assert.equal(m.steps[0]!.tasks.find((t) => t.title === "Rileggi con Pebble")!.state, undefined);
 });
 
@@ -254,7 +254,7 @@ test("withCheckbox cambia solo la casella e rifiuta righe che non sono compiti",
 
 test("descrive e riassume le condizioni", () => {
   const impl = task("Implementa platesFor");
-  assert.deepEqual(impl.conditions.map(describeCondition), ['passano i test che si chiamano "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
+  assert.deepEqual(impl.conditions.map((c) => describeCondition(c)), ['passano i test che si chiamano "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
   assert.equal(summarizeConditions(impl.conditions), "3 test · 0 errori");
   assert.equal(summarizeConditions([]), "a mano");
   assert.equal(describeCondition({ kind: "file", path: "a.ts", exports: [] }), "esiste a.ts");
@@ -331,8 +331,18 @@ test("trova le esportazioni di un file TypeScript", () => {
 test("condizione sulle dipendenze: installate o no", () => {
   assert.deepEqual(parseCondition("dipendenza vitest, @testing-library/react jsdom"), { kind: "dependency", names: ["vitest", "@testing-library/react", "jsdom"] });
   const d = parsePath("- [ ] Installa i test\n  fatto quando: dipendenza vitest jsdom");
-  assert.deepEqual(evaluate(d.tasks, { dependencies: ["react", "vitest"] }), [{ status: "open", reason: "manca la dipendenza jsdom (npm install -D jsdom)" }]);
+  assert.deepEqual(evaluate(d.tasks, { dependencies: ["react", "vitest"] }), [{ status: "open", reason: "manca la dipendenza jsdom (npm install -D jsdom)", code: "dependency" }]);
   assert.deepEqual(evaluate(d.tasks, { dependencies: ["vitest", "jsdom"] }), [{ status: "done" }]);
   assert.equal(evaluate(d.tasks, {})[0]!.status, "unknown");
   assert.deepEqual(explainCondition({ kind: "dependency", names: ["vitest"] }), { text: "vitest installato nel progetto, cioè presente in package.json.", example: "npm install -D vitest" });
+});
+
+test("in inglese: motivi, condizioni spiegate e riassunti", () => {
+  const red: Signals = { ...allGood, tests: [greenTests[0]!, greenTests[1]!, { name: "60 kg: un 20 per lato", ok: false }] };
+  const st = evaluate(doc.tasks, red, { lang: "en" })[doc.tasks.indexOf(task("Implementa platesFor"))]!;
+  assert.deepEqual(st, { status: "open", reason: 'red test: "60 kg"', progress: { passed: 2, total: 3 }, code: "testRed" });
+  assert.equal(describeCondition({ kind: "tests", names: ["20 kg"] }, "en"), 'a test named "20 kg" passes');
+  assert.equal(explainCondition({ kind: "manual" }, "en").text, "You tick it yourself, when it feels done.");
+  assert.equal(summarizeConditions(task("Implementa platesFor").conditions, "en"), "3 tests · 0 errors");
+  assert.equal(buildViewModel(parsePath("- [ ] A").tasks, undefined, "en").steps[0]!.name, "No step");
 });

@@ -1,3 +1,4 @@
+import { languageLine, PATH_TEXT, type Lang } from "./i18n";
 import { z } from "zod";
 import { numberLines } from "./context";
 import type { ExperienceLevel, ProjectContext } from "./model";
@@ -65,7 +66,7 @@ export function stepTitle(raw: string): string {
 export function plannedStepNumbers(pathMarkdown: string): Map<number, { done: boolean }> {
   const out = new Map<number, { done: boolean }>();
   for (const t of parsePath(pathMarkdown).tasks) {
-    const n = Number(/passo\s+(\d+)/i.exec(t.step ?? "")?.[1]);
+    const n = Number(/(?:passo|step)\s+(\d+)/i.exec(t.step ?? "")?.[1]);
     if (!Number.isFinite(n) || n <= 0) continue;
     const prev = out.get(n);
     out.set(n, { done: (prev?.done ?? true) && t.checked });
@@ -95,6 +96,7 @@ export function buildPlanMessage(
   pathMarkdown: string | null,
   files: readonly PlanFile[],
   level: ExperienceLevel,
+  lang: Lang = "it",
 ): string {
   const list = files.map((f) => f.path).join("\n") || "(nessun file oltre a .pebble/)";
   const contents = files
@@ -110,6 +112,7 @@ export function buildPlanMessage(
     contents,
     `PASSO DA PREPARARE: ${step.n} · ${step.title}\n${step.text}`,
     "Rispondi compilando lo schema.",
+    languageLine(lang),
   ]
     .filter(Boolean)
     .join("\n");
@@ -118,19 +121,20 @@ export function buildPlanMessage(
 const oneLine = (s: string) => s.replace(/\s*\n\s*/g, " ").trim();
 
 /** Trasforma il piano in una sezione di percorso.md. Le condizioni scritte male vengono scartate. */
-export function planToSection(plan: PlanStep, step: RoadmapStep): { markdown: string; dropped: string[] } {
+export function planToSection(plan: PlanStep, step: RoadmapStep, lang: Lang = "it"): { markdown: string; dropped: string[] } {
+  const T = PATH_TEXT[lang];
   const dropped: string[] = [];
-  const lines = [`## Passo ${step.n} · ${step.title}`];
+  const lines = [`## ${T.stepWord} ${step.n} · ${step.title}`];
   for (const t of plan.tasks.slice(0, 8)) {
     lines.push(`- [ ] ${oneLine(t.title)}`);
-    if (t.todo.trim()) lines.push(`  fare: ${oneLine(t.todo)}`);
-    if (t.signature?.trim()) lines.push(`  firma: ${oneLine(t.signature)}`);
+    if (t.todo.trim()) lines.push(`  ${T.keyTodo}: ${oneLine(t.todo)}`);
+    if (t.signature?.trim()) lines.push(`  ${T.keySignature}: ${oneLine(t.signature)}`);
     const valid = t.doneWhen.map(oneLine).filter((c) => {
       const ok = parseCondition(c).kind !== "invalid";
       if (!ok) dropped.push(c);
       return ok;
     });
-    for (const c of valid.length ? valid : ["a mano"]) lines.push(`  fatto quando: ${c}`);
+    for (const c of valid.length ? valid : [T.condManual]) lines.push(`  ${T.keyDone}: ${c}`);
   }
   return { markdown: lines.join("\n") + "\n", dropped };
 }
@@ -139,11 +143,11 @@ export function planToSection(plan: PlanStep, step: RoadmapStep): { markdown: st
  * Inserisce la sezione nel percorso. Se il passo c'è già e ha compiti fatti, non tocca niente (null):
  * i passi chiusi sono la storia del progetto (ADR-011). Se c'è ma è tutto da fare, lo sostituisce.
  */
-export function insertStep(pathMarkdown: string | null, section: string, n: number): string | null {
+export function insertStep(pathMarkdown: string | null, section: string, n: number, lang: Lang = "it"): string | null {
   const md = pathMarkdown ?? "";
-  if (!md.trim()) return `# Percorso\n\n${section}`;
+  if (!md.trim()) return `# ${PATH_TEXT[lang].pathTitle}\n\n${section}`;
   const lines = md.split("\n");
-  const start = lines.findIndex((l) => new RegExp(`^#{2,3}\\s+passo\\s+${n}\\b`, "i").test(l));
+  const start = lines.findIndex((l) => new RegExp(`^#{2,3}\\s+(?:passo|step)\\s+${n}\\b`, "i").test(l));
   if (start === -1) return `${md.replace(/\s*$/, "")}\n\n${section}`;
   let end = lines.findIndex((l, i) => i > start && /^#{1,3}\s/.test(l));
   if (end === -1) end = lines.length;

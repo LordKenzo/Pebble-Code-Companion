@@ -47,3 +47,9 @@ test("risposte vuote: un bootstrap valido con i punti da scrivere segnati", () =
   assert.match(md, /## Non so ancora\n- Da dove cominciare\n$/);
   assert.doesNotMatch(md, /Esempio d'uso/);
 });
+
+test("in inglese: sezioni del bootstrap", () => {
+  const md = composeBootstrap({ name: "", what: "A CLI.", example: "", stack: "", rules: "", unknowns: [], otherUnknown: "" }, "en");
+  assert.match(md, /^# My project — bootstrap\n\n## What I want to build\nA CLI\.\n\n## Constraints\n/);
+  assert.match(md, /## What I don't know yet\n- Where to start\n$/);
+});

@@ -1,7 +1,9 @@
+import { BOOTSTRAP_TEXT, type Lang } from "./i18n";
+
 /**
  * Il primo sassolino: bootstrap.md composto dalle risposte della procedura guidata.
  * Logica pura, nessun modello: le parole sono dello sviluppatore, Pebble le mette in ordine
- * nel formato che MODE: INIT si aspetta (Cosa devo fare, Vincoli, Non so ancora).
+ * nel formato che MODE: INIT si aspetta, nella lingua scelta (ADR-012).
  */
 export interface BootstrapAnswers {
   name: string;
@@ -14,13 +16,14 @@ export interface BootstrapAnswers {
 }
 
 /** Dubbi frequenti all'inizio di un progetto: la procedura li propone come caselle. */
-export const COMMON_UNKNOWNS = [
-  "Come strutturare le cartelle",
-  "Che test runner usare",
-  "Come gestire gli errori e i casi anomali",
-  "Quali librerie servono davvero",
-  "Da dove cominciare",
-];
+export const commonUnknowns = (lang: Lang = "it") => BOOTSTRAP_TEXT[lang].common;
+/** Compatibilità: i dubbi frequenti in italiano. */
+export const COMMON_UNKNOWNS = BOOTSTRAP_TEXT.it.common;
+/** "Lo scrivo io": la traccia con le istruzioni nei commenti. */
+export const bootstrapGuide = (lang: Lang = "it") => BOOTSTRAP_TEXT[lang].guide;
+export const BOOTSTRAP_GUIDE = BOOTSTRAP_TEXT.it.guide;
+/** Il dubbio aggiunto quando lo sviluppatore non sa ancora che linguaggio usare. */
+export const unknownStack = (lang: Lang = "it") => BOOTSTRAP_TEXT[lang].unknownStack;
 
 /** Divide un testo in punti: una riga per punto, togliendo trattini e righe vuote. */
 const points = (s: string) =>
@@ -29,36 +32,18 @@ const points = (s: string) =>
     .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
     .filter(Boolean);
 
-export function composeBootstrap(a: BootstrapAnswers): string {
-  const name = a.name.trim() || "Il mio progetto";
-  const out = [`# ${name} — bootstrap`, "", "## Cosa devo fare"];
-  out.push(a.what.trim() || "_Da scrivere: cosa deve fare il progetto e per chi._");
-  if (a.example.trim()) out.push("", "Esempio d'uso che immagino:", ...points(a.example).map((p) => `- ${p}`));
+export function composeBootstrap(a: BootstrapAnswers, lang: Lang = "it"): string {
+  const T = BOOTSTRAP_TEXT[lang];
+  const out = [T.title(a.name.trim() || T.defaultName), "", T.what];
+  out.push(a.what.trim() || T.whatMissing);
+  if (a.example.trim()) out.push("", T.example, ...points(a.example).map((p) => `- ${p}`));
 
-  out.push("", "## Vincoli");
+  out.push("", T.constraints);
   const constraints = [...(a.stack.trim() ? [a.stack.trim()] : []), ...points(a.rules)];
-  out.push(...(constraints.length ? constraints.map((c) => `- ${c}`) : ["- _Da scrivere: linguaggio, piattaforma, regole che non si possono sbagliare._"]));
+  out.push(...(constraints.length ? constraints.map((c) => `- ${c}`) : [T.constraintsMissing]));
 
-  out.push("", "## Non so ancora");
+  out.push("", T.unknowns);
   const unknowns = [...a.unknowns, ...points(a.otherUnknown)].filter((u, i, all) => all.indexOf(u) === i);
-  out.push(...(unknowns.length ? unknowns.map((u) => `- ${u}`) : ["- Da dove cominciare"]));
+  out.push(...(unknowns.length ? unknowns.map((u) => `- ${u}`) : [`- ${T.unknownDefault}`]));
   return out.join("\n") + "\n";
 }
-
-/** "Lo scrivo io": la traccia con le istruzioni nei commenti, che non finiscono nel testo letto da Pebble. */
-export const BOOTSTRAP_GUIDE = `# Nome del progetto — bootstrap
-
-<!-- Scrivi con parole tue: non serve che sia perfetto. Pebble lo legge e ti propone come impostare il progetto. -->
-
-## Cosa devo fare
-<!-- Cosa deve fare il progetto e per chi, in poche righe. Se puoi, un esempio d'uso concreto. -->
-
-## Vincoli
-<!-- Linguaggio e piattaforma, librerie obbligatorie o vietate, e soprattutto le regole del dominio che non si possono sbagliare. -->
--
-
-## Non so ancora
-<!-- I dubbi: è proprio qui che Pebble ti aiuta di più. -->
-- Come strutturare le cartelle
-- Da dove cominciare
-`;

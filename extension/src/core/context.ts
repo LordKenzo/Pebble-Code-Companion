@@ -1,3 +1,4 @@
+import { languageLine, type Lang } from "./i18n";
 import type { ExperienceLevel, FileUnderReview, Problem, ProjectContext } from "./model";
 
 /** Numera le righe come le vede l'utente nell'editor, così le note puntano alla riga giusta. */
@@ -27,7 +28,7 @@ export const LEVEL_HINTS: Record<ExperienceLevel, string> = {
  * Il contesto stabile (bootstrap, architettura, decisioni) viene prima del file,
  * così il prefisso resta uguale tra una review e l'altra.
  */
-export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, level: ExperienceLevel = "mid"): string {
+export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, level: ExperienceLevel = "mid", lang: Lang = "it"): string {
   const decisions = ctx.decisions.map((d) => `### ${d.name}\n${d.content.trim()}`).join("\n\n");
   const missing: string[] = [];
   if (!ctx.bootstrap) missing.push("bootstrap.md");
@@ -46,6 +47,7 @@ export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, l
     formatProblems(file.problems),
     "Le righe del file sono numerate (`N | codice`): usa quei numeri in `line` ed `endLine`. Rispondi compilando lo schema richiesto.",
     LEVEL_HINTS[level],
+    languageLine(lang),
   ]
     .filter(Boolean)
     .join("\n");

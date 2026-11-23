@@ -1,3 +1,4 @@
+import { languageLine, type Lang } from "./i18n";
 import { formatProblems, numberLines } from "./context";
 import type { ExperienceLevel, Problem, ProjectContext } from "./model";
 import { projectBlocks } from "./modes";
@@ -42,6 +43,8 @@ export interface HelpRequest {
   tests?: (TestResult & { detail?: string })[];
   /** Errori dell'editor sul file: se ci sono, il fumetto sistema prima quelli. */
   problems?: Problem[];
+  /** Lingua della risposta (ADR-012). Default: italiano. */
+  lang?: Lang;
 }
 
 const HELP_LEVEL: Record<ExperienceLevel, string> = {
@@ -91,6 +94,7 @@ export function buildHelpMessage(req: HelpRequest): string {
     req.history.length ? block("history", req.history.join("\n")) : "",
     ask.kind === "reply" ? block("reply", ask.text) : "",
     HELP_LEVEL[req.level],
+    languageLine(req.lang ?? "it"),
   ]
     .filter(Boolean)
     .join("\n");
@@ -98,7 +102,7 @@ export function buildHelpMessage(req: HelpRequest): string {
 
 /** Separa il corpo della risposta dalla riga "**Concetto:** …", che finisce nel quaderno. */
 export function parseHelpAnswer(text: string): { body: string; concept: string | null } {
-  const re = /^\s*\*\*Concetto:\*\*\s*(.+?)\s*$/im;
+  const re = /^\s*\*\*(?:Concetto|Concept):\*\*\s*(.+?)\s*$/im;
   const m = re.exec(text);
   if (!m) return { body: text.trim(), concept: null };
   return { body: text.replace(re, "").trim(), concept: m[1]!.replace(/\.$/, "") };
