@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="Pebble, the Code Path Companion: a trail of glowing pebbles through a dark forest at night">
+  <img src="assets/banner.jpg" alt="Pebble, the Code Path Companion: a developer at the keyboard and a trail of glowing pebbles through a night forest, with friendly ghosts and bugs along the way">
 </p>
 
 <p align="center">
