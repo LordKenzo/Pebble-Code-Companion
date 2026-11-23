@@ -18,6 +18,7 @@ export interface HelpDeps {
 }
 
 interface ThreadState {
+  id: string;
   rung: Rung;
   history: string[];
   concepts: string[];
@@ -30,12 +31,17 @@ class Note implements vscode.Comment {
     public body: vscode.MarkdownString | string,
     public author: vscode.CommentAuthorInformation,
     public label?: string,
+    /** Testo della risposta senza la riga dei tasti, per toglierla quando arriva una risposta nuova. */
+    public readonly base?: string,
   ) {}
 }
 
-/** Argomento dei comandi: dal menu sotto il riquadro arriva una CommentReply, dal titolo il thread. */
-type ThreadArg = vscode.CommentReply | vscode.CommentThread;
-const threadOf = (arg: ThreadArg): vscode.CommentThread => ("thread" in arg ? arg.thread : arg);
+/** Argomento dei comandi: dal menu sotto il riquadro una CommentReply, dal titolo il thread, dai tasti nella bolla l'id. */
+type ThreadArg = vscode.CommentReply | vscode.CommentThread | string;
+
+const ACTIONS = ["pebble.help.up", "pebble.help.why", "pebble.help.deep", "pebble.help.close"];
+/** L'avanzamento sui gradini, come nel mockup: ▰▰▱▱. */
+const rungBar = (r: Rung) => "▰".repeat(r) + "▱".repeat(4 - r);
 
 /**
  * Il fumetto sulla riga (ADR-009): con ⌥P si apre un riquadro di commento sotto il cursore,
@@ -44,6 +50,8 @@ const threadOf = (arg: ThreadArg): vscode.CommentThread => ("thread" in arg ? ar
 export class HelpBalloon implements vscode.Disposable {
   private readonly controller = vscode.comments.createCommentController("pebble.help", "Pebble");
   private readonly states = new Map<vscode.CommentThread, ThreadState>();
+  private readonly byId = new Map<string, vscode.CommentThread>();
+  private nextId = 1;
   private readonly pebble: vscode.CommentAuthorInformation;
   private readonly you: vscode.CommentAuthorInformation = { name: "Tu" };
 
@@ -73,12 +81,15 @@ export class HelpBalloon implements vscode.Disposable {
     thread.contextValue = "pebble.help";
     thread.canReply = true;
     thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
-    this.states.set(thread, { rung: 1, history: [], concepts: [], busy: false });
+    const id = String(this.nextId++);
+    this.states.set(thread, { id, rung: 1, history: [], concepts: [], busy: false });
+    this.byId.set(id, thread);
     await this.ask(thread, { kind: "rung", rung: 1 });
   }
 
   async up(arg: ThreadArg): Promise<void> {
-    const thread = threadOf(arg);
+    const thread = this.threadOf(arg);
+    if (!thread) return;
     const st = this.states.get(thread);
     if (!st || st.busy) return;
     if (st.rung === 4) {
@@ -90,13 +101,15 @@ export class HelpBalloon implements vscode.Disposable {
   }
 
   async why(arg: ThreadArg): Promise<void> {
-    const thread = threadOf(arg);
+    const thread = this.threadOf(arg);
+    if (!thread) return;
     const st = this.states.get(thread);
     if (st) await this.ask(thread, { kind: "why", rung: st.rung });
   }
 
   async deep(arg: ThreadArg): Promise<void> {
-    const thread = threadOf(arg);
+    const thread = this.threadOf(arg);
+    if (!thread) return;
     const st = this.states.get(thread);
     if (st) await this.ask(thread, { kind: "deep", rung: st.rung });
   }
@@ -112,9 +125,36 @@ export class HelpBalloon implements vscode.Disposable {
   }
 
   close(arg: ThreadArg): void {
-    const thread = threadOf(arg);
+    const thread = this.threadOf(arg);
+    if (!thread) return;
+    const st = this.states.get(thread);
+    if (st) this.byId.delete(st.id);
     this.states.delete(thread);
     thread.dispose();
+  }
+
+  private threadOf(arg: ThreadArg): vscode.CommentThread | undefined {
+    if (typeof arg === "string") return this.byId.get(arg);
+    return "thread" in arg ? arg.thread : arg;
+  }
+
+  /** La bolla di una risposta: avanzamento e contesto in alto, la risposta, i tasti, il costo. */
+  private bubble(st: ThreadState, base: string, withActions: boolean): vscode.MarkdownString {
+    const md = new vscode.MarkdownString(base, true);
+    if (withActions) {
+      const link = (cmd: string, icon: string, label: string) =>
+        `[$(${icon}) ${label}](command:${cmd}?${encodeURIComponent(JSON.stringify([st.id]))} "${label}")`;
+      const actions = [
+        st.rung < 4 ? link("pebble.help.up", "arrow-up", "Più concreto") : null,
+        link("pebble.help.why", "question", "Perché conta?"),
+        link("pebble.help.deep", "book", "Approfondisci"),
+        link("pebble.help.close", "check", "Ho capito"),
+      ].filter(Boolean);
+      md.appendMarkdown(`\n\n${actions.join(" &nbsp;·&nbsp; ")}\n\n_Oppure rispondi alla domanda qui sotto._`);
+      md.isTrusted = { enabledCommands: ACTIONS };
+    }
+    md.supportHtml = true;
+    return md;
   }
 
   private async ask(thread: vscode.CommentThread, ask: HelpAsk): Promise<void> {
@@ -123,7 +163,12 @@ export class HelpBalloon implements vscode.Disposable {
     st.busy = true;
     const thinking = new Note(new vscode.MarkdownString("_Ci penso…_"), this.pebble);
     thread.comments = [...thread.comments, thinking];
-    thread.label = `Pebble · gradino ${st.rung} di 4 · ${RUNG_NAMES[st.rung]}`;
+    thread.label = `Pebble · ${rungBar(st.rung)} · gradino ${st.rung} di 4 · ${RUNG_NAMES[st.rung]}`;
+    // Le risposte precedenti perdono i tasti: valgono solo sull'ultima.
+    thread.comments = thread.comments.map((c) => {
+      const base = c instanceof Note ? (c as Note).base : undefined; // Comment è già assegnabile a Note: serve il cast
+      return base && c !== thinking ? new Note(this.bubble(st, base, false), this.pebble, undefined, base) : c;
+    });
     try {
       const doc = await vscode.workspace.openTextDocument(thread.uri);
       const path = vscode.workspace.asRelativePath(thread.uri, false);
@@ -147,10 +192,17 @@ export class HelpBalloon implements vscode.Disposable {
       const { body, concept } = parseHelpAnswer(stripLongCode(text).text);
       if (concept && !st.concepts.includes(concept)) st.concepts.push(concept);
       st.history.push(historyLine(body));
-      const md = new vscode.MarkdownString(body);
-      if (concept) md.appendMarkdown(`\n\n*Concetto:* ${concept}`);
-      md.appendMarkdown(`\n\n---\n_${mentor.provider} · ${mentor.model} · ${formatUsd(costUsd)}_`);
-      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(md, this.pebble) : c));
+      const red = tests?.filter((t) => !t.ok).length ?? 0;
+      const context = [`riga ${(thread.range?.start.line ?? 0) + 1}`, task?.title, red ? `${red} test ross${red === 1 ? "o" : "i"}` : null].filter(Boolean).join(" · ");
+      const base = [
+        `<span style="color:#e3b25c;">${rungBar(st.rung)}</span> &nbsp;<sub>${context}</sub>`,
+        body,
+        concept ? `*Concetto:* ${concept}` : "",
+        `<sub>${mentor.provider} · ${mentor.model} · ${formatUsd(costUsd)}</sub>`,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(this.bubble(st, base, true), this.pebble, undefined, base) : c));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const md = new vscode.MarkdownString(`Non sono riuscito a rispondere: ${msg}\n\nControlla provider e chiave in **Pebble: Impostazioni**, poi riprova.`);
