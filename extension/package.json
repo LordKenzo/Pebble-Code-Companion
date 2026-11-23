@@ -1,0 +1,270 @@
+{
+  "name": "pebble",
+  "displayName": "Pebble",
+  "description": "Un senior engineer nel tuo editor: guida, rivede e consiglia test. Il codice lo scrivi tu.",
+  "version": "0.6.0",
+  "publisher": "lordkenzo",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Linters",
+    "Education",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "pebble.reviewFile",
+        "title": "Rivedi il file",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.setApiKey",
+        "title": "Imposta la chiave API",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.clearReview",
+        "title": "Rimuovi le note",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.openSettings",
+        "title": "Impostazioni",
+        "category": "Pebble",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "pebble.setLevel",
+        "title": "Imposta il mio livello di esperienza",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.showSpend",
+        "title": "Mostra la spesa",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.resetSpend",
+        "title": "Azzera il conteggio della spesa",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.init",
+        "title": "Leggi il bootstrap e proponi il piano",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.next",
+        "title": "Qual è il prossimo passo?",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.tests",
+        "title": "Test consigliati per il file aperto",
+        "category": "Pebble"
+      },
+      {
+        "command": "pebble.clearChat",
+        "title": "Pulisci la conversazione",
+        "category": "Pebble",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "pebble.openChat",
+        "title": "Apri il mentor",
+        "category": "Pebble",
+        "icon": "$(comment-discussion)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "pebble.reviewFile",
+          "group": "pebble"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "pebble.clearChat",
+          "when": "view == pebble.chat",
+          "group": "navigation@1"
+        },
+        {
+          "command": "pebble.openSettings",
+          "when": "view == pebble.chat",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "pebble.reviewFile",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Pebble",
+      "properties": {
+        "pebble.experienceLevel": {
+          "type": "string",
+          "enum": [
+            "entry",
+            "junior",
+            "mid",
+            "senior"
+          ],
+          "enumDescriptions": [
+            "Sto imparando a programmare: spiegazioni semplici, termini spiegati, passi concreti",
+            "Programmo ma ho poca esperienza di progetto: il perché, con il nome dei principi",
+            "Sono autonomo: comportamento predefinito",
+            "Esperto: solo bug, violazioni degli ADR e trade-off, risposte asciutte"
+          ],
+          "default": "mid",
+          "description": "Il tuo livello di esperienza: cambia cosa segnala Pebble e come lo spiega."
+        },
+        "pebble.provider": {
+          "type": "string",
+          "enum": [
+            "anthropic",
+            "openai",
+            "local"
+          ],
+          "enumDescriptions": [
+            "Claude, via API di Anthropic",
+            "OpenAI",
+            "Modello locale con API compatibile OpenAI (Ollama, LM Studio, llama.cpp)"
+          ],
+          "default": "anthropic",
+          "description": "Quale modello usa Pebble per le review."
+        },
+        "pebble.anthropic.model": {
+          "type": "string",
+          "default": "claude-opus-5-5",
+          "description": "Modello Claude."
+        },
+        "pebble.anthropic.effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "default": "medium",
+          "description": "Quanto ragiona Claude: più alto = review più accurate, più lente e più costose."
+        },
+        "pebble.openai.model": {
+          "type": "string",
+          "default": "",
+          "description": "Modello OpenAI da usare (obbligatorio se il provider è OpenAI)."
+        },
+        "pebble.local.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:11434/v1",
+          "description": "Indirizzo dell'API compatibile OpenAI del server locale. Ollama: http://localhost:11434/v1 · LM Studio: http://localhost:1234/v1"
+        },
+        "pebble.local.model": {
+          "type": "string",
+          "default": "",
+          "description": "Nome del modello locale (es. quello che vedi con `ollama list`)."
+        },
+        "pebble.monthlyBudgetUsd": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Budget mensile in dollari. Superato il budget, Pebble ti avvisa e la barra di stato diventa gialla. 0 = nessun budget."
+        },
+        "pebble.prices": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Prezzi per i modelli non noti a Pebble (es. OpenAI), in dollari per milione di token. Esempio: `{ \"gpt-6.2-sol\": { \"input\": 2, \"output\": 8, \"cacheRead\": 0.2 } }`. I prezzi dei modelli Claude sono già inclusi.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "number"
+              },
+              "output": {
+                "type": "number"
+              },
+              "cacheRead": {
+                "type": "number"
+              },
+              "cacheWrite": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "input",
+              "output"
+            ]
+          }
+        },
+        "pebble.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Quando apri un progetto con bootstrap.md ma senza .pebble/, Pebble lo legge da solo e propone il piano (una volta per progetto)."
+        },
+        "pebble.guideNewFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Quando crei un file in un progetto con .pebble/, Pebble ti dice che ruolo ha e cosa evitare."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pebble",
+          "title": "Pebble",
+          "icon": "media/pebble.svg"
+        }
+      ]
+    },
+    "views": {
+      "pebble": [
+        {
+          "type": "webview",
+          "id": "pebble.chat",
+          "name": "Mentor"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "sync-prompt": "node scripts/sync-prompt.mjs",
+    "build": "npm run sync-prompt && tsc --noEmit && esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --minify --outfile=dist/extension.js",
+    "test": "tsc -p tsconfig.test.json && node --test \"out-test/test/*.test.js\"",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "marked": "^18.2.1",
+    "openai": "^7.62.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Pebble legge i file del progetto e li invia al modello scelto: funziona solo nelle cartelle di cui ti fidi."
+    },
+    "virtualWorkspaces": false
+  }
+}
