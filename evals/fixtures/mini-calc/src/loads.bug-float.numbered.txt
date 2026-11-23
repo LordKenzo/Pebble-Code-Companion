@@ -1,0 +1,23 @@
+ 1 | import { platesFor } from "./plates.ts";
+ 2 | import { invalid, ok, type Result } from "./result.ts";
+ 3 | 
+ 4 | export interface LoadRow {
+ 5 |   percent: number;
+ 6 |   targetKg: number;
+ 7 |   actualKg: number;
+ 8 |   perSide: readonly number[];
+ 9 | }
+10 | 
+11 | /** Massimale in kg e percentuali → target, carico reale arrotondato per difetto, dischi per lato. */
+12 | export function computeLoads(oneRmKg: number, percents: readonly number[]): Result<LoadRow[]> {
+13 |   if (oneRmKg <= 0) return invalid("massimale non valido");
+14 |   const rows: LoadRow[] = [];
+15 |   for (const percent of percents) {
+16 |     const targetKg = oneRmKg * (percent / 100);
+17 |     const actualKg = 20 + Math.floor((targetKg - 20) / 2.5) * 2.5;
+18 |     const plates = platesFor(actualKg * 1000);
+19 |     if (!plates.ok) return invalid(plates.error);
+20 |     rows.push({ percent, targetKg, actualKg, perSide: plates.value.perSide });
+21 |   }
+22 |   return ok(rows);
+23 | }
