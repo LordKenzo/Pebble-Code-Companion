@@ -133,8 +133,8 @@ Pebble is an early, working prototype, built in the open and dogfooded on itself
 
 | | |
 |---|---|
-| **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path view, which reads `.pebble/percorso.md` and lets you tick tasks by hand. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
-| **In design** | Tasks that tick themselves from your tests and compiler, *Prepare the file*, the `⌥P` balloon with the help ladder, deep dives and the notebook. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/piano-pair-engineer.md`](docs/piano-pair-engineer.md). |
+| **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path panel, styled like the mockup. It reads `.pebble/percorso.md`, and tasks tick themselves when you save: Pebble runs your tests (any runner with TAP output), reads the compiler errors VS Code already has, and warns you when a test has never been seen failing. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
+| **In design** | *Prepare the file*, the `⌥P` balloon with the help ladder, deep dives and the notebook. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/piano-pair-engineer.md`](docs/piano-pair-engineer.md). |
 
 Heads-up: the prompts, ADRs, evals and internal docs are in Italian for now, because that is the language the project is being built in. English versions will follow.
 
