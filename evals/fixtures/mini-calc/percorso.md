@@ -11,7 +11,7 @@ Per usarlo: copialo in mini-calc/.pebble/percorso.md.
   fare: "test" con node --test, "typecheck" con tsc --noEmit (ADR-005)
   fatto quando: a mano
 - [ ] Un primo test che passa
-  fare: un test banale in test/, solo per vedere partire il runner
+  fare: un test banale che si chiama "il runner funziona", solo per vedere partire il runner
   fatto quando: test "il runner funziona"
 
 ## Passo 2 · Dischi per lato

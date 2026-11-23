@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  applyStates, buildViewModel, describeCondition, evaluate, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
+  applyStates, buildViewModel, describeCondition, evaluate, explainCondition, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
   updateSeenRed, type Signals,
 } from "../src/core/path";
 
@@ -254,11 +254,26 @@ test("withCheckbox cambia solo la casella e rifiuta righe che non sono compiti",
 
 test("descrive e riassume le condizioni", () => {
   const impl = task("Implementa platesFor");
-  assert.deepEqual(impl.conditions.map(describeCondition), ['passano i test "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
+  assert.deepEqual(impl.conditions.map(describeCondition), ['passano i test che si chiamano "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
   assert.equal(summarizeConditions(impl.conditions), "3 test · 0 errori");
   assert.equal(summarizeConditions([]), "a mano");
   assert.equal(describeCondition({ kind: "file", path: "a.ts", exports: [] }), "esiste a.ts");
   assert.equal(summarizeConditions([{ kind: "invalid", raw: "boh" }]), "condizione da correggere");
+  assert.equal(describeCondition({ kind: "tests", names: ["il runner funziona"] }), 'passa un test che si chiama "il runner funziona"');
+});
+
+test("spiega cosa si aspetta, con un esempio del nome del test", () => {
+  assert.deepEqual(explainCondition({ kind: "tests", names: ["il runner funziona"] }), {
+    text: 'Un test verde che si chiama "il runner funziona" (basta che il nome contenga queste parole).',
+    example: 'test("il runner funziona", () => { … })',
+  });
+  assert.match(explainCondition({ kind: "tests", names: ["20 kg", "60 kg"] }).text, /^2 test verdi, uno per caso/);
+  assert.equal(explainCondition({ kind: "tests", names: ["20 kg", "60 kg"] }).example, 'test("20 kg: …", () => { … })');
+  assert.deepEqual(explainCondition({ kind: "file", path: "src/a.ts", exports: ["platesFor"] }), { text: "Il file src/a.ts, che esporta platesFor.", example: "export … platesFor" });
+  assert.match(explainCondition({ kind: "noErrors", path: "src/a.ts" }).text, /sottolineature rosse/);
+  assert.match(explainCondition({ kind: "invalid", raw: "boh" }).text, /non la capisco: "boh"/);
+  const m = buildViewModel(doc.tasks);
+  assert.equal(m.steps[0]!.tasks.find((x) => x.title === "Rileggi con Pebble")!.expect[0]!.text, "Lo spunti tu, quando ti sembra fatto.");
 });
 
 // ---------- modello per la vista ----------
@@ -276,7 +291,7 @@ test("modello: passo corrente, compito attivo, ADR citati e conteggi", () => {
   assert.equal(m.steps[1]!.tasks.some((t) => t.current), false);
   const impl = step.tasks.find((t) => t.title === "Implementa platesFor")!;
   assert.deepEqual(impl.when, [
-    { text: 'passano i test "20 kg", "22,5 kg", "60 kg"', invalid: false },
+    { text: 'passano i test che si chiamano "20 kg", "22,5 kg", "60 kg"', invalid: false },
     { text: "nessun errore in src/core/plates.ts", invalid: false },
   ]);
   assert.deepEqual(step.tasks.find((t) => t.title === "Rileggi con Pebble")!.when, [{ text: "a mano", invalid: false }]);

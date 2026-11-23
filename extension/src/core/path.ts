@@ -272,7 +272,9 @@ export function withCheckbox(line: string | undefined, checked: boolean): string
 export function describeCondition(c: Condition): string {
   switch (c.kind) {
     case "tests":
-      return `passano i test ${c.names.map((n) => `"${n}"`).join(", ")}`;
+      return c.names.length === 1
+        ? `passa un test che si chiama "${c.names[0]}"`
+        : `passano i test che si chiamano ${c.names.map((n) => `"${n}"`).join(", ")}`;
     case "file":
       return c.exports.length ? `${c.path} esporta ${c.exports.join(", ")}` : `esiste ${c.path}`;
     case "noErrors":
@@ -281,6 +283,32 @@ export function describeCondition(c: Condition): string {
       return "a mano";
     case "invalid":
       return `non riconosciuta: ${c.raw}`;
+  }
+}
+
+/**
+ * Cosa si aspetta Pebble, spiegato a chi legge il compito per la prima volta.
+ * Per i test c'è un esempio di come si scrive il nome: è il nome che conta, non quello che il test verifica.
+ */
+export function explainCondition(c: Condition): { text: string; example?: string } {
+  switch (c.kind) {
+    case "tests":
+      return c.names.length === 1
+        ? { text: `Un test verde che si chiama "${c.names[0]}" (basta che il nome contenga queste parole).`, example: `test("${c.names[0]}", () => { … })` }
+        : {
+            text: `${c.names.length} test verdi, uno per caso, con questi nomi: ${c.names.map((n) => `"${n}"`).join(", ")} (basta che il nome li contenga).`,
+            example: `test("${c.names[0]}: …", () => { … })`,
+          };
+    case "file":
+      return c.exports.length
+        ? { text: `Il file ${c.path}, che esporta ${c.exports.join(", ")}.`, example: c.exports.map((e) => `export … ${e}`).join("\n") }
+        : { text: `Il file ${c.path} (basta che esista).` };
+    case "noErrors":
+      return { text: `Nessun errore di TypeScript in ${c.path}: niente sottolineature rosse nell'editor.` };
+    case "manual":
+      return { text: "Lo spunti tu, quando ti sembra fatto." };
+    case "invalid":
+      return { text: `Questa condizione in percorso.md non la capisco: "${c.raw}". Scrivila come test "nome", file percorso, nessun errore in percorso oppure a mano.` };
   }
 }
 
@@ -336,6 +364,8 @@ export interface TaskView {
   when: { text: string; invalid: boolean }[];
   /** File citati dalle condizioni (file, nessun errore in): candidati per "Prepara il file". */
   files: string[];
+  /** "Cosa mi aspetto": le condizioni spiegate, con un esempio quando serve. */
+  expect: { text: string; example?: string; invalid: boolean }[];
   /** Stato dai segnali; assente se non si può decidere (vale la casella). */
   state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string };
 }
@@ -372,6 +402,7 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
           text: describeCondition(c),
           invalid: c.kind === "invalid",
         })),
+        expect: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({ ...explainCondition(c), invalid: c.kind === "invalid" })),
         files: [...new Set(t.conditions.flatMap((c) => (c.kind === "file" || c.kind === "noErrors" ? [c.path] : [])))],
         ...viewState(stateOf.get(t.line)),
       })),

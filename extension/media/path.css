@@ -65,8 +65,20 @@ button { font: inherit; color: inherit; }
 .when.invalid::before { background: var(--err); }
 .when code { font-family: var(--mono); font-size: 11.5px; color: var(--fg); }
 .reason { color: var(--err); font-size: 12px; }
+.hint { font-size: 12px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 8px; }
+.hint b { color: var(--fg); font-weight: 600; }
+.hint code { font-family: var(--mono); font-size: 11.5px; color: var(--fg); }
 .warning { color: var(--mentor); font-size: 12px; border-left: 2px solid var(--mentor-line); padding-left: 8px; }
 .reason code, .warning code { font-family: var(--mono); font-size: 11.5px; }
+.expect { display: flex; flex-direction: column; gap: 4px; }
+.label2 { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+.expect ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.expect li { display: grid; grid-template-columns: 6px minmax(0, 1fr); column-gap: 8px; row-gap: 4px; font-size: 12px; align-items: baseline; }
+.expect li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--mentor); transform: translateY(-1px); }
+.expect li.invalid { color: var(--err); }
+.expect li.invalid::before { background: var(--err); }
+.expect li code { font-family: var(--mono); font-size: 11.5px; color: var(--fg); }
+.expect .ex { grid-column: 2; display: block; background: var(--editor); border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .btn { font-size: 12px; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
 .btn:hover { border-color: var(--faint); }

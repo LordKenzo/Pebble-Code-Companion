@@ -36,8 +36,9 @@
         t.todo ? `<p>${inline(t.todo)}</p>` : "",
         t.signature ? `<div class="sig">${esc(t.signature)}</div>` : "",
         t.state && t.state.status === "open" && t.state.reason ? `<p class="reason">Ancora aperto: ${condition(t.state.reason)}</p>` : "",
+        missingHint(t),
         t.state && t.state.warning ? `<p class="warning">${condition(t.state.warning)}</p>` : "",
-        ...t.when.map((w) => `<span class="when${w.invalid ? " invalid" : ""}"><span>${w.invalid ? `Da correggere: ${condition(w.text)}` : w.text === "a mano" ? "La spunti tu, quando ti sembra fatto" : `Si spunta quando ${condition(w.text)}`}</span></span>`),
+        expectBlock(t),
         `<div class="actions">${scaffoldButton(t)}<button class="btn" type="button" data-reveal="${t.line}">Apri nel percorso</button></div>`,
       ].join("");
       return `<li class="${cls}"><details${t.current ? " open" : ""}><summary>
@@ -70,6 +71,24 @@
     }
     if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">da fare</span>`;
     return `<span class="meta">${esc(t.summary)}</span>`;
+  }
+
+  /** "Cosa mi aspetto": ogni condizione spiegata, con l'esempio del nome del test quando serve. */
+  function expectBlock(t) {
+    const items = t.expect.map((x) =>
+      `<li class="${x.invalid ? "invalid" : ""}"><span>${condition(x.text)}</span>${x.example ? `<code class="ex">${esc(x.example)}</code>` : ""}</li>`).join("");
+    return `<div class="expect"><span class="label2">Cosa mi aspetto</span><ul>${items}</ul></div>`;
+  }
+
+  /** Un test "non trovato" va spiegato: è il nome del test che conta, non quello che verifica. */
+  function missingHint(t) {
+    const r = t.state && t.state.status === "open" ? t.state.reason || "" : "";
+    if (!r.startsWith("test non trovato")) return "";
+    const names = (model.check && model.check.names) || [];
+    const found = names.length
+      ? `Ora i tuoi test si chiamano: ${names.map((n) => `<code>“${esc(n)}”</code>`).join(", ")}.`
+      : "Non ho ancora trovato nessun test: controlla il comando in fondo al pannello.";
+    return `<p class="hint">Pebble cerca un test il cui <b>nome</b> contiene quelle parole: è il testo tra virgolette in <code>test('…', …)</code>. ${found} Rinomina il test e salva.</p>`;
   }
 
   /** "Prepara il file" (ADR-003): per i compiti da fare che citano un file che manca o non è ancora verificato. */
