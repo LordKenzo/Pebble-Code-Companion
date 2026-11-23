@@ -280,6 +280,8 @@ test("modello: passo corrente, compito attivo, ADR citati e conteggi", () => {
     { text: "nessun errore in src/core/plates.ts", invalid: false },
   ]);
   assert.deepEqual(step.tasks.find((t) => t.title === "Rileggi con Pebble")!.when, [{ text: "a mano", invalid: false }]);
+  assert.deepEqual(impl.files, ["src/core/plates.ts"]);
+  assert.deepEqual(step.tasks.find((t) => t.title === "Crea src/core/plates.ts")!.files, ["src/core/plates.ts"]);
 });
 
 test("modello: il passo corrente è il primo con compiti da fare", () => {

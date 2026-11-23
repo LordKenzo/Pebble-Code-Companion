@@ -6,6 +6,7 @@ import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, Pl
 import type { MentorModel } from "../../core/ports";
 import { WorkspaceStore } from "../store/workspaceStore";
 import type { ProposalDocs } from "./proposals";
+import { buildScaffoldMessage, composeScaffold, Scaffold } from "../../core/scaffold";
 import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
 import type { ParsedTest } from "../../core/tap";
 import { SignalCollector } from "../signals/collector";
@@ -61,7 +62,8 @@ type FromWebview =
   | { type: "createExample" }
   | { type: "verify" }
   | { type: "settings" }
-  | { type: "planNext" };
+  | { type: "planNext" }
+  | { type: "scaffold"; path: string; line: number };
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -141,6 +143,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "verify") void this.verify(true);
       else if (m.type === "settings") void vscode.commands.executeCommand("workbench.action.openSettings", "pebble.path");
       else if (m.type === "planNext") void this.planNext();
+      else if (m.type === "scaffold") void this.scaffold(m.path, m.line);
     });
     view.onDidChangeVisibility(() => {
       if (view.visible) this.post();
@@ -346,6 +349,55 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     } finally {
       this.planning = false;
       await this.refresh();
+    }
+  }
+
+  // ---------- prepara il file (ADR-003) ----------
+
+  /** Scheletro di un file nuovo: le parti dal modello, il testo composto da Pebble, un diff da accettare. */
+  async scaffold(path?: string, taskLine?: number): Promise<void> {
+    if (!this.root || !this.planner) return;
+    const planner = this.planner;
+    const step = this.model?.steps[this.model.currentStep];
+    const fromTask = step?.tasks.find((t) => t.line === taskLine) ?? step?.tasks.find((t) => t.current);
+    const target = path ?? (await vscode.window.showInputBox({ prompt: "Quale file preparo?", value: fromTask?.files[0] ?? "src/" }));
+    if (!target?.trim()) return;
+    const rel = target.trim().replace(/^\.?\//, "");
+    const uri = vscode.Uri.joinPath(this.root, ...rel.split("/"));
+    const existing = await readText(uri);
+    if (existing?.trim()) {
+      void vscode.window.showInformationMessage(`Pebble: ${rel} contiene già codice e non lo sovrascrivo. Se sei bloccato, metti il cursore su una riga e premi ⌥P.`);
+      return;
+    }
+    try {
+      const ctx = await new WorkspaceStore(this.root).load();
+      const task = fromTask && { title: fromTask.title, todo: fromTask.todo, signature: fromTask.signature, when: fromTask.when.map((w) => w.text) };
+      const signatures = (step?.tasks ?? []).map((t) => t.signature).filter((x): x is string => !!x);
+      const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(), signatures);
+      const mentor = await planner.mentor();
+      const { data, usage } = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `Pebble prepara ${rel}…` },
+        async () => mentor.generate(await planner.systemPrompt(), message, Scaffold, "scaffold"),
+      );
+      await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
+      const { text, dropped } = composeScaffold(data, rel);
+      const key = `scheletro-${Date.now()}`;
+      const left = planner.proposals.put(`${key}/vuoto`, existing ?? "");
+      const right = planner.proposals.put(`${key}/${rel}`, text);
+      await vscode.commands.executeCommand("vscode.diff", left, right, `${rel}: scheletro proposto da Pebble`);
+      const note = dropped.length ? ` Ho scartato ${dropped.length} ${dropped.length === 1 ? "parte che conteneva" : "parti che contenevano"} logica.` : "";
+      const choice = await vscode.window.showInformationMessage(
+        `Pebble propone lo scheletro di ${rel}: firme e pseudocodice, il codice lo scrivi tu.${note}`,
+        "Crea il file",
+        "Scarta",
+      );
+      if (choice !== "Crea il file") return;
+      await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
+      await vscode.window.showTextDocument(uri);
+      this.schedule(true, 500);
+    } catch (err) {
+      void vscode.window.showErrorMessage(`Pebble non è riuscito a preparare il file: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

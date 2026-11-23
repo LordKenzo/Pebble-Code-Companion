@@ -334,6 +334,8 @@ export interface TaskView {
   signature: string | null;
   summary: string;
   when: { text: string; invalid: boolean }[];
+  /** File citati dalle condizioni (file, nessun errore in): candidati per "Prepara il file". */
+  files: string[];
   /** Stato dai segnali; assente se non si può decidere (vale la casella). */
   state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string };
 }
@@ -370,6 +372,7 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
           text: describeCondition(c),
           invalid: c.kind === "invalid",
         })),
+        files: [...new Set(t.conditions.flatMap((c) => (c.kind === "file" || c.kind === "noErrors" ? [c.path] : [])))],
         ...viewState(stateOf.get(t.line)),
       })),
     };

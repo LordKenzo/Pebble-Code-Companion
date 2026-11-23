@@ -146,6 +146,11 @@
         "command": "pebble.path.planNext",
         "title": "Prepara il prossimo passo del percorso",
         "category": "Pebble"
+      },
+      {
+        "command": "pebble.scaffoldFile",
+        "title": "Prepara il file: firme e pseudocodice",
+        "category": "Pebble"
       }
     ],
     "menus": {

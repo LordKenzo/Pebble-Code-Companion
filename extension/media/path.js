@@ -38,7 +38,7 @@
         t.state && t.state.status === "open" && t.state.reason ? `<p class="reason">Ancora aperto: ${condition(t.state.reason)}</p>` : "",
         t.state && t.state.warning ? `<p class="warning">${condition(t.state.warning)}</p>` : "",
         ...t.when.map((w) => `<span class="when${w.invalid ? " invalid" : ""}"><span>${w.invalid ? `Da correggere: ${condition(w.text)}` : w.text === "a mano" ? "La spunti tu, quando ti sembra fatto" : `Si spunta quando ${condition(w.text)}`}</span></span>`),
-        `<div class="actions"><button class="btn" type="button" data-reveal="${t.line}">Apri nel percorso</button></div>`,
+        `<div class="actions">${scaffoldButton(t)}<button class="btn" type="button" data-reveal="${t.line}">Apri nel percorso</button></div>`,
       ].join("");
       return `<li class="${cls}"><details${t.current ? " open" : ""}><summary>
           <button class="box" type="button" role="checkbox" aria-checked="${t.checked}" aria-label="${t.checked ? "Segna da fare" : "Segna come fatto"}: ${esc(t.title)}" data-line="${t.line}"></button>
@@ -70,6 +70,14 @@
     }
     if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">da fare</span>`;
     return `<span class="meta">${esc(t.summary)}</span>`;
+  }
+
+  /** "Prepara il file" (ADR-003): per i compiti da fare che citano un file che manca o non è ancora verificato. */
+  function scaffoldButton(t) {
+    if (t.checked || !t.files.length) return "";
+    const missing = t.files.find((f) => t.state && t.state.reason && t.state.reason.includes(`manca ${f}`)) || (!t.state ? t.files[0] : null);
+    if (!missing) return "";
+    return `<button class="btn primary" type="button" data-scaffold="${esc(missing)}" data-line="${t.line}" title="Firme e pseudocodice in ${esc(missing)}">Prepara il file</button>`;
   }
 
   /** Il passo è chiuso: Pebble offre di preparare il prossimo, partendo dal codice com'è adesso (ADR-011). */
@@ -142,6 +150,8 @@
     if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
+    const sc = e.target.closest("[data-scaffold]");
+    if (sc) return vscode.postMessage({ type: "scaffold", path: sc.dataset.scaffold, line: Number(sc.dataset.line) });
     if (e.target.closest("[data-settings]")) return vscode.postMessage({ type: "settings" });
   });
 
