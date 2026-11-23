@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyStates, evaluate, findExports, parseCondition, parsePath, testNameMatches, type Signals } from "../src/core/path";
+import {
+  applyStates, describeCondition, evaluate, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
+  type Signals,
+} from "../src/core/path";
 
 const PERCORSO = [
   "# Percorso",
@@ -196,6 +199,24 @@ test("conserva i fine riga Windows", () => {
   const { text } = applyStates(crlf, d.tasks, evaluate(d.tasks, allGood));
   assert.equal(text.split("\r\n").length, PERCORSO.split("\n").length);
   assert.match(text, /- \[x\] Implementa platesFor\r\n/);
+});
+
+test("withCheckbox cambia solo la casella e rifiuta righe che non sono compiti", () => {
+  assert.equal(withCheckbox("  - [ ] Implementa platesFor", true), "  - [x] Implementa platesFor");
+  assert.equal(withCheckbox("* [X] A [ ] dentro il titolo", false), "* [ ] A [ ] dentro il titolo");
+  assert.equal(withCheckbox("## Passo 2", true), null);
+  assert.equal(withCheckbox(undefined, true), null);
+});
+
+// ---------- testi per la vista ----------
+
+test("descrive e riassume le condizioni", () => {
+  const impl = task("Implementa platesFor");
+  assert.deepEqual(impl.conditions.map(describeCondition), ['test "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
+  assert.equal(summarizeConditions(impl.conditions), "3 test · 0 errori");
+  assert.equal(summarizeConditions([]), "a mano");
+  assert.equal(describeCondition({ kind: "file", path: "a.ts", exports: [] }), "esiste a.ts");
+  assert.equal(summarizeConditions([{ kind: "invalid", raw: "boh" }]), "condizione da correggere");
 });
 
 // ---------- esportazioni ----------

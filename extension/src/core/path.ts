@@ -224,12 +224,55 @@ export function applyStates(markdown: string, tasks: readonly Task[], states: re
     if (!state || state.status === "unknown") return;
     const want = state.status === "done";
     if (want === task.checked) return;
-    const original = lines[task.line];
-    if (original === undefined || !TASK.test(original)) return; // file cambiato nel frattempo: non toccare
-    lines[task.line] = original.replace(/\[( |x|X)\]/, want ? "[x]" : "[ ]");
+    const updated = withCheckbox(lines[task.line], want);
+    if (updated === null) return; // file cambiato nel frattempo: non toccare
+    lines[task.line] = updated;
     changed++;
   });
   return { text: lines.join("\n"), changed };
+}
+
+/** La riga con la casella spuntata o no; null se la riga non è un compito (il file è cambiato). */
+export function withCheckbox(line: string | undefined, checked: boolean): string | null {
+  if (line === undefined || !TASK.test(line)) return null;
+  return line.replace(/\[( |x|X)\]/, checked ? "[x]" : "[ ]");
+}
+
+/** Testo leggibile di una condizione, per la vista del percorso. */
+export function describeCondition(c: Condition): string {
+  switch (c.kind) {
+    case "tests":
+      return `test ${c.names.map((n) => `"${n}"`).join(", ")}`;
+    case "file":
+      return c.exports.length ? `${c.path} esporta ${c.exports.join(", ")}` : `esiste ${c.path}`;
+    case "noErrors":
+      return `nessun errore in ${c.path}`;
+    case "manual":
+      return "a mano";
+    case "invalid":
+      return `non riconosciuta: ${c.raw}`;
+  }
+}
+
+/** Riassunto breve accanto al titolo del compito: "3 test · 0 errori", "a mano". */
+export function summarizeConditions(conditions: readonly Condition[]): string {
+  if (conditions.length === 0) return "a mano";
+  return conditions
+    .map((c) => {
+      switch (c.kind) {
+        case "tests":
+          return `${c.names.length} test`;
+        case "file":
+          return "file";
+        case "noErrors":
+          return "0 errori";
+        case "manual":
+          return "a mano";
+        case "invalid":
+          return "condizione da correggere";
+      }
+    })
+    .join(" · ");
 }
 
 /** Simboli esportati da un sorgente TypeScript o JavaScript, per il segnale `files`. */
