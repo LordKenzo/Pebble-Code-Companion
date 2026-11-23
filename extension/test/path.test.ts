@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  applyStates, describeCondition, evaluate, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
+  applyStates, buildViewModel, describeCondition, evaluate, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
   type Signals,
 } from "../src/core/path";
 
@@ -212,11 +212,46 @@ test("withCheckbox cambia solo la casella e rifiuta righe che non sono compiti",
 
 test("descrive e riassume le condizioni", () => {
   const impl = task("Implementa platesFor");
-  assert.deepEqual(impl.conditions.map(describeCondition), ['test "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
+  assert.deepEqual(impl.conditions.map(describeCondition), ['passano i test "20 kg", "22,5 kg", "60 kg"', "nessun errore in src/core/plates.ts"]);
   assert.equal(summarizeConditions(impl.conditions), "3 test · 0 errori");
   assert.equal(summarizeConditions([]), "a mano");
   assert.equal(describeCondition({ kind: "file", path: "a.ts", exports: [] }), "esiste a.ts");
   assert.equal(summarizeConditions([{ kind: "invalid", raw: "boh" }]), "condizione da correggere");
+});
+
+// ---------- modello per la vista ----------
+
+test("modello: passo corrente, compito attivo, ADR citati e conteggi", () => {
+  const m = buildViewModel(doc.tasks);
+  assert.equal(m.total, 5);
+  assert.equal(m.done, 1);
+  assert.equal(m.currentStep, 0);
+  const step = m.steps[0]!;
+  assert.equal(step.name, "Passo 2 · Dischi per lato");
+  assert.deepEqual(step.refs, ["ADR-003"]);
+  assert.deepEqual([step.done, step.total], [1, 4]);
+  assert.deepEqual(step.tasks.filter((t) => t.current).map((t) => t.title), ["Crea src/core/plates.ts"]);
+  assert.equal(m.steps[1]!.tasks.some((t) => t.current), false);
+  const impl = step.tasks.find((t) => t.title === "Implementa platesFor")!;
+  assert.deepEqual(impl.when, [
+    { text: 'passano i test "20 kg", "22,5 kg", "60 kg"', invalid: false },
+    { text: "nessun errore in src/core/plates.ts", invalid: false },
+  ]);
+  assert.deepEqual(step.tasks.find((t) => t.title === "Rileggi con Pebble")!.when, [{ text: "a mano", invalid: false }]);
+});
+
+test("modello: il passo corrente è il primo con compiti da fare", () => {
+  const all = PERCORSO.replace(/- \[ \] (Crea|Implementa|Rileggi)/g, "- [x] $1");
+  const m = buildViewModel(parsePath(all).tasks);
+  assert.equal(m.currentStep, 1);
+  assert.equal(m.steps[1]!.tasks[0]!.current, true);
+});
+
+test("modello: tutto fatto mostra l'ultimo passo, percorso vuoto non si rompe", () => {
+  const m = buildViewModel(parsePath(PERCORSO.replace(/- \[ \]/g, "- [x]")).tasks);
+  assert.equal(m.currentStep, 1);
+  assert.equal(m.steps.flatMap((s) => s.tasks).some((t) => t.current), false);
+  assert.deepEqual(buildViewModel([]), { done: 0, total: 0, currentStep: 0, steps: [] });
 });
 
 // ---------- esportazioni ----------

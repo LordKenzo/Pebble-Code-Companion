@@ -242,7 +242,7 @@ export function withCheckbox(line: string | undefined, checked: boolean): string
 export function describeCondition(c: Condition): string {
   switch (c.kind) {
     case "tests":
-      return `test ${c.names.map((n) => `"${n}"`).join(", ")}`;
+      return `passano i test ${c.names.map((n) => `"${n}"`).join(", ")}`;
     case "file":
       return c.exports.length ? `${c.path} esporta ${c.exports.join(", ")}` : `esiste ${c.path}`;
     case "noErrors":
@@ -273,6 +273,74 @@ export function summarizeConditions(conditions: readonly Condition[]): string {
       }
     })
     .join(" · ");
+}
+
+// ---------- modello per la vista (mockup/on-demand.html) ----------
+
+export interface PathViewModel {
+  done: number;
+  total: number;
+  /** Indice del passo da mostrare aperto: il primo con compiti da fare (o l'ultimo, se è tutto fatto). */
+  currentStep: number;
+  steps: StepView[];
+}
+
+export interface StepView {
+  name: string;
+  /** ADR citati nei compiti del passo, in ordine: "ADR-003", "ADR-004". */
+  refs: string[];
+  done: number;
+  total: number;
+  tasks: TaskView[];
+}
+
+export interface TaskView {
+  line: number;
+  title: string;
+  checked: boolean;
+  /** Il compito attivo: il primo da fare del passo corrente. */
+  current: boolean;
+  todo: string | null;
+  signature: string | null;
+  summary: string;
+  when: { text: string; invalid: boolean }[];
+}
+
+export function buildViewModel(tasks: readonly Task[]): PathViewModel {
+  const byStep = new Map<string, Task[]>();
+  for (const t of tasks) {
+    const name = t.step ?? "Senza passo";
+    byStep.set(name, [...(byStep.get(name) ?? []), t]);
+  }
+  const groups = [...byStep];
+  const firstOpen = groups.findIndex(([, ts]) => ts.some((t) => !t.checked));
+  const currentStep = firstOpen === -1 ? Math.max(0, groups.length - 1) : firstOpen;
+
+  const steps = groups.map(([name, ts], i): StepView => {
+    const activeLine = i === currentStep ? ts.find((t) => !t.checked)?.line : undefined;
+    const text = ts.map((t) => [t.title, t.todo, t.signature].join(" ")).join(" ");
+    const refs = [...new Set(text.match(/ADR-\d{3}/g) ?? [])].sort();
+    return {
+      name,
+      refs,
+      done: ts.filter((t) => t.checked).length,
+      total: ts.length,
+      tasks: ts.map((t) => ({
+        line: t.line,
+        title: t.title,
+        checked: t.checked,
+        current: t.line === activeLine,
+        todo: t.todo,
+        signature: t.signature,
+        summary: summarizeConditions(t.conditions),
+        when: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({
+          text: describeCondition(c),
+          invalid: c.kind === "invalid",
+        })),
+      })),
+    };
+  });
+  return { done: tasks.filter((t) => t.checked).length, total: tasks.length, currentStep, steps };
 }
 
 /** Simboli esportati da un sorgente TypeScript o JavaScript, per il segnale `files`. */
