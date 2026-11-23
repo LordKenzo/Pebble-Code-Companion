@@ -1,0 +1,109 @@
+TAP version 13
+# Subtest: 20 kg: nessun disco
+ok 1 - 20 kg: nessun disco
+  ---
+  duration_ms: 0.452292
+  type: 'test'
+  ...
+# Subtest: 60 kg: un 20 per lato
+not ok 2 - 60 kg: un 20 per lato
+  ---
+  duration_ms: 0.415292
+  type: 'test'
+  location: '/progetto/test/plates.test.ts:4:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    +   15,
+    +   2.5,
+    +   1.25
+    -   20
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 20
+  actual:
+    0: 15
+    1: 2.5
+    2: 1.25
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///progetto/test/plates.test.ts:4:44)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1402:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+    Test.postRun (node:internal/test_runner/test:1542:19)
+    Test.run (node:internal/test_runner/test:1467:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: arrotondamento
+    # Subtest: 84,9 kg \# diventa 82,5
+    ok 1 - 84,9 kg \# diventa 82,5
+      ---
+      duration_ms: 0.052333
+      type: 'test'
+      ...
+    # Subtest: 85 kg resta 85
+    not ok 2 - 85 kg resta 85
+      ---
+      duration_ms: 0.078625
+      type: 'test'
+      location: '/progetto/test/plates.test.ts:7:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        84 !== 85
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 85
+      actual: 84
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (file:///progetto/test/plates.test.ts:7:39)
+        Test.runInAsyncScope (node:async_hooks:227:14)
+        Test.run (node:internal/test_runner/test:1402:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:974:18)
+        Test.postRun (node:internal/test_runner/test:1542:19)
+        Test.run (node:internal/test_runner/test:1467:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1905:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+      ...
+    1..2
+not ok 3 - arrotondamento
+  ---
+  duration_ms: 0.22275
+  type: 'suite'
+  location: '/progetto/test/plates.test.ts:5:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: saltato
+ok 4 - saltato # SKIP
+  ---
+  duration_ms: 0.033125
+  type: 'test'
+  ...
+# Subtest: da fare
+ok 5 - da fare # TODO
+  ---
+  duration_ms: 0.026125
+  type: 'test'
+  ...
+1..5
+# tests 6
+# suites 1
+# pass 2
+# fail 2
+# cancelled 0
+# skipped 1
+# todo 1
+# duration_ms 52.906125
