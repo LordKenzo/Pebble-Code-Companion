@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { estimateCost, formatUsd, type Price } from "../../core/cost";
-import { buildHelpMessage, historyLine, parseHelpAnswer, RUNG_NAMES, type HelpAsk, type HelpTask, type Rung } from "../../core/help";
+import { buildHelpMessage, historyLine, parseHelpAnswer, type HelpAsk, type HelpTask, type Rung } from "../../core/help";
+import { HELP_TEXT, type Lang } from "../../core/i18n";
 import type { ExperienceLevel, Usage } from "../../core/model";
 import { stripLongCode } from "../../core/policy";
 import type { MentorModel } from "../../core/ports";
@@ -16,6 +17,8 @@ export interface HelpDeps {
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   /** Compito attivo e ultimi risultati dei test, dal percorso. */
   helpContext(filePath: string): { task?: HelpTask; tests?: (TestResult & { detail?: string })[] };
+  /** Lingua del fumetto e delle risposte (ADR-012). */
+  lang(): Lang;
 }
 
 interface ThreadState {
@@ -54,7 +57,9 @@ export class HelpBalloon implements vscode.Disposable {
   private readonly byId = new Map<string, vscode.CommentThread>();
   private nextId = 1;
   private readonly pebble: vscode.CommentAuthorInformation;
-  private readonly you: vscode.CommentAuthorInformation = { name: "Tu" };
+  private get T() {
+    return HELP_TEXT[this.deps.lang()];
+  }
 
   constructor(
     extensionUri: vscode.Uri,
@@ -62,14 +67,14 @@ export class HelpBalloon implements vscode.Disposable {
     private readonly deps: HelpDeps,
   ) {
     this.pebble = { name: "Pebble", iconPath: vscode.Uri.joinPath(extensionUri, "media", "icon.png") };
-    this.controller.options = { prompt: "Rispondi a Pebble…", placeHolder: "Scrivi la tua risposta alla domanda, poi premi Rispondi" };
+    this.controller.options = { prompt: this.T.prompt, placeHolder: this.T.placeholder };
   }
 
   /** ⌥P: apre il fumetto sulla riga del cursore, o riapre quello che c'è già. */
   async helpHere(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.uri.scheme !== "file") {
-      void vscode.window.showInformationMessage("Pebble: metti il cursore su una riga del tuo codice, poi premi ⌥P.");
+      void vscode.window.showInformationMessage(this.T.noEditor);
       return;
     }
     const line = editor.selection.active.line;
@@ -94,7 +99,7 @@ export class HelpBalloon implements vscode.Disposable {
     const st = this.states.get(thread);
     if (!st || st.busy) return;
     if (st.rung === 4) {
-      void vscode.window.showInformationMessage("Pebble: sei già alla riga esatta. Se serve, chiedimi perché conta o un approfondimento.");
+      void vscode.window.showInformationMessage(this.T.atTop);
       return;
     }
     st.rung = (st.rung + 1) as Rung;
@@ -120,7 +125,7 @@ export class HelpBalloon implements vscode.Disposable {
     const st = this.states.get(arg.thread);
     const text = arg.text.trim();
     if (!st || st.busy || !text) return;
-    arg.thread.comments = [...arg.thread.comments, new Note(text, this.you)];
+    arg.thread.comments = [...arg.thread.comments, new Note(text, { name: this.T.you })];
     st.history.push(`Sviluppatore: ${text}`);
     await this.ask(arg.thread, { kind: "reply", rung: st.rung, text });
   }
@@ -146,12 +151,12 @@ export class HelpBalloon implements vscode.Disposable {
       const link = (cmd: string, icon: string, label: string) =>
         `[$(${icon}) ${label}](command:${cmd}?${encodeURIComponent(JSON.stringify([st.id]))} "${label}")`;
       const actions = [
-        st.rung < 4 ? link("pebble.help.up", "arrow-up", "Più concreto") : null,
-        link("pebble.help.why", "question", "Perché conta?"),
-        link("pebble.help.deep", "book", "Approfondisci"),
-        link("pebble.help.close", "check", "Ho capito"),
+        st.rung < 4 ? link("pebble.help.up", "arrow-up", this.T.more) : null,
+        link("pebble.help.why", "question", this.T.why),
+        link("pebble.help.deep", "book", this.T.deep),
+        link("pebble.help.close", "check", this.T.gotIt),
       ].filter(Boolean);
-      md.appendMarkdown(`\n\n${actions.join(" &nbsp;·&nbsp; ")}\n\n_Oppure rispondi alla domanda qui sotto._`);
+      md.appendMarkdown(`\n\n${actions.join(" &nbsp;·&nbsp; ")}\n\n${this.T.orReply}`);
       md.isTrusted = { enabledCommands: ACTIONS };
     }
     md.supportHtml = true;
@@ -162,9 +167,9 @@ export class HelpBalloon implements vscode.Disposable {
     const st = this.states.get(thread);
     if (!st || st.busy) return;
     st.busy = true;
-    const thinking = new Note(new vscode.MarkdownString("_Ci penso…_"), this.pebble);
+    const thinking = new Note(new vscode.MarkdownString(this.T.thinking), this.pebble);
     thread.comments = [...thread.comments, thinking];
-    thread.label = `Pebble · ${rungBar(st.rung)} · gradino ${st.rung} di 4 · ${RUNG_NAMES[st.rung]}`;
+    thread.label = this.T.label(rungBar(st.rung), st.rung, this.T.rungs[st.rung]);
     // Le risposte precedenti perdono i tasti: valgono solo sull'ultima.
     thread.comments = thread.comments.map((c) => {
       const base = c instanceof Note ? (c as Note).base : undefined; // Comment è già assegnabile a Note: serve il cast
@@ -185,6 +190,7 @@ export class HelpBalloon implements vscode.Disposable {
         ...(task && { task }),
         ...(tests && { tests }),
         problems: editorProblems(thread.uri),
+        lang: this.deps.lang(),
       });
       const mentor = await this.deps.mentor();
       const { text, usage } = await mentor.chat(await this.deps.systemPrompt(), message);
@@ -195,11 +201,11 @@ export class HelpBalloon implements vscode.Disposable {
       if (concept && !st.concepts.includes(concept)) st.concepts.push(concept);
       st.history.push(historyLine(body));
       const red = tests?.filter((t) => !t.ok).length ?? 0;
-      const context = [`riga ${(thread.range?.start.line ?? 0) + 1}`, task?.title, red ? `${red} test ross${red === 1 ? "o" : "i"}` : null].filter(Boolean).join(" · ");
+      const context = [this.T.line((thread.range?.start.line ?? 0) + 1), task?.title, red ? this.T.red(red) : null].filter(Boolean).join(" · ");
       const base = [
         `<span style="color:#e3b25c;">${rungBar(st.rung)}</span> &nbsp;<sub>${context}</sub>`,
         body,
-        concept ? `*Concetto:* ${concept}` : "",
+        concept ? `*${this.T.concept}:* ${concept}` : "",
         `<sub>${mentor.provider} · ${mentor.model} · ${formatUsd(costUsd)}</sub>`,
       ]
         .filter(Boolean)
@@ -207,7 +213,7 @@ export class HelpBalloon implements vscode.Disposable {
       thread.comments = thread.comments.map((c) => (c === thinking ? new Note(this.bubble(st, base, true), this.pebble, undefined, base) : c));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      const md = new vscode.MarkdownString(`Non sono riuscito a rispondere: ${msg}\n\nControlla provider e chiave in **Pebble: Impostazioni**, poi riprova.`);
+      const md = new vscode.MarkdownString(this.T.failed(msg));
       thread.comments = thread.comments.map((c) => (c === thinking ? new Note(md, this.pebble) : c));
     } finally {
       st.busy = false;

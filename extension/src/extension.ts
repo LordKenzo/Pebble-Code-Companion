@@ -11,6 +11,7 @@ import { SpendLedger } from "./adapters/vscode/spendLedger";
 import { SettingsPanel } from "./adapters/vscode/settingsPanel";
 import { formatUsd, resolvePrice, type Price } from "./core/cost";
 import { LEVELS, type ExperienceLevel } from "./core/model";
+import { resolveLang, type Lang } from "./core/i18n";
 
 const secretKey = (p: ProviderId) => `pebble.apiKey.${p}`;
 
@@ -20,6 +21,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const ledger = new SpendLedger(context.globalState);
 
   const config = () => vscode.workspace.getConfiguration("pebble");
+  /** Lingua di Pebble (ADR-012): "auto" segue la lingua di VS Code. */
+  const lang = (): Lang => resolveLang(config().get<string>("language", "auto"), vscode.env.language);
   const level = (): ExperienceLevel => {
     const v = config().get<string>("experienceLevel", "mid");
     return (LEVELS as readonly string[]).includes(v) ? (v as ExperienceLevel) : "mid";
@@ -120,7 +123,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   const loadSystemPrompt = async (): Promise<string> => {
-    const uri = vscode.Uri.joinPath(context.extensionUri, "media", "mentor.md");
+    const uri = vscode.Uri.joinPath(context.extensionUri, "media", lang() === "en" ? "mentor.en.md" : "mentor.md");
     return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
   };
 
@@ -167,6 +170,7 @@ export function activate(context: vscode.ExtensionContext): void {
     timeoutSeconds: config().get("path.testTimeoutSeconds", 60),
     verifyOnSave: config().get("path.verifyOnSave", true),
     requireRedFirst: config().get("path.requireRedFirst", false),
+    lang: lang(),
   }), {
     mentor: async () => {
       const s = settings();
@@ -198,6 +202,7 @@ export function activate(context: vscode.ExtensionContext): void {
       void settingsPanel.refresh();
     },
     helpContext: (path) => pathView.helpContext(path),
+    lang,
   });
 
   context.subscriptions.push(
@@ -283,6 +288,8 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!e.affectsConfiguration("pebble")) return;
       refreshStatus();
       void settingsPanel.refresh();
+      // Cambio di lingua: il pannello si ridisegna subito nella lingua nuova (ADR-012).
+      if (e.affectsConfiguration("pebble.language")) void pathView.refresh();
     }),
 
     context.secrets.onDidChange((e) => {

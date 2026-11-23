@@ -7,7 +7,8 @@ import type { MentorModel } from "../../core/ports";
 import { WorkspaceStore } from "../store/workspaceStore";
 import type { ProposalDocs } from "./proposals";
 import { buildScaffoldMessage, composeScaffold, Scaffold } from "../../core/scaffold";
-import { BOOTSTRAP_GUIDE, COMMON_UNKNOWNS, composeBootstrap, type BootstrapAnswers } from "../../core/bootstrap";
+import { bootstrapGuide, commonUnknowns, composeBootstrap, unknownStack, type BootstrapAnswers } from "../../core/bootstrap";
+import { EXAMPLE_PATH as EXAMPLES, NOTICE_TEXT, VIEW_TEXT, type Lang } from "../../core/i18n";
 import { LEVELS, type ExperienceLevel as Level } from "../../core/model";
 import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
 import type { ParsedTest } from "../../core/tap";
@@ -15,21 +16,6 @@ import { SignalCollector } from "../signals/collector";
 
 const PATH_FILE = [".pebble", "percorso.md"] as const;
 const SEEN_RED_KEY = "pebble.path.seenRed";
-
-/** Percorso di esempio, scritto quando il progetto non ne ha ancora uno. */
-export const EXAMPLE_PATH = `# Percorso
-
-Una sezione per passo della roadmap, un compito per riga (ADR-007).
-Sotto ogni compito: fare, firma, fatto quando. Le righe che Pebble non riconosce restano dove sono.
-
-## Passo 1 · Setup
-- [ ] Installa TypeScript e i tipi di Node
-  fare: \`npm install -D typescript @types/node\`
-  fatto quando: file package.json
-- [ ] Un primo test che passa
-  fare: un test banale che si chiama "il runner funziona", per verificare che il runner parta
-  fatto quando: test "il runner funziona"
-`;
 
 /** Quello che serve per preparare un passo con il modello (ADR-011). */
 export interface PlannerDeps {
@@ -46,6 +32,8 @@ export interface PathSettings {
   timeoutSeconds: number;
   verifyOnSave: boolean;
   requireRedFirst: boolean;
+  /** Lingua di interfaccia, testi generati e risposte del modello (ADR-012). */
+  lang: Lang;
 }
 
 /** Il sentiero d'avvio: bootstrap, piano in .pebble/, primo passo. */
@@ -76,7 +64,7 @@ type FromWebview =
   | { type: "settings" }
   | { type: "planNext" }
   | { type: "scaffold"; path: string; line: number }
-  | { type: "bootstrapWizard"; answers: BootstrapAnswers; level: string | null }
+  | { type: "bootstrapWizard"; answers: BootstrapAnswers; level: string | null; unknownStack?: boolean }
   | { type: "bootstrapTemplate" }
   | { type: "openBootstrap" }
   | { type: "init" };
@@ -91,7 +79,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly id = "pebble.path";
 
   private view: vscode.WebviewView | undefined;
-  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding }) | null = null;
+  private model: (PathViewModel & {
+    t: (typeof VIEW_TEXT)[Lang]; hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding }) | null = null;
   private hasBootstrap = false;
   private roadmap: string | null = null;
   private planning = false;
@@ -168,8 +157,11 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "settings") void vscode.commands.executeCommand("workbench.action.openSettings", "pebble.path");
       else if (m.type === "planNext") void this.planNext();
       else if (m.type === "scaffold") void this.scaffold(m.path, m.line);
-      else if (m.type === "bootstrapWizard") void this.writeBootstrap(composeBootstrap(m.answers), m.level);
-      else if (m.type === "bootstrapTemplate") void this.writeBootstrap(BOOTSTRAP_GUIDE, null, true);
+      else if (m.type === "bootstrapWizard") {
+        const lang = this.settings().lang;
+        const answers = m.unknownStack ? { ...m.answers, unknowns: [...m.answers.unknowns, unknownStack(lang)] } : m.answers;
+        void this.writeBootstrap(composeBootstrap(answers, lang), m.level);
+      } else if (m.type === "bootstrapTemplate") void this.writeBootstrap(bootstrapGuide(this.settings().lang), null, true);
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
     });
@@ -203,7 +195,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const states = tasks.map((t) => this.states.get(keyOf(t)) ?? ({ status: "unknown", reason: "" } as TaskState));
     const next = this.roadmap && this.planner ? nextStep(parseRoadmap(this.roadmap), text) : null;
     this.model = {
-      ...buildViewModel(tasks, states),
+      ...buildViewModel(tasks, states, this.settings().lang),
+      t: VIEW_TEXT[this.settings().lang],
       hasFile: text !== null,
       check: this.checkInfo(),
       next: next && { n: next.n, title: next.title },
@@ -212,7 +205,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       onboarding: {
         bootstrap: this.hasBootstrap,
         roadmap: !!this.roadmap?.trim(),
-        commonUnknowns: COMMON_UNKNOWNS,
+        commonUnknowns: commonUnknowns(this.settings().lang),
         level: vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
       },
     };
@@ -276,7 +269,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
         seenRed = updateSeenRed(seenRed, run.tests);
         await this.memento.update(SEEN_RED_KEY, seenRed);
       }
-      const states = evaluate(tasks, { ...signals, seenRed }, { requireRedFirst: this.settings().requireRedFirst });
+      const states = evaluate(tasks, { ...signals, seenRed }, { requireRedFirst: this.settings().requireRedFirst, lang: this.settings().lang });
       this.states = new Map(tasks.map((t, i) => [keyOf(t), states[i]!]));
       await this.applyCheckboxes();
     } finally {
@@ -340,54 +333,49 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const uri = this.uri;
     if (!this.root || !uri || !this.planner || this.planning) return;
     const planner = this.planner;
+    const lang = this.settings().lang;
+    const N = NOTICE_TEXT[lang];
     this.planning = true;
     this.load(this.text);
     try {
       const ctx = await new WorkspaceStore(this.root).load();
       const step = nextStep(parseRoadmap(ctx.roadmap ?? ""), this.text);
       if (!step) {
-        void vscode.window.showInformationMessage(
-          ctx.roadmap ? "Pebble: chiudi prima i compiti del passo corrente, poi preparo il prossimo." : "Pebble: manca .pebble/roadmap.md. Lancia «Pebble: Leggi il bootstrap e proponi il piano».",
-        );
+        void vscode.window.showInformationMessage(ctx.roadmap ? N.closeStepFirst : N.noRoadmap);
         return;
       }
       const files = await planFiles(this.root);
-      const message = buildPlanMessage(ctx, step, this.text, files, planner.level());
+      const message = buildPlanMessage(ctx, step, this.text, files, planner.level(), lang);
       const mentor = await planner.mentor();
       const { data, usage } = await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `Pebble prepara il passo ${step.n} · ${step.title}…` },
+        { location: vscode.ProgressLocation.Notification, title: N.preparingStep(step.n, step.title) },
         async () => mentor.generate(await planner.systemPrompt(), message, PlanStep, "plan_step"),
       );
       await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
 
-      const { markdown, dropped } = planToSection(data, step);
-      const proposed = insertStep(this.text, markdown, step.n);
+      const { markdown, dropped } = planToSection(data, step, lang);
+      const proposed = insertStep(this.text, markdown, step.n, lang);
       if (proposed === null) {
-        void vscode.window.showWarningMessage(`Pebble: il passo ${step.n} ha già compiti fatti, non lo riscrivo.`);
+        void vscode.window.showWarningMessage(N.stepHasDone(step.n));
         return;
       }
       const key = `percorso-${Date.now()}`;
       const left = this.text === null ? planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
       const right = planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
-      await vscode.commands.executeCommand("vscode.diff", left, right, `Percorso: attuale ↔ passo ${step.n} proposto da Pebble`);
-      const extra = [data.reading, data.question ? `Domanda: ${data.question}` : "", dropped.length ? `(${dropped.length} condizioni scartate perché scritte male)` : ""]
+      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffStepTitle(step.n));
+      const extra = [data.reading, data.question ? N.question(data.question) : "", dropped.length ? N.droppedConditions(dropped.length) : ""]
         .filter(Boolean)
         .join(" ");
-      const choice = await vscode.window.showInformationMessage(
-        `Pebble propone ${data.tasks.length} compiti per il passo ${step.n} · ${step.title}. ${extra}`,
-        "Accetta",
-        "Revisiona e modifica",
-        "Scarta",
-      );
-      if (choice === "Accetta") {
+      const choice = await vscode.window.showInformationMessage(N.stepProposal(data.tasks.length, step.n, step.title, extra), N.accept, N.reviewEdit, N.discard);
+      if (choice === N.accept) {
         await this.writePath(proposed);
-        void vscode.window.showInformationMessage(`Pebble: passo ${step.n} aggiunto al percorso.`);
+        void vscode.window.showInformationMessage(N.stepAdded(step.n));
         this.schedule(true, 300);
-      } else if (choice === "Revisiona e modifica") {
-        await reviewInEditor(uri, proposed, "Il nuovo passo è nel percorso");
+      } else if (choice === N.reviewEdit) {
+        await reviewInEditor(uri, proposed, N.reviewInEditor(N.stepInEditor));
       }
     } catch (err) {
-      void vscode.window.showErrorMessage(`Pebble non è riuscito a preparare il passo: ${err instanceof Error ? err.message : String(err)}`);
+      void vscode.window.showErrorMessage(N.stepFailed(err instanceof Error ? err.message : String(err)));
     } finally {
       this.planning = false;
       await this.refresh();
@@ -398,25 +386,24 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
 
   /** Scrive bootstrap.md (dalla procedura guidata o la traccia) e lo apre. Non sovrascrive senza chiedere. */
   private async writeBootstrap(content: string, level: string | null, guide = false): Promise<void> {
+    const N = NOTICE_TEXT[this.settings().lang];
     if (!this.root) {
-      void vscode.window.showWarningMessage("Pebble: apri prima la cartella di un progetto.");
+      void vscode.window.showWarningMessage(N.openFolderFirst);
       return;
     }
     const uri = vscode.Uri.joinPath(this.root, "bootstrap.md");
     const existing = await readText(uri);
     if (existing?.trim()) {
       if (guide) return void vscode.window.showTextDocument(uri);
-      const ok = await vscode.window.showWarningMessage("bootstrap.md esiste già. Lo sostituisco con le tue risposte?", { modal: true }, "Sostituisci");
-      if (ok !== "Sostituisci") return;
+      const ok = await vscode.window.showWarningMessage(N.bootstrapExists, { modal: true }, N.replace);
+      if (ok !== N.replace) return;
     }
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
     if (level && (LEVELS as readonly string[]).includes(level)) {
       await vscode.workspace.getConfiguration("pebble").update("experienceLevel", level as Level, vscode.ConfigurationTarget.Global);
     }
     await vscode.window.showTextDocument(uri, { preview: false });
-    void vscode.window.showInformationMessage(
-      guide ? "Pebble: scrivi il bootstrap con parole tue, poi premi «Proponi il piano»." : "Pebble: ecco il tuo bootstrap. Ritoccalo se vuoi, poi premi «Proponi il piano».",
-    );
+    void vscode.window.showInformationMessage(guide ? N.bootstrapGuideWritten : N.bootstrapWritten);
     await this.refresh();
   }
 
@@ -426,51 +413,48 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   async scaffold(path?: string, taskLine?: number): Promise<void> {
     if (!this.root || !this.planner) return;
     const planner = this.planner;
+    const lang = this.settings().lang;
+    const N = NOTICE_TEXT[lang];
     const step = this.model?.steps[this.model.currentStep];
     const fromTask = step?.tasks.find((t) => t.line === taskLine) ?? step?.tasks.find((t) => t.current);
-    const target = path ?? (await vscode.window.showInputBox({ prompt: "Quale file preparo?", value: fromTask?.files[0] ?? "src/" }));
+    const target = path ?? (await vscode.window.showInputBox({ prompt: N.whichFile, value: fromTask?.files[0] ?? "src/" }));
     if (!target?.trim()) return;
     const rel = target.trim().replace(/^\.?\//, "");
     const uri = vscode.Uri.joinPath(this.root, ...rel.split("/"));
     const existing = await readText(uri);
     if (existing?.trim()) {
-      void vscode.window.showInformationMessage(`Pebble: ${rel} contiene già codice e non lo sovrascrivo. Se sei bloccato, metti il cursore su una riga e premi ⌥P.`);
+      void vscode.window.showInformationMessage(N.fileHasCode(rel));
       return;
     }
     try {
       const ctx = await new WorkspaceStore(this.root).load();
       const task = fromTask && { title: fromTask.title, todo: fromTask.todo, signature: fromTask.signature, when: fromTask.when.map((w) => w.text) };
       const signatures = (step?.tasks ?? []).map((t) => t.signature).filter((x): x is string => !!x);
-      const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(), signatures);
+      const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(), signatures, lang);
       const mentor = await planner.mentor();
       const { data, usage } = await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `Pebble prepara ${rel}…` },
+        { location: vscode.ProgressLocation.Notification, title: N.preparingFile(rel) },
         async () => mentor.generate(await planner.systemPrompt(), message, Scaffold, "scaffold"),
       );
       await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
-      const { text, dropped } = composeScaffold(data, rel);
+      const { text, dropped } = composeScaffold(data, rel, lang);
       const key = `scheletro-${Date.now()}`;
       const left = planner.proposals.put(`${key}/vuoto`, existing ?? "");
       const right = planner.proposals.put(`${key}/${rel}`, text);
-      await vscode.commands.executeCommand("vscode.diff", left, right, `${rel}: scheletro proposto da Pebble`);
-      const note = dropped.length ? ` Ho scartato ${dropped.length} ${dropped.length === 1 ? "parte che conteneva" : "parti che contenevano"} logica.` : "";
-      const choice = await vscode.window.showInformationMessage(
-        `Pebble propone lo scheletro di ${rel}: firme e pseudocodice, il codice lo scrivi tu.${note}`,
-        "Crea il file",
-        "Revisiona e modifica",
-        "Scarta",
-      );
-      if (choice === "Revisiona e modifica") {
-        await reviewInEditor(uri, text, "Lo scheletro è nell'editor");
+      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffFileTitle(rel));
+      const note = dropped.length ? N.droppedParts(dropped.length) : "";
+      const choice = await vscode.window.showInformationMessage(N.fileProposal(rel, note), N.createFile, N.reviewEdit, N.discard);
+      if (choice === N.reviewEdit) {
+        await reviewInEditor(uri, text, N.reviewInEditor(N.skeletonInEditor));
         return;
       }
-      if (choice !== "Crea il file") return;
+      if (choice !== N.createFile) return;
       await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
       await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
       await vscode.window.showTextDocument(uri);
       this.schedule(true, 500);
     } catch (err) {
-      void vscode.window.showErrorMessage(`Pebble non è riuscito a preparare il file: ${err instanceof Error ? err.message : String(err)}`);
+      void vscode.window.showErrorMessage(N.fileFailed(err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -505,13 +489,13 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   async createExample(): Promise<void> {
     const uri = this.uri;
     if (!uri) {
-      void vscode.window.showWarningMessage("Pebble: apri prima la cartella di un progetto.");
+      void vscode.window.showWarningMessage(NOTICE_TEXT[this.settings().lang].openFolderFirst);
       return;
     }
     try {
       await vscode.workspace.fs.stat(uri);
     } catch {
-      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(EXAMPLE_PATH));
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(EXAMPLES[this.settings().lang]));
     }
     await vscode.window.showTextDocument(uri, { preview: true });
     await this.refresh();
@@ -525,7 +509,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const doc = await vscode.workspace.openTextDocument(uri);
     const updated = line < doc.lineCount ? withCheckbox(doc.lineAt(line).text, checked) : null;
     if (updated === null) {
-      void vscode.window.showWarningMessage("Pebble: il percorso è cambiato mentre lo spuntavi. Ho ricaricato la vista, riprova.");
+      void vscode.window.showWarningMessage(NOTICE_TEXT[this.settings().lang].pathChanged);
       return this.refresh();
     }
     const wasDirty = doc.isDirty;
@@ -560,9 +544,7 @@ async function reviewInEditor(uri: vscode.Uri, content: string, what: string): P
   edit.replace(target, new vscode.Range(0, 0, doc.lineCount, 0), content);
   await vscode.workspace.applyEdit(edit);
   await vscode.window.showTextDocument(doc, { preview: false });
-  void vscode.window.showInformationMessage(
-    `${what}, non ancora salvato. Modificalo come vuoi e salva (⌘S / Ctrl+S) per confermare; per scartarlo annulla (⌘Z) o chiudi senza salvare.`,
-  );
+  void vscode.window.showInformationMessage(what);
 }
 
 async function readText(uri: vscode.Uri): Promise<string | null> {

@@ -1,14 +1,18 @@
 // Vista Percorso: disegna il modello che arriva dall'estensione (core/path buildViewModel).
 // Vista "stupida": lo stato vero è .pebble/percorso.md, questa pagina manda solo intenzioni.
+// I testi arrivano con il modello (model.t, catalogo VIEW_TEXT in core/i18n.ts): qui nessuna frase fissa (ADR-012).
 (function () {
   const vscode = acquireVsCodeApi();
   const root = document.getElementById("root");
   let model = null;
+  let T = null;
   let shownStep = null; // passo scelto dall'utente; null = quello corrente
   let lastDone = new Set();
   let loaded = false;
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  /** "{n} di {total}" con i valori: i valori sono già escapati da chi chiama, se serve. */
+  const f = (s, vars = {}) => String(s).replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : `{${k}}`));
   /** `codice` → <code>, il resto escapato. */
   const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
   /** Nelle condizioni: percorsi di file e nomi tra virgolette in monospazio, come nel mockup. */
@@ -27,36 +31,36 @@
     const pct = step.total ? Math.round((step.done / step.total) * 100) : 0;
     const refs = step.refs.length ? ` · ${step.refs.join(", ")}` : "";
     // Il totale viene dalla roadmap: il percorso contiene solo i passi già preparati (ADR-011).
-    const num = Number((/passo\s+(\d+)/i.exec(step.name) || [])[1]) || idx + 1;
-    const position = model.roadmapSteps ? `passo ${num} di ${model.roadmapSteps}` : `passo ${num}`;
+    const num = Number((/(?:passo|step)\s+(\d+)/i.exec(step.name) || [])[1]) || idx + 1;
+    const position = model.roadmapSteps ? f(T.position, { num, total: model.roadmapSteps }) : f(T.positionShort, { num });
 
     const tasks = step.tasks.map((t) => {
       const cls = ["task", t.checked ? "done" : "", t.current ? "current" : "", flashLines.has(t.line) ? "flash" : ""].join(" ");
       const body = [
         t.todo ? `<p>${inline(t.todo)}</p>` : "",
         t.signature ? `<div class="sig">${esc(t.signature)}</div>` : "",
-        t.state && t.state.status === "open" && t.state.reason ? `<p class="reason">Ancora aperto: ${condition(t.state.reason)}</p>` : "",
+        t.state && t.state.status === "open" && t.state.reason ? `<p class="reason">${f(T.stillOpen, { reason: condition(t.state.reason) })}</p>` : "",
         missingHint(t),
         t.state && t.state.warning ? `<p class="warning">${condition(t.state.warning)}</p>` : "",
         expectBlock(t),
-        `<div class="actions">${scaffoldButton(t)}<button class="btn" type="button" data-reveal="${t.line}">Apri nel percorso</button></div>`,
+        `<div class="actions">${scaffoldButton(t)}<button class="btn" type="button" data-reveal="${t.line}">${esc(T.openInPath)}</button></div>`,
       ].join("");
       return `<li class="${cls}"><details${t.current ? " open" : ""}><summary>
-          <button class="box" type="button" role="checkbox" aria-checked="${t.checked}" aria-label="${t.checked ? "Segna da fare" : "Segna come fatto"}: ${esc(t.title)}" data-line="${t.line}"></button>
+          <button class="box" type="button" role="checkbox" aria-checked="${t.checked}" aria-label="${esc(t.checked ? T.markTodo : T.markDone)}: ${esc(t.title)}" data-line="${t.line}"></button>
           <span class="label">${esc(t.title)}</span>${meta(t)}
         </summary><div class="detail">${body}</div></details></li>`;
     }).join("");
 
     const others = model.steps.map((s, i) => i === idx ? "" :
-      `<li class="${s.done === s.total ? "full" : ""}"><button type="button" data-step="${i}" title="Mostra ${esc(s.name)}">
+      `<li class="${s.done === s.total ? "full" : ""}"><button type="button" data-step="${i}" title="${esc(f(T.showStep, { name: s.name }))}">
         <span class="dot"></span><span class="name">${esc(s.name)}</span><span class="count">${s.done}/${s.total}</span></button></li>`).join("");
 
     root.innerHTML = `
-      <div class="sec"><span>Pebble · percorso</span><b>${model.done} di ${model.total}</b></div>
-      <div class="step">${esc(step.name)}<small>roadmap › ${position}${esc(refs)}</small><div class="bar"><i data-pct="${pct}"></i></div></div>
+      <div class="sec"><span>${esc(T.header)}</span><b>${f(T.ofTotal, { done: model.done, total: model.total })}</b></div>
+      <div class="step">${esc(step.name)}<small>roadmap › ${esc(position)}${esc(refs)}</small><div class="bar"><i data-pct="${pct}"></i></div></div>
       <ul class="tasks">${tasks}</ul>
       ${step.done === step.total && idx === model.currentStep ? nextCard() : ""}
-      ${others ? `<div class="sec"><span>Altri passi</span></div><ul class="others">${others}</ul>` : ""}
+      ${others ? `<div class="sec"><span>${esc(T.otherSteps)}</span></div><ul class="others">${others}</ul>` : ""}
       ${foot()}`;
     // Il CSP vieta gli attributi style nell'HTML: la larghezza si imposta da script.
     for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
@@ -67,9 +71,9 @@
     const p = t.state && t.state.progress;
     if (p) {
       const cls = t.state.status === "done" ? (t.state.warning ? "warn" : "green") : "red";
-      return `<span class="meta ${cls}" title="${p.passed} test verdi su ${p.total}">${p.passed}/${p.total}${t.state.warning ? " !" : ""}</span>`;
+      return `<span class="meta ${cls}" title="${esc(f(T.testsGreenOf, { passed: p.passed, total: p.total }))}">${p.passed}/${p.total}${t.state.warning ? " !" : ""}</span>`;
     }
-    if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">da fare</span>`;
+    if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">${esc(T.toDo)}</span>`;
     return `<span class="meta">${esc(t.summary)}</span>`;
   }
 
@@ -77,26 +81,23 @@
   function expectBlock(t) {
     const items = t.expect.map((x) =>
       `<li class="${x.invalid ? "invalid" : ""}"><span>${condition(x.text)}</span>${x.example ? `<code class="ex">${esc(x.example)}</code>` : ""}</li>`).join("");
-    return `<div class="expect"><span class="label2">Cosa mi aspetto</span><ul>${items}</ul></div>`;
+    return `<div class="expect"><span class="label2">${esc(T.expectTitle)}</span><ul>${items}</ul></div>`;
   }
 
   /** Un test "non trovato" va spiegato: è il nome del test che conta, non quello che verifica. */
   function missingHint(t) {
-    const r = t.state && t.state.status === "open" ? t.state.reason || "" : "";
-    if (!r.startsWith("test non trovato")) return "";
+    if (!t.state || t.state.status !== "open" || t.state.code !== "testMissing") return "";
     const names = (model.check && model.check.names) || [];
-    const found = names.length
-      ? `Ora i tuoi test si chiamano: ${names.map((n) => `<code>“${esc(n)}”</code>`).join(", ")}.`
-      : "Non ho ancora trovato nessun test: controlla il comando in fondo al pannello.";
-    return `<p class="hint">Pebble cerca un test il cui <b>nome</b> contiene quelle parole: è il testo tra virgolette in <code>test('…', …)</code>. ${found} Rinomina il test e salva.</p>`;
+    const found = names.length ? f(T.missingFound, { names: names.map((n) => `<code>“${esc(n)}”</code>`).join(", ") }) : T.missingNone;
+    return `<p class="hint">${f(T.missingHint, { found })}</p>`;
   }
 
   /** "Prepara il file" (ADR-003): per i compiti da fare che citano un file che manca o non è ancora verificato. */
   function scaffoldButton(t) {
     if (t.checked || !t.files.length) return "";
-    const missing = t.files.find((f) => t.state && t.state.reason && t.state.reason.includes(`manca ${f}`)) || (!t.state ? t.files[0] : null);
+    const missing = t.state && t.state.code === "fileMissing" ? t.state.path : !t.state ? t.files[0] : null;
     if (!missing) return "";
-    return `<button class="btn primary" type="button" data-scaffold="${esc(missing)}" data-line="${t.line}" title="Firme e pseudocodice in ${esc(missing)}">Prepara il file</button>`;
+    return `<button class="btn primary" type="button" data-scaffold="${esc(missing)}" data-line="${t.line}" title="${esc(f(T.prepareFileTitle, { path: missing }))}">${esc(T.prepareFile)}</button>`;
   }
 
   /** Il passo è chiuso: Pebble offre di preparare il prossimo, partendo dal codice com'è adesso (ADR-011). */
@@ -104,41 +105,27 @@
     const n = model.next;
     if (!n) return "";
     const action = model.planning
-      ? `<span class="planning"><span class="spin"></span> Pebble sta preparando il passo ${n.n}…</span>`
-      : `<button class="btn primary" type="button" data-plan>Prepara il passo ${n.n}</button>`;
-    return `<div class="next"><span class="lvl">Passo fatto</span><p>Prossimo: <b>Passo ${n.n} · ${esc(n.title)}</b>. Pebble lo scompone in compiti partendo dal codice com'è adesso, e ti mostra la proposta prima di scriverla.</p>${action}</div>`;
+      ? `<span class="planning"><span class="spin"></span> ${esc(f(T.preparingStep, { n: n.n }))}</span>`
+      : `<button class="btn primary" type="button" data-plan>${esc(f(T.prepareStep, { n: n.n }))}</button>`;
+    return `<div class="next"><span class="lvl">${esc(T.stepDone)}</span><p>${f(T.nextStep, { n: n.n, title: esc(n.title) })}</p>${action}</div>`;
   }
 
   function foot() {
     const c = model.check;
-    const verify = `<button class="link" type="button" data-verify>Verifica ora</button>`;
-    if (c.running) return `<div class="foot"><span class="spin"></span> Sto lanciando i test e guardando il compilatore…</div>`;
+    const verify = `<button class="link" type="button" data-verify>${esc(T.checkNow)}</button>`;
+    if (c.running) return `<div class="foot"><span class="spin"></span> ${esc(T.running)}</div>`;
     if (c.error)
-      return `<div class="foot err">I test non sono partiti: ${esc(c.error)}.<br>Comando: <code>${esc(c.command)}</code> · <button class="link" type="button" data-settings>Cambia comando</button> · ${verify}</div>`;
+      return `<div class="foot err">${esc(f(T.testsFailed, { error: c.error }))}<br>${esc(T.command)} <code>${esc(c.command)}</code> · <button class="link" type="button" data-settings>${esc(T.changeCommand)}</button> · ${verify}</div>`;
     if (c.at) {
-      const red = c.failed ? `, <span class="r">${c.failed} ross${c.failed === 1 ? "o" : "i"}</span>` : ", tutti verdi";
-      return `<div class="foot">Verificato alle ${esc(c.at)} · ${c.tests} test${red}. Le caselle si spuntano quando test e compilatore lo confermano. ${verify}</div>`;
+      const red = c.failed ? (c.failed === 1 ? T.redOne : f(T.redMany, { n: c.failed })) : T.allGreen;
+      const count = c.tests === 1 ? T.testCount1 : f(T.testCountN, { n: c.tests });
+      return `<div class="foot">${f(T.checkedAt, { at: esc(c.at), count, red })} ${verify}</div>`;
     }
-    return `<div class="foot">Le caselle si spuntano quando test e compilatore lo confermano: salva un file o ${verify}. Puoi anche spuntarle tu.</div>`;
+    return `<div class="foot">${f(T.neverChecked, { verify })}</div>`;
   }
 
   // ---------- il sentiero d'avvio: bootstrap, piano, primo passo ----------
 
-  const QUESTIONS = [
-    { key: "name", kind: "line", title: "Come si chiama il progetto?", help: "Un nome di lavoro va benissimo, lo puoi cambiare quando vuoi.", example: "mini-calc" },
-    { key: "what", kind: "text", title: "Cosa vuoi costruire, e per chi?", help: "Poche righe, con parole tue. È la cosa più importante.", example: "Un programma da riga di comando che aiuta a caricare il bilanciere in palestra." },
-    { key: "example", kind: "text", optional: true, title: "Come lo useresti? Un esempio concreto", help: "Un comando, una schermata, un'azione. Una riga per esempio.", example: "mini-calc 1rm 100 5 → massimale stimato" },
-    { key: "stack", kind: "chips", title: "Con quale linguaggio, su quale piattaforma?", help: "Se non lo sai, va bene: diventa uno dei dubbi da chiarire.", options: ["TypeScript su Node", "Python", "Web app con React", "Swift per iOS", "Non lo so ancora"] },
-    { key: "rules", kind: "text", optional: true, title: "Ci sono regole che non si possono sbagliare?", help: "Le regole del dominio: è lì che un errore costa di più. Una per riga.", example: "Bilanciere da 20 kg; dischi da 25 a 1,25 kg, in coppia" },
-    { key: "unknowns", kind: "checks", title: "Cosa non sai ancora?", help: "I dubbi sono il punto di partenza: è proprio lì che Pebble ti aiuta di più." },
-    { key: "level", kind: "levels", title: "Quanta esperienza hai?", help: "Cambia come Pebble ti spiega le cose. Puoi modificarlo nelle impostazioni." },
-  ];
-  const LEVEL_OPTIONS = [
-    ["entry", "Sto imparando", "spiegazioni semplici, ogni termine spiegato"],
-    ["junior", "Ho scritto qualcosa", "il perché, con il nome dei principi"],
-    ["mid", "Sono autonomo", "il giusto, senza ripetere l'ovvio"],
-    ["senior", "Sono esperto", "asciutto: bug, decisioni, compromessi"],
-  ];
   const saved0 = vscode.getState() || {};
   let wizard = saved0.wizard || null; // { step, answers }
   const saveWizard = () => vscode.setState({ ...(vscode.getState() || {}), shownStep, wizard });
@@ -148,32 +135,29 @@
     const ob = model.onboarding;
     const stage = (n, done, active, title, text, actions) => `
       <div class="stage${done ? " done" : ""}${active ? " active" : ""}">
-        <div class="stage-head"><span class="stage-n">${done ? "" : n}</span><b>${title}</b></div>
+        <div class="stage-head"><span class="stage-n">${done ? "" : n}</span><b>${esc(title)}</b></div>
         <p>${text}</p>${active || done ? `<div class="actions">${actions}</div>` : ""}
       </div>`;
     const planBtn = model.next && ob.roadmap
-      ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${model.planning ? "Pebble sta preparando il passo…" : `Prepara il passo ${model.next.n}`}</button>`
+      ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${esc(model.planning ? T.preparingStepShort : f(T.prepareStep, { n: model.next.n }))}</button>`
       : "";
     root.innerHTML = `
-      <div class="sec"><span>Pebble · si parte</span></div>
-      <div class="intro">Tre sassolini per partire. Pebble ti guida e ti propone, il codice lo scrivi tu.</div>
+      <div class="sec"><span>${esc(T.startHeader)}</span></div>
+      <div class="intro">${esc(T.startIntro)}</div>
       <div class="stages">
-        ${stage(1, ob.bootstrap, !ob.bootstrap, "Racconta il progetto",
-          ob.bootstrap ? "Il tuo <code>bootstrap.md</code> c'è." : "Un <code>bootstrap.md</code>: cosa vuoi costruire, i vincoli, cosa non sai ancora.",
+        ${stage(1, ob.bootstrap, !ob.bootstrap, T.stage1Title, ob.bootstrap ? T.stage1Done : T.stage1Todo,
           ob.bootstrap
-            ? `<button class="link" type="button" data-open-bootstrap>Apri bootstrap.md</button>`
-            : `<button class="btn primary" type="button" data-wizard>Rispondi a qualche domanda</button><button class="btn" type="button" data-template>Lo scrivo io nel file</button>`)}
-        ${stage(2, ob.roadmap, ob.bootstrap && !ob.roadmap, "Pebble propone il piano",
-          "Decisioni, architettura e roadmap in <code>.pebble/</code>. Le leggi, le discuti e le salvi tu.",
-          ob.roadmap ? "" : `<button class="btn primary" type="button" data-init>Proponi il piano</button>`)}
-        ${stage(3, false, ob.roadmap, "Il primo passo",
-          "Pebble scompone il passo 1 della roadmap in compiti piccoli, ognuno con quello che si aspetta.",
-          planBtn)}
+            ? `<button class="link" type="button" data-open-bootstrap>${esc(T.openBootstrap)}</button>`
+            : `<button class="btn primary" type="button" data-wizard>${esc(T.answerQuestions)}</button><button class="btn" type="button" data-template>${esc(T.writeItMyself)}</button>`)}
+        ${stage(2, ob.roadmap, ob.bootstrap && !ob.roadmap, T.stage2Title, T.stage2Text,
+          ob.roadmap ? "" : `<button class="btn primary" type="button" data-init>${esc(T.proposePlan)}</button>`)}
+        ${stage(3, false, ob.roadmap, T.stage3Title, T.stage3Text, planBtn)}
       </div>
-      <div class="foot">Preferisci provare subito? <button class="link" type="button" data-create>Crea un percorso di esempio</button></div>`;
+      <div class="foot">${esc(T.tryNow)} <button class="link" type="button" data-create>${esc(T.createExample)}</button></div>`;
   }
 
   function renderWizard() {
+    const QUESTIONS = T.questions;
     const q = QUESTIONS[wizard.step];
     const a = wizard.answers;
     const pct = Math.round(((wizard.step + 1) / QUESTIONS.length) * 100);
@@ -181,55 +165,57 @@
     if (q.kind === "line") field = `<input id="f" type="text" value="${esc(a[q.key] || "")}" placeholder="${esc(q.example || "")}">`;
     if (q.kind === "text") field = `<textarea id="f" rows="4" placeholder="${esc(q.example || "")}">${esc(a[q.key] || "")}</textarea>`;
     if (q.kind === "chips")
-      field = `<div class="chips">${q.options.map((o) => `<button type="button" class="chip${a.stack === o ? " on" : ""}" data-chip="${esc(o)}">${esc(o)}</button>`).join("")}</div>
-        <input id="f" type="text" value="${esc(q.options.includes(a.stack) ? "" : a.stack || "")}" placeholder="Altro: scrivilo qui">`;
+      field = `<div class="chips">${q.options.map((o, i) => `<button type="button" class="chip${a.stack === o ? " on" : ""}" data-chip="${esc(o)}" data-chip-i="${i}">${esc(o)}</button>`).join("")}</div>
+        <input id="f" type="text" value="${esc(q.options.includes(a.stack) ? "" : a.stack || "")}" placeholder="${esc(T.otherPlaceholder)}">`;
     if (q.kind === "checks")
       field = `<div class="checks">${model.onboarding.commonUnknowns.map((u) => `<label><input type="checkbox" data-check="${esc(u)}" ${(a.unknowns || []).includes(u) ? "checked" : ""}> ${esc(u)}</label>`).join("")}</div>
-        <textarea id="f" rows="2" placeholder="Altri dubbi, uno per riga">${esc(a.otherUnknown || "")}</textarea>`;
+        <textarea id="f" rows="2" placeholder="${esc(T.otherDoubts)}">${esc(a.otherUnknown || "")}</textarea>`;
     if (q.kind === "levels")
-      field = `<div class="levels">${LEVEL_OPTIONS.map(([id, t, d]) => `<button type="button" class="level${(a.level || model.onboarding.level) === id ? " on" : ""}" data-level="${id}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>`;
+      field = `<div class="levels">${T.levels.map(([id, t, d]) => `<button type="button" class="level${(a.level || model.onboarding.level) === id ? " on" : ""}" data-level="${id}"><b>${esc(t)}</b><span>${esc(d)}</span></button>`).join("")}</div>`;
     const last = wizard.step === QUESTIONS.length - 1;
     root.innerHTML = `
-      <div class="sec"><span>Racconta il progetto</span><b>${wizard.step + 1} di ${QUESTIONS.length}</b></div>
+      <div class="sec"><span>${esc(T.wizardTitle)}</span><b>${esc(f(T.wizardCount, { i: wizard.step + 1, n: QUESTIONS.length }))}</b></div>
       <div class="step"><div class="bar"><i data-pct="${pct}"></i></div></div>
       <div class="wizard">
         <h2>${esc(q.title)}</h2>
         <p class="help">${esc(q.help)}</p>
         ${field}
-        ${q.example && q.kind !== "line" ? `<p class="example">Per esempio: ${esc(q.example)}</p>` : ""}
+        ${q.example && q.kind !== "line" ? `<p class="example">${esc(f(T.forExample, { x: q.example }))}</p>` : ""}
         <div class="actions">
-          ${wizard.step > 0 ? `<button class="btn" type="button" data-wiz="back">Indietro</button>` : `<button class="btn" type="button" data-wiz="cancel">Annulla</button>`}
-          <button class="btn primary" type="button" data-wiz="${last ? "finish" : "next"}">${last ? "Crea bootstrap.md" : q.optional ? "Avanti (o salta)" : "Avanti"}</button>
+          ${wizard.step > 0 ? `<button class="btn" type="button" data-wiz="back">${esc(T.back)}</button>` : `<button class="btn" type="button" data-wiz="cancel">${esc(T.cancel)}</button>`}
+          <button class="btn primary" type="button" data-wiz="${last ? "finish" : "next"}">${esc(last ? T.createBootstrap : q.optional ? T.nextOrSkip : T.next)}</button>
         </div>
       </div>`;
     for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
-    const f = document.getElementById("f");
-    if (f) f.focus();
+    const input = document.getElementById("f");
+    if (input) input.focus();
   }
 
   /** Legge il campo della domanda corrente nelle risposte. */
   function collect() {
-    const q = QUESTIONS[wizard.step];
-    const f = document.getElementById("f");
+    const q = T.questions[wizard.step];
+    const input = document.getElementById("f");
     const a = wizard.answers;
-    if (q.kind === "line" || q.kind === "text") a[q.key] = f ? f.value : "";
-    if (q.kind === "chips" && f && f.value.trim()) a.stack = f.value.trim();
+    if (q.kind === "line" || q.kind === "text") a[q.key] = input ? input.value : "";
+    if (q.kind === "chips" && input && input.value.trim()) a.stack = input.value.trim();
     if (q.kind === "checks") {
       a.unknowns = [...root.querySelectorAll("[data-check]")].filter((c) => c.checked).map((c) => c.dataset.check);
-      a.otherUnknown = f ? f.value : "";
+      a.otherUnknown = input ? input.value : "";
     }
   }
 
   function finishWizard() {
     const a = wizard.answers;
-    const unknownStack = a.stack === "Non lo so ancora";
+    // L'ultima scelta del linguaggio è sempre "Non lo so ancora": diventa un dubbio, non un vincolo.
+    const stackOptions = T.questions.find((q) => q.kind === "chips").options;
+    const unknownStack = a.stack === stackOptions[stackOptions.length - 1];
     const answers = {
       name: a.name || "", what: a.what || "", example: a.example || "",
       stack: unknownStack ? "" : a.stack || "", rules: a.rules || "",
-      unknowns: [...(a.unknowns || []), ...(unknownStack ? ["Quale linguaggio e piattaforma usare"] : [])],
+      unknowns: a.unknowns || [],
       otherUnknown: a.otherUnknown || "",
     };
-    vscode.postMessage({ type: "bootstrapWizard", answers, level: a.level || null });
+    vscode.postMessage({ type: "bootstrapWizard", answers, level: a.level || null, unknownStack });
     wizard = null;
     saveWizard();
     render(new Set());
@@ -237,11 +223,11 @@
 
   function renderNoTasks() {
     root.innerHTML = `
-      <div class="sec"><span>Pebble · percorso</span></div>
+      <div class="sec"><span>${esc(T.header)}</span></div>
       <div class="empty">
-        <h2>Il percorso non ha ancora compiti</h2>
-        <p>Aggiungi una riga <code>- [ ] titolo</code> sotto un passo <code>## …</code> in <code>.pebble/percorso.md</code>.</p>
-        <button class="btn" type="button" data-reveal="0">Apri percorso.md</button>
+        <h2>${esc(T.noTasksTitle)}</h2>
+        <p>${T.noTasksText}</p>
+        <button class="btn" type="button" data-reveal="0">${esc(T.openPathFile)}</button>
       </div>`;
   }
 
@@ -292,7 +278,7 @@
       else {
         collect();
         if (act === "back") wizard.step = Math.max(0, wizard.step - 1);
-        if (act === "next") wizard.step = Math.min(QUESTIONS.length - 1, wizard.step + 1);
+        if (act === "next") wizard.step = Math.min(T.questions.length - 1, wizard.step + 1);
         if (act === "finish") return finishWizard();
       }
       saveWizard();
@@ -317,6 +303,7 @@
     if (e.data.type !== "model") return;
     const prev = lastDone;
     model = e.data.model;
+    T = model.t;
     const nowDone = new Set(model.steps.flatMap((s) => s.tasks.filter((t) => t.checked).map((t) => t.line)));
     const flash = new Set([...nowDone].filter((l) => !prev.has(l)));
     lastDone = nowDone;

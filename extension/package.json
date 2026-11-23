@@ -279,6 +279,21 @@
     "configuration": {
       "title": "Pebble",
       "properties": {
+        "pebble.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "it",
+            "en"
+          ],
+          "default": "auto",
+          "enumDescriptions": [
+            "Segue la lingua di VS Code (italiano se VS Code è in italiano, altrimenti inglese) · Follows VS Code's language",
+            "Italiano",
+            "English"
+          ],
+          "markdownDescription": "Lingua di Pebble: interfaccia, testi che scrive (percorso, scheletri, bootstrap) e risposte del modello. · Pebble's language: interface, the texts it writes and the model's answers."
+        },
         "pebble.experienceLevel": {
           "type": "string",
           "enum": [

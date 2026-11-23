@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import * as vscode from "vscode";
 import { findExports, type Signals, type Task } from "../../core/path";
+import { NOTICE_TEXT, type Lang } from "../../core/i18n";
 import { DEFAULT_TEST_COMMAND, detectTestCommand, packageDependencies } from "../../core/runner";
 import { parseTap, type ParsedTest } from "../../core/tap";
 
@@ -15,6 +16,7 @@ export interface TestRun {
 export interface CollectorSettings {
   testCommand: string;
   timeoutSeconds: number;
+  lang: Lang;
 }
 
 const MAX_OUTPUT = 4 * 1024 * 1024;
@@ -90,14 +92,15 @@ export class SignalCollector {
         at: new Date(),
         durationMs: 0,
         tests: [],
-        error: "la cartella è in modalità con restrizioni, quindi non lancio i test. Considerala attendibile (Gestisci attendibilità dell'area di lavoro) e riprova",
+        error: NOTICE_TEXT[this.settings().lang].restricted,
       });
     }
-    const { timeoutSeconds } = this.settings();
+    const { timeoutSeconds, lang } = this.settings();
+    const N = NOTICE_TEXT[lang];
     // Se lo sviluppatore non ha scelto un comando, Pebble lo ricava dal package.json (Vitest, node:test…).
     let testCommand = this.settings().testCommand;
     if (testCommand === DEFAULT_TEST_COMMAND) {
-      const choice = detectTestCommand(manifest);
+      const choice = detectTestCommand(manifest, lang);
       if (choice.kind === "missing") return Promise.resolve({ at: new Date(), durationMs: 0, tests: [], error: choice.hint });
       testCommand = choice.command;
     }
@@ -120,7 +123,7 @@ export class SignalCollector {
       });
       const timer = setTimeout(() => {
         child.kill();
-        done({ tests: parseTap(out), error: `i test non sono finiti entro ${timeoutSeconds} secondi` });
+        done({ tests: parseTap(out), error: N.timeout(timeoutSeconds) });
       }, timeoutSeconds * 1000);
       child.stdout.on("data", (b: Buffer) => {
         if (out.length < MAX_OUTPUT) out += b.toString("utf8");
@@ -128,14 +131,14 @@ export class SignalCollector {
       child.stderr.on("data", (b: Buffer) => {
         if (err.length < 16_384) err += b.toString("utf8");
       });
-      child.on("error", (e) => done({ tests: [], error: `non riesco a lanciare "${testCommand}": ${e.message}` }));
+      child.on("error", (e) => done({ tests: [], error: N.cannotRun(testCommand, e.message) }));
       child.on("close", (code) => {
         const tests = parseTap(out);
         if (tests.length === 0 && code !== 0) {
-          const first = (err || out).split(/\r?\n/).find((l) => l.trim()) ?? `uscito con codice ${code}`;
+          const first = (err || out).split(/\r?\n/).find((l) => l.trim()) ?? N.exitCode(code);
           done({ tests, error: first.trim().slice(0, 240) });
         } else if (tests.length === 0) {
-          done({ tests, error: `"${testCommand}" non ha prodotto risultati in formato TAP` });
+          done({ tests, error: N.noTap(testCommand) });
         } else {
           done({ tests });
         }
