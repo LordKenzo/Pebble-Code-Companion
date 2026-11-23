@@ -2,6 +2,16 @@
   <img src="assets/banner.jpg" alt="Pebble, the Code Path Companion: a trail of glowing pebbles through a dark forest at night">
 </p>
 
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7fb4e6" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/status-early%20prototype-e3b25c" alt="Status: early prototype">
+  <img src="https://img.shields.io/badge/VS%20Code-%E2%89%A51.100-2f80c4" alt="VS Code 1.100 or newer">
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.18-5fa04e?logo=nodedotjs&logoColor=white" alt="Node.js 22.18 or newer">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" alt="TypeScript, strict mode">
+  <img src="https://img.shields.io/badge/logic-written%20by%20you-8fd19e" alt="Logic: written by you">
+  <a href="https://github.com/LordKenzo/pebble-code-companion/commits/main"><img src="https://img.shields.io/github/last-commit/LordKenzo/pebble-code-companion" alt="Last commit"></a>
+</p>
+
 # <img src="assets/logo.png" alt="" width="40" align="top"> Pebble :: The Code Path Companion
 
 **Walk the path. You write the code.**
