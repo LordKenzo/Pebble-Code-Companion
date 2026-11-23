@@ -3,4 +3,5 @@ dist/
 out/
 out-test/
 media/mentor.md
+media/mentor.en.md
 *.vsix
