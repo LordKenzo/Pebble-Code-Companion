@@ -52,6 +52,9 @@ button { font: inherit; color: inherit; }
 .task.flash { animation: flash 1.2s ease; }
 @keyframes flash { 0% { background: color-mix(in srgb, var(--ok) 25%, transparent); } 100% { background: transparent; } }
 .meta { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; padding-left: 6px; }
+.meta.red { color: var(--err); }
+.meta.green { color: var(--ok); }
+.meta.warn { color: var(--mentor); }
 
 .detail { padding: 0 10px 10px 33px; font-size: 12.5px; color: var(--muted); line-height: 1.5; display: flex; flex-direction: column; gap: 7px; }
 .detail p { margin: 0; }
@@ -61,6 +64,9 @@ button { font: inherit; color: inherit; }
 .when.invalid { color: var(--err); }
 .when.invalid::before { background: var(--err); }
 .when code { font-family: var(--mono); font-size: 11.5px; color: var(--fg); }
+.reason { color: var(--err); font-size: 12px; }
+.warning { color: var(--mentor); font-size: 12px; border-left: 2px solid var(--mentor-line); padding-left: 8px; }
+.reason code, .warning code { font-family: var(--mono); font-size: 11.5px; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .btn { font-size: 12px; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
 .btn:hover { border-color: var(--faint); }
@@ -75,7 +81,12 @@ button { font: inherit; color: inherit; }
 .others .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--faint); }
 
 .foot { border-top: 1px solid var(--line); margin-top: 4px; padding: 10px 14px 0; font-size: 12px; color: var(--faint); line-height: 1.5; }
-.foot code { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.foot code { font-family: var(--mono); font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.foot.err { color: var(--err); }
+.foot .r { color: var(--err); }
+.link { background: none; border: 0; padding: 0; color: var(--mentor); cursor: pointer; font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+.spin { display: inline-block; width: 10px; height: 10px; border: 1.5px solid var(--faint); border-top-color: var(--mentor); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .empty { padding: 18px 14px; display: flex; flex-direction: column; gap: 10px; line-height: 1.55; color: var(--muted); }
 .empty h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--fg); }

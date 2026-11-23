@@ -33,12 +33,14 @@
       const body = [
         t.todo ? `<p>${inline(t.todo)}</p>` : "",
         t.signature ? `<div class="sig">${esc(t.signature)}</div>` : "",
+        t.state && t.state.status === "open" && t.state.reason ? `<p class="reason">Ancora aperto: ${condition(t.state.reason)}</p>` : "",
+        t.state && t.state.warning ? `<p class="warning">${condition(t.state.warning)}</p>` : "",
         ...t.when.map((w) => `<span class="when${w.invalid ? " invalid" : ""}"><span>${w.invalid ? `Da correggere: ${condition(w.text)}` : w.text === "a mano" ? "La spunti tu, quando ti sembra fatto" : `Si spunta quando ${condition(w.text)}`}</span></span>`),
         `<div class="actions"><button class="btn" type="button" data-reveal="${t.line}">Apri nel percorso</button></div>`,
       ].join("");
       return `<li class="${cls}"><details${t.current ? " open" : ""}><summary>
           <button class="box" type="button" role="checkbox" aria-checked="${t.checked}" aria-label="${t.checked ? "Segna da fare" : "Segna come fatto"}: ${esc(t.title)}" data-line="${t.line}"></button>
-          <span class="label">${esc(t.title)}</span><span class="meta">${esc(t.summary)}</span>
+          <span class="label">${esc(t.title)}</span>${meta(t)}
         </summary><div class="detail">${body}</div></details></li>`;
     }).join("");
 
@@ -51,9 +53,33 @@
       <div class="step">${esc(step.name)}<small>roadmap › ${position}${esc(refs)}</small><div class="bar"><i data-pct="${pct}"></i></div></div>
       <ul class="tasks">${tasks}</ul>
       ${others ? `<div class="sec"><span>Altri passi</span></div><ul class="others">${others}</ul>` : ""}
-      <div class="foot">Per ora le caselle le spunti tu, e <code>.pebble/percorso.md</code> si aggiorna. Presto lo faranno i tuoi test e il compilatore.</div>`;
+      ${foot()}`;
     // Il CSP vieta gli attributi style nell'HTML: la larghezza si imposta da script.
     for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
+  }
+
+  /** Accanto al titolo: "1/4" rosso o verde quando ci sono i test, altrimenti il riassunto delle condizioni. */
+  function meta(t) {
+    const p = t.state && t.state.progress;
+    if (p) {
+      const cls = t.state.status === "done" ? (t.state.warning ? "warn" : "green") : "red";
+      return `<span class="meta ${cls}" title="${p.passed} test verdi su ${p.total}">${p.passed}/${p.total}${t.state.warning ? " !" : ""}</span>`;
+    }
+    if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">da fare</span>`;
+    return `<span class="meta">${esc(t.summary)}</span>`;
+  }
+
+  function foot() {
+    const c = model.check;
+    const verify = `<button class="link" type="button" data-verify>Verifica ora</button>`;
+    if (c.running) return `<div class="foot"><span class="spin"></span> Sto lanciando i test e guardando il compilatore…</div>`;
+    if (c.error)
+      return `<div class="foot err">I test non sono partiti: ${esc(c.error)}.<br>Comando: <code>${esc(c.command)}</code> · <button class="link" type="button" data-settings>Cambia comando</button> · ${verify}</div>`;
+    if (c.at) {
+      const red = c.failed ? `, <span class="r">${c.failed} ross${c.failed === 1 ? "o" : "i"}</span>` : ", tutti verdi";
+      return `<div class="foot">Verificato alle ${esc(c.at)} · ${c.tests} test${red}. Le caselle si spuntano quando test e compilatore lo confermano. ${verify}</div>`;
+    }
+    return `<div class="foot">Le caselle si spuntano quando test e compilatore lo confermano: salva un file o ${verify}. Puoi anche spuntarle tu.</div>`;
   }
 
   function renderEmpty() {
@@ -99,7 +125,9 @@
       vscode.setState({ shownStep });
       return render(new Set());
     }
-    if (e.target.closest("[data-create]")) vscode.postMessage({ type: "createExample" });
+    if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });
+    if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
+    if (e.target.closest("[data-settings]")) return vscode.postMessage({ type: "settings" });
   });
 
   window.addEventListener("message", (e) => {
