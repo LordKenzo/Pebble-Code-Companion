@@ -141,6 +141,11 @@
         "command": "pebble.help.close",
         "title": "Ho capito",
         "icon": "$(check)"
+      },
+      {
+        "command": "pebble.path.planNext",
+        "title": "Prepara il prossimo passo del percorso",
+        "category": "Pebble"
       }
     ],
     "menus": {

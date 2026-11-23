@@ -26,7 +26,9 @@
     const step = model.steps[idx];
     const pct = step.total ? Math.round((step.done / step.total) * 100) : 0;
     const refs = step.refs.length ? ` · ${step.refs.join(", ")}` : "";
-    const position = `passo ${idx + 1} di ${model.steps.length}`;
+    // Il totale viene dalla roadmap: il percorso contiene solo i passi già preparati (ADR-011).
+    const num = Number((/passo\s+(\d+)/i.exec(step.name) || [])[1]) || idx + 1;
+    const position = model.roadmapSteps ? `passo ${num} di ${model.roadmapSteps}` : `passo ${num}`;
 
     const tasks = step.tasks.map((t) => {
       const cls = ["task", t.checked ? "done" : "", t.current ? "current" : "", flashLines.has(t.line) ? "flash" : ""].join(" ");
@@ -52,6 +54,7 @@
       <div class="sec"><span>Pebble · percorso</span><b>${model.done} di ${model.total}</b></div>
       <div class="step">${esc(step.name)}<small>roadmap › ${position}${esc(refs)}</small><div class="bar"><i data-pct="${pct}"></i></div></div>
       <ul class="tasks">${tasks}</ul>
+      ${step.done === step.total && idx === model.currentStep ? nextCard() : ""}
       ${others ? `<div class="sec"><span>Altri passi</span></div><ul class="others">${others}</ul>` : ""}
       ${foot()}`;
     // Il CSP vieta gli attributi style nell'HTML: la larghezza si imposta da script.
@@ -67,6 +70,16 @@
     }
     if (t.state && t.state.status === "open") return `<span class="meta red" title="${esc(t.state.reason || "")}">da fare</span>`;
     return `<span class="meta">${esc(t.summary)}</span>`;
+  }
+
+  /** Il passo è chiuso: Pebble offre di preparare il prossimo, partendo dal codice com'è adesso (ADR-011). */
+  function nextCard() {
+    const n = model.next;
+    if (!n) return "";
+    const action = model.planning
+      ? `<span class="planning"><span class="spin"></span> Pebble sta preparando il passo ${n.n}…</span>`
+      : `<button class="btn primary" type="button" data-plan>Prepara il passo ${n.n}</button>`;
+    return `<div class="next"><span class="lvl">Passo fatto</span><p>Prossimo: <b>Passo ${n.n} · ${esc(n.title)}</b>. Pebble lo scompone in compiti partendo dal codice com'è adesso, e ti mostra la proposta prima di scriverla.</p>${action}</div>`;
   }
 
   function foot() {
@@ -92,7 +105,8 @@
 - [ ] Implementa platesFor
   firma: platesFor(total: Grams)
   fatto quando: test "60 kg"</pre>
-        <button class="btn primary" type="button" data-create>Crea un percorso di esempio</button>
+        ${model.next ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${model.planning ? "Pebble sta preparando il passo…" : `Prepara il passo ${model.next.n} · ${esc(model.next.title)}`}</button>` : ""}
+        <button class="btn${model.next ? "" : " primary"}" type="button" data-create>Crea un percorso di esempio</button>
       </div>`;
   }
 
@@ -127,6 +141,7 @@
     }
     if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
+    if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
     if (e.target.closest("[data-settings]")) return vscode.postMessage({ type: "settings" });
   });
 

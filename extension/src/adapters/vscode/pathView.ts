@@ -1,5 +1,11 @@
 import * as vscode from "vscode";
+import { estimateCost, type Price } from "../../core/cost";
 import type { HelpTask } from "../../core/help";
+import type { ExperienceLevel, Usage } from "../../core/model";
+import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, PlanStep, type PlanFile } from "../../core/plan";
+import type { MentorModel } from "../../core/ports";
+import { WorkspaceStore } from "../store/workspaceStore";
+import type { ProposalDocs } from "./proposals";
 import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
 import type { ParsedTest } from "../../core/tap";
 import { SignalCollector } from "../signals/collector";
@@ -21,6 +27,16 @@ Sotto ogni compito: fare, firma, fatto quando. Le righe che Pebble non riconosce
   fare: un test banale in test/, per verificare che il runner parta
   fatto quando: test "il runner funziona"
 `;
+
+/** Quello che serve per preparare un passo con il modello (ADR-011). */
+export interface PlannerDeps {
+  mentor(): Promise<MentorModel>;
+  systemPrompt(): Promise<string>;
+  level(): ExperienceLevel;
+  priceFor(mentor: MentorModel): Price | undefined;
+  record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
+  proposals: ProposalDocs;
+}
 
 export interface PathSettings {
   testCommand: string;
@@ -44,7 +60,8 @@ type FromWebview =
   | { type: "reveal"; line: number }
   | { type: "createExample" }
   | { type: "verify" }
-  | { type: "settings" };
+  | { type: "settings" }
+  | { type: "planNext" };
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -56,7 +73,9 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly id = "pebble.path";
 
   private view: vscode.WebviewView | undefined;
-  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo }) | null = null;
+  private model: (PathViewModel & { hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null }) | null = null;
+  private roadmap: string | null = null;
+  private planning = false;
   private text: string | null = null;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly collector: SignalCollector | undefined;
@@ -71,6 +90,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     private readonly root: vscode.Uri | undefined,
     private readonly memento: vscode.Memento,
     private readonly settings: () => PathSettings,
+    private readonly planner?: PlannerDeps,
   ) {
     if (root) {
       this.collector = new SignalCollector(root, () => this.settings());
@@ -120,6 +140,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "createExample") void this.createExample();
       else if (m.type === "verify") void this.verify(true);
       else if (m.type === "settings") void vscode.commands.executeCommand("workbench.action.openSettings", "pebble.path");
+      else if (m.type === "planNext") void this.planNext();
     });
     view.onDidChangeVisibility(() => {
       if (view.visible) this.post();
@@ -131,6 +152,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   async refresh(): Promise<void> {
     const uri = this.uri;
     if (!uri) return this.load(null);
+    this.roadmap = this.root ? await readText(vscode.Uri.joinPath(this.root, ".pebble", "roadmap.md")) : null;
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (open) return this.load(open.getText());
     try {
@@ -144,7 +166,15 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     this.text = text;
     const tasks = text === null ? [] : parsePath(text).tasks;
     const states = tasks.map((t) => this.states.get(keyOf(t)) ?? ({ status: "unknown", reason: "" } as TaskState));
-    this.model = { ...buildViewModel(tasks, states), hasFile: text !== null, check: this.checkInfo() };
+    const next = this.roadmap && this.planner ? nextStep(parseRoadmap(this.roadmap), text) : null;
+    this.model = {
+      ...buildViewModel(tasks, states),
+      hasFile: text !== null,
+      check: this.checkInfo(),
+      next: next && { n: next.n, title: next.title },
+      planning: this.planning,
+      roadmapSteps: this.roadmap ? parseRoadmap(this.roadmap).length || null : null,
+    };
     void vscode.commands.executeCommand("setContext", "pebble.hasPath", text !== null);
     this.decorate();
     this.post();
@@ -261,6 +291,79 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     return { ...(task && { task }), ...(tests && { tests }) };
   }
 
+  // ---------- il prossimo passo (ADR-011) ----------
+
+  /** Scompone il prossimo passo della roadmap dal codice com'è adesso e lo propone come diff. */
+  async planNext(): Promise<void> {
+    const uri = this.uri;
+    if (!this.root || !uri || !this.planner || this.planning) return;
+    const planner = this.planner;
+    this.planning = true;
+    this.load(this.text);
+    try {
+      const ctx = await new WorkspaceStore(this.root).load();
+      const step = nextStep(parseRoadmap(ctx.roadmap ?? ""), this.text);
+      if (!step) {
+        void vscode.window.showInformationMessage(
+          ctx.roadmap ? "Pebble: chiudi prima i compiti del passo corrente, poi preparo il prossimo." : "Pebble: manca .pebble/roadmap.md. Lancia «Pebble: Leggi il bootstrap e proponi il piano».",
+        );
+        return;
+      }
+      const files = await planFiles(this.root);
+      const message = buildPlanMessage(ctx, step, this.text, files, planner.level());
+      const mentor = await planner.mentor();
+      const { data, usage } = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `Pebble prepara il passo ${step.n} · ${step.title}…` },
+        async () => mentor.generate(await planner.systemPrompt(), message, PlanStep, "plan_step"),
+      );
+      await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
+
+      const { markdown, dropped } = planToSection(data, step);
+      const proposed = insertStep(this.text, markdown, step.n);
+      if (proposed === null) {
+        void vscode.window.showWarningMessage(`Pebble: il passo ${step.n} ha già compiti fatti, non lo riscrivo.`);
+        return;
+      }
+      const key = `percorso-${Date.now()}`;
+      const left = this.text === null ? planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
+      const right = planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
+      await vscode.commands.executeCommand("vscode.diff", left, right, `Percorso: attuale ↔ passo ${step.n} proposto da Pebble`);
+      const extra = [data.reading, data.question ? `Domanda: ${data.question}` : "", dropped.length ? `(${dropped.length} condizioni scartate perché scritte male)` : ""]
+        .filter(Boolean)
+        .join(" ");
+      const choice = await vscode.window.showInformationMessage(
+        `Pebble propone ${data.tasks.length} compiti per il passo ${step.n} · ${step.title}. ${extra}`,
+        "Accetta",
+        "Scarta",
+      );
+      if (choice === "Accetta") {
+        await this.writePath(proposed);
+        void vscode.window.showInformationMessage(`Pebble: passo ${step.n} aggiunto al percorso.`);
+        this.schedule(true, 300);
+      }
+    } catch (err) {
+      void vscode.window.showErrorMessage(`Pebble non è riuscito a preparare il passo: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      this.planning = false;
+      await this.refresh();
+    }
+  }
+
+  /** Riscrive percorso.md intero (solo dopo che lo sviluppatore ha accettato la proposta). */
+  private async writePath(content: string): Promise<void> {
+    const uri = this.uri;
+    if (!uri) return;
+    const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+    if (open) {
+      const edit = new vscode.WorkspaceEdit();
+      edit.replace(uri, new vscode.Range(0, 0, open.lineCount, 0), content);
+      await vscode.workspace.applyEdit(edit);
+      await open.save();
+    } else {
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
+    }
+  }
+
   // ---------- azioni ----------
 
   /** Apre percorso.md sulla riga del compito. */
@@ -312,6 +415,41 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     clearTimeout(this.timer);
     for (const d of this.disposables) d.dispose();
   }
+}
+
+async function readText(uri: vscode.Uri): Promise<string | null> {
+  const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+  if (open) return open.getText();
+  try {
+    return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
+  } catch {
+    return null;
+  }
+}
+
+const PLAN_EXCLUDE = "{**/node_modules/**,**/.git/**,**/out/**,**/dist/**,**/build/**,**/.pebble/**,**/coverage/**,**/*.vsix,**/package-lock.json,**/yarn.lock,**/pnpm-lock.yaml}";
+const MAX_FILE = 8_000;
+const MAX_TOTAL = 40_000;
+
+/** Elenco dei file del progetto, con il contenuto di quelli piccoli e rilevanti (manifest, sorgenti, test). */
+async function planFiles(root: vscode.Uri): Promise<PlanFile[]> {
+  const uris = await vscode.workspace.findFiles(new vscode.RelativePattern(root, "**/*"), PLAN_EXCLUDE, 300);
+  const rel = uris.map((u) => ({ uri: u, path: vscode.workspace.asRelativePath(u, false) })).sort((a, b) => a.path.localeCompare(b.path));
+  const relevant = (p: string) => /^(package\.json|tsconfig[\w.]*\.json|pyproject\.toml)$/.test(p) || /^(src|test|tests|lib|app)\/.+\.(ts|tsx|js|mjs|py|go|rs|java|kt|swift)$/.test(p);
+  let total = 0;
+  const out: PlanFile[] = [];
+  for (const f of rel) {
+    if (relevant(f.path) && total < MAX_TOTAL) {
+      const text = await readText(f.uri);
+      if (text !== null && text.length <= MAX_FILE) {
+        total += text.length;
+        out.push({ path: f.path, content: text });
+        continue;
+      }
+    }
+    out.push({ path: f.path });
+  }
+  return out;
 }
 
 function html(cspSource: string, css: vscode.Uri, js: vscode.Uri): string {

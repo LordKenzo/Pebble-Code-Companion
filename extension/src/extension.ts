@@ -167,7 +167,21 @@ export function activate(context: vscode.ExtensionContext): void {
     timeoutSeconds: config().get("path.testTimeoutSeconds", 60),
     verifyOnSave: config().get("path.verifyOnSave", true),
     requireRedFirst: config().get("path.requireRedFirst", false),
-  }));
+  }), {
+    mentor: async () => {
+      const s = settings();
+      return createMentor(s, await context.secrets.get(secretKey(s.provider)));
+    },
+    systemPrompt: loadSystemPrompt,
+    level,
+    priceFor: (m) => resolvePrice(m.model, settings().provider === "local", prices()),
+    record: async (entry) => {
+      await ledger.record(entry);
+      refreshStatus();
+      void settingsPanel.refresh();
+    },
+    proposals,
+  });
 
   // Il fumetto sulla riga (ADR-009): stesso modello e stesso registro della spesa della conversazione.
   const help = new HelpBalloon(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
@@ -200,6 +214,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.reveal", (line: number) => pathView.reveal(line)),
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
+    vscode.commands.registerCommand("pebble.path.planNext", () => pathView.planNext()),
     vscode.commands.registerCommand("pebble.path.open", () => pathView.reveal(0)),
     vscode.commands.registerCommand("pebble.path.createExample", () => pathView.createExample()),
 
