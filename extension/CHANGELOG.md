@@ -2,6 +2,9 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.21
+- **The mentor ghost**: Pebble now has a face. In the balloon and the chat it is neutral when it talks, thoughtful while it waits for the model, worried when the file doesn't compile, happy when you get the answer right; on the map it waits next to the active pebble.
+
 ## 0.7.19 · first public beta
 - **Path map**: the whole roadmap as a trail of pebbles in an editor tab, with each step's diary next to it. The next step to prepare is highlighted, with its button.
 - **Diary** (`.pebble/diario.md`): written by Pebble as you work, without a model: accepted plans, tests turning red and green, balloons and their concepts, closed tasks, reviews. Your own notes stay.
