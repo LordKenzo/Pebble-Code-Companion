@@ -171,3 +171,12 @@ A single `prompts/mentor.md`, in English, with the table of headings per languag
 - The automatic check only verifies code blocks (with the zone A and B exceptions). The rest, for now, is judged by hand against each case's expectations.
 - No cases yet on languages other than TypeScript or on projects without `.pebble/`.
 - The single-prompt runs were done with Claude only; local models (qwen3-coder) still need checking with English instructions.
+
+## 2026-11-24 · plan step scope (cases 29, 30, `runs/2026-11-24_1455`)
+From real use on a React calculator: step 2 ("describe with tests") was generated with an implementation task, and step 3 ("write the operations") then proposed the same implementation again. The prompt now says to stay inside the roadmap step and not to repeat what `<path>` or the code already cover, and to write conditions in the project's language.
+
+| Case | Result | Notes |
+|---|---|---|
+| 29 tests-only step | ✅ | Tests, signatures and "run them and read why they fail"; `reading` says the operations come in step 3. Italian conditions |
+| 30 step already done | ✅ | `reading` says `calculate` and its tests already exist from step 2; proposes only the missing tests (invalid input on line 4, negatives, decimals) and the review |
+| 20 (regression) | ✅ | Same quality as before; the review task is titled "Revisione con Pebble" instead of the expected "Rileggi con Pebble" |
