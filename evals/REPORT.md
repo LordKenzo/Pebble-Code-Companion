@@ -152,3 +152,6 @@ Aperto: gli eval sono ancora solo in italiano; servono casi in inglese prima del
 - INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
 - Il controllo automatico verifica solo i blocchi di codice (con le eccezioni delle zone A e B). Il resto, per ora, si valuta a mano.
 - Mancano casi su linguaggi diversi da TypeScript e su progetti senza `.pebble/`.
+
+## 2026-11-24 · protocollo in inglese
+Parole chiave verso il modello (`LEVEL`, `RUNG`, `WHY: yes`, `DEEP_DIVE: yes`, `STEP_TO_PREPARE`, `FILE_TO_PREPARE`, `STEP_SIGNATURES`, `LANGUAGE`, `<path>`) e istruzioni degli schemi in inglese. 23/23 casi ok, nessuna regressione: le risposte restano in italiano con `LANGUAGE: it`, gradini e intestazioni (`Gradino 1 · Domanda`, `Approfondimento · …`) invariati, scheletri con commenti in italiano.
