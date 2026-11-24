@@ -144,7 +144,7 @@ Pebble speaks **English and Italian**: set `pebble.language` (`auto` follows VS 
 |---|---|
 | `bootstrap.md` | Pebble's own bootstrap |
 | `.pebble/` | Pebble's own architecture, ADRs and roadmap |
-| `prompts/mentor.en.md`, `prompts/mentor.md` | The mentor system prompt, in English and Italian: the real product |
+| `prompts/mentor.md` | The mentor system prompt, one for every language: the real product |
 | `evals/` | Prompt evaluation cases, fixtures, the runner and the report |
 | `extension/` | The VS Code extension (TypeScript) |
 | `mockup/` | Interactive mockups: the original live session and the on-demand path |

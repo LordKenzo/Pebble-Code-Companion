@@ -46,4 +46,4 @@ npm test
 npm run package
 code --install-extension pebble-0.7.12.vsix --force
 ```
-The prompts are copied from `../prompts/mentor.en.md` and `../prompts/mentor.md` on every build.
+The prompt is copied from `../prompts/mentor.md` on every build.
