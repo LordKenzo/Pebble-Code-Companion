@@ -1,10 +1,19 @@
 {
   "name": "pebble",
-  "displayName": "Pebble",
-  "description": "Un senior engineer nel tuo editor: guida, rivede e consiglia test. Il codice lo scrivi tu.",
+  "displayName": "Pebble · Code Path Companion",
+  "description": "%description%",
   "version": "0.7.11",
   "publisher": "lordkenzo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LordKenzo/pebble-code-companion.git",
+    "directory": "extension"
+  },
+  "homepage": "https://github.com/LordKenzo/pebble-code-companion#readme",
+  "bugs": {
+    "url": "https://github.com/LordKenzo/pebble-code-companion/issues"
+  },
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#14182a",
@@ -37,134 +46,134 @@
     "commands": [
       {
         "command": "pebble.start",
-        "title": "Inizia: racconta il progetto a Pebble",
+        "title": "%command.start%",
         "category": "Pebble"
       },
       {
         "command": "pebble.reviewFile",
-        "title": "Rivedi il file",
+        "title": "%command.reviewFile%",
         "category": "Pebble"
       },
       {
         "command": "pebble.setApiKey",
-        "title": "Imposta la chiave API",
+        "title": "%command.setApiKey%",
         "category": "Pebble"
       },
       {
         "command": "pebble.clearReview",
-        "title": "Rimuovi le note",
+        "title": "%command.clearReview%",
         "category": "Pebble"
       },
       {
         "command": "pebble.openSettings",
-        "title": "Impostazioni",
+        "title": "%command.openSettings%",
         "category": "Pebble",
         "icon": "$(gear)"
       },
       {
         "command": "pebble.setLevel",
-        "title": "Imposta il mio livello di esperienza",
+        "title": "%command.setLevel%",
         "category": "Pebble"
       },
       {
         "command": "pebble.showSpend",
-        "title": "Mostra la spesa",
+        "title": "%command.showSpend%",
         "category": "Pebble"
       },
       {
         "command": "pebble.resetSpend",
-        "title": "Azzera il conteggio della spesa",
+        "title": "%command.resetSpend%",
         "category": "Pebble"
       },
       {
         "command": "pebble.init",
-        "title": "Leggi il bootstrap e proponi il piano",
+        "title": "%command.init%",
         "category": "Pebble"
       },
       {
         "command": "pebble.next",
-        "title": "Qual è il prossimo passo?",
+        "title": "%command.next%",
         "category": "Pebble"
       },
       {
         "command": "pebble.tests",
-        "title": "Test consigliati per il file aperto",
+        "title": "%command.tests%",
         "category": "Pebble"
       },
       {
         "command": "pebble.clearChat",
-        "title": "Pulisci la conversazione",
+        "title": "%command.clearChat%",
         "category": "Pebble",
         "icon": "$(clear-all)"
       },
       {
         "command": "pebble.openChat",
-        "title": "Apri il mentor",
+        "title": "%command.openChat%",
         "category": "Pebble",
         "icon": "$(comment-discussion)"
       },
       {
         "command": "pebble.path.refresh",
-        "title": "Ricarica il percorso",
+        "title": "%command.path.refresh%",
         "category": "Pebble",
         "icon": "$(refresh)"
       },
       {
         "command": "pebble.path.open",
-        "title": "Apri percorso.md",
+        "title": "%command.path.open%",
         "category": "Pebble",
         "icon": "$(go-to-file)"
       },
       {
         "command": "pebble.path.createExample",
-        "title": "Crea un percorso di esempio",
+        "title": "%command.path.createExample%",
         "category": "Pebble"
       },
       {
         "command": "pebble.path.reveal",
-        "title": "Apri il compito nel percorso",
+        "title": "%command.path.reveal%",
         "category": "Pebble"
       },
       {
         "command": "pebble.path.verify",
-        "title": "Verifica il percorso con test e compilatore",
+        "title": "%command.path.verify%",
         "category": "Pebble",
         "icon": "$(beaker)"
       },
       {
         "command": "pebble.helpHere",
-        "title": "Pebble, aiutami qui",
+        "title": "%command.helpHere%",
         "category": "Pebble"
       },
       {
         "command": "pebble.help.reply",
-        "title": "Rispondi"
+        "title": "%command.help.reply%"
       },
       {
         "command": "pebble.help.up",
-        "title": "Più concreto"
+        "title": "%command.help.up%"
       },
       {
         "command": "pebble.help.why",
-        "title": "Perché conta?"
+        "title": "%command.help.why%"
       },
       {
         "command": "pebble.help.deep",
-        "title": "Approfondisci"
+        "title": "%command.help.deep%"
       },
       {
         "command": "pebble.help.close",
-        "title": "Ho capito",
+        "title": "%command.help.close%",
         "icon": "$(check)"
       },
       {
         "command": "pebble.path.planNext",
-        "title": "Prepara il prossimo passo del percorso",
+        "title": "%command.path.planNext%",
         "category": "Pebble"
       },
       {
         "command": "pebble.scaffoldFile",
-        "title": "Prepara il file: firme e pseudocodice",
+        "title": "%command.scaffoldFile%",
         "category": "Pebble"
       }
     ],
@@ -288,11 +297,11 @@
           ],
           "default": "auto",
           "enumDescriptions": [
-            "Segue la lingua di VS Code (italiano se VS Code è in italiano, altrimenti inglese) · Follows VS Code's language",
-            "Italiano",
-            "English"
+            "%config.language.enum0%",
+            "%config.language.enum1%",
+            "%config.language.enum2%"
           ],
-          "markdownDescription": "Lingua di Pebble: interfaccia, testi che scrive (percorso, scheletri, bootstrap) e risposte del modello. · Pebble's language: interface, the texts it writes and the model's answers."
+          "markdownDescription": "%config.language%"
         },
         "pebble.experienceLevel": {
           "type": "string",
@@ -303,13 +312,13 @@
             "senior"
           ],
           "enumDescriptions": [
-            "Sto imparando a programmare: spiegazioni semplici, termini spiegati, passi concreti",
-            "Programmo ma ho poca esperienza di progetto: il perché, con il nome dei principi",
-            "Sono autonomo: comportamento predefinito",
-            "Esperto: solo bug, violazioni degli ADR e trade-off, risposte asciutte"
+            "%config.experienceLevel.enum0%",
+            "%config.experienceLevel.enum1%",
+            "%config.experienceLevel.enum2%",
+            "%config.experienceLevel.enum3%"
           ],
           "default": "mid",
-          "description": "Il tuo livello di esperienza: cambia cosa segnala Pebble e come lo spiega."
+          "description": "%config.experienceLevel%"
         },
         "pebble.provider": {
           "type": "string",
@@ -319,17 +328,17 @@
             "local"
           ],
           "enumDescriptions": [
-            "Claude, via API di Anthropic",
-            "OpenAI",
-            "Modello locale con API compatibile OpenAI (Ollama, LM Studio, llama.cpp)"
+            "%config.provider.enum0%",
+            "%config.provider.enum1%",
+            "%config.provider.enum2%"
           ],
           "default": "anthropic",
-          "description": "Quale modello usa Pebble per le review."
+          "description": "%config.provider%"
         },
         "pebble.anthropic.model": {
           "type": "string",
           "default": "claude-opus-5-5",
-          "description": "Modello Claude."
+          "description": "%config.anthropic.model%"
         },
         "pebble.anthropic.effort": {
           "type": "string",
@@ -340,33 +349,33 @@
             "xhigh"
           ],
           "default": "medium",
-          "description": "Quanto ragiona Claude: più alto = review più accurate, più lente e più costose."
+          "description": "%config.anthropic.effort%"
         },
         "pebble.openai.model": {
           "type": "string",
           "default": "",
-          "description": "Modello OpenAI da usare (obbligatorio se il provider è OpenAI)."
+          "description": "%config.openai.model%"
         },
         "pebble.local.baseUrl": {
           "type": "string",
           "default": "http://localhost:11434/v1",
-          "description": "Indirizzo dell'API compatibile OpenAI del server locale. Ollama: http://localhost:11434/v1 · LM Studio: http://localhost:1234/v1"
+          "description": "%config.local.baseUrl%"
         },
         "pebble.local.model": {
           "type": "string",
           "default": "",
-          "description": "Nome del modello locale (es. quello che vedi con `ollama list`)."
+          "description": "%config.local.model%"
         },
         "pebble.monthlyBudgetUsd": {
           "type": "number",
           "default": 0,
           "minimum": 0,
-          "description": "Budget mensile in dollari. Superato il budget, Pebble ti avvisa e la barra di stato diventa gialla. 0 = nessun budget."
+          "description": "%config.monthlyBudgetUsd%"
         },
         "pebble.prices": {
           "type": "object",
           "default": {},
-          "markdownDescription": "Prezzi per i modelli non noti a Pebble (es. OpenAI), in dollari per milione di token. Esempio: `{ \"gpt-6.2-sol\": { \"input\": 2, \"output\": 8, \"cacheRead\": 0.2 } }`. I prezzi dei modelli Claude sono già inclusi.",
+          "markdownDescription": "%config.prices%",
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -392,33 +401,33 @@
         "pebble.autoStart": {
           "type": "boolean",
           "default": true,
-          "description": "Quando apri un progetto con bootstrap.md ma senza .pebble/, Pebble lo legge da solo e propone il piano (una volta per progetto)."
+          "description": "%config.autoStart%"
         },
         "pebble.guideNewFiles": {
           "type": "boolean",
           "default": true,
-          "description": "Quando crei un file in un progetto con .pebble/, Pebble ti dice che ruolo ha e cosa evitare."
+          "description": "%config.guideNewFiles%"
         },
         "pebble.path.testCommand": {
           "type": "string",
           "default": "node --test --test-reporter=tap",
-          "markdownDescription": "Comando che lancia i test e stampa i risultati in formato TAP, eseguito nella cartella del progetto. Esempi: `node --test --test-reporter=tap \"test/**/*.test.ts\"`, `npx vitest run --reporter=tap`."
+          "markdownDescription": "%config.path.testCommand%"
         },
         "pebble.path.testTimeoutSeconds": {
           "type": "number",
           "default": 60,
           "minimum": 5,
-          "description": "Tempo massimo per i test lanciati dal percorso, in secondi."
+          "description": "%config.path.testTimeoutSeconds%"
         },
         "pebble.path.verifyOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Quando salvi un file del progetto, rilancia i test e aggiorna le caselle del percorso. Non usa il modello e non costa niente."
+          "description": "%config.path.verifyOnSave%"
         },
         "pebble.path.requireRedFirst": {
           "type": "boolean",
           "default": false,
-          "description": "Un compito si chiude solo se Pebble ha visto i suoi test fallire almeno una volta (ADR-010). Disattivato: il compito si chiude con un avviso."
+          "description": "%config.path.requireRedFirst%"
         }
       }
     },
@@ -435,13 +444,13 @@
       "pebble": [
         {
           "id": "pebble.path",
-          "name": "Percorso",
+          "name": "%view.path%",
           "type": "webview"
         },
         {
           "type": "webview",
           "id": "pebble.chat",
-          "name": "Mentor"
+          "name": "%view.chat%"
         }
       ]
     }
