@@ -131,7 +131,7 @@
       : `<button class="btn primary" type="button" data-plan>${esc(f(T.prepareStep, { n: n.n }))}</button>`;
     const closed = /(\d+)/.exec(model.steps[model.currentStep].name);
     const more = `<div class="more">${closed ? `<button class="btn" type="button" data-review-step="${closed[1]}">${esc(T.reviewStepBtn)}</button>` : ""}<button class="link" type="button" data-open-map>${esc(T.openMap)}</button></div>`;
-    return `<div class="next"><span class="lvl">${esc(T.stepDone)}</span><p>${f(T.nextStep, { n: n.n, title: esc(n.title) })}</p>${action}${more}</div>`;
+    return `<div class="next"><span class="lvl">${ghost("happy")}${esc(T.stepDone)}</span><p>${f(T.nextStep, { n: n.n, title: esc(n.title) })}</p>${action}${more}</div>`;
   }
 
   function foot() {
@@ -139,7 +139,7 @@
     const verify = `<button class="link" type="button" data-verify>${esc(T.checkNow)}</button>`;
     if (c.running) return `<div class="foot"><span class="spin"></span> ${esc(T.running)}</div>`;
     if (c.error)
-      return `<div class="foot err">${esc(f(T.testsFailed, { error: c.error }))}<br>${esc(T.command)} <code>${esc(c.command)}</code> · <button class="link" type="button" data-settings>${esc(T.changeCommand)}</button> · ${verify}</div>`;
+      return `<div class="foot err">${ghost("worried")}${esc(f(T.testsFailed, { error: c.error }))}<br>${esc(T.command)} <code>${esc(c.command)}</code> · <button class="link" type="button" data-settings>${esc(T.changeCommand)}</button> · ${verify}</div>`;
     if (c.at) {
       const red = c.failed ? (c.failed === 1 ? T.redOne : f(T.redMany, { n: c.failed })) : T.allGreen;
       const count = c.tests === 1 ? T.testCount1 : f(T.testCountN, { n: c.tests });
@@ -154,6 +154,12 @@
   let wizard = saved0.wizard || null; // { step, answers }
   const saveWizard = () => vscode.setState({ ...(vscode.getState() || {}), shownStep, wizard });
 
+  /** Il fantasmino-mentor: neutro, contento o preoccupato. */
+  function ghost(mood, cls) {
+    const src = model.ghosts && model.ghosts[mood];
+    return src ? `<img class="ghost ${cls || ""}" src="${esc(src)}" alt="">` : "";
+  }
+
   function renderEmpty() {
     if (wizard) return renderWizard();
     const ob = model.onboarding;
@@ -167,7 +173,7 @@
       : "";
     root.innerHTML = `
       <div class="sec"><span>${esc(T.startHeader)}</span></div>
-      <div class="intro">${esc(T.startIntro)}</div>
+      <div class="intro with-ghost">${ghost("neutral", "big")}<span>${esc(T.startIntro)}</span></div>
       <div class="stages">
         ${stage(1, ob.bootstrap, !ob.bootstrap, T.stage1Title, ob.bootstrap ? T.stage1Done : T.stage1Todo,
           ob.bootstrap

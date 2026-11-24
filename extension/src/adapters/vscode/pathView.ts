@@ -240,7 +240,12 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   }
 
   private post(): void {
-    if (this.model) void this.view?.webview.postMessage({ type: "model", model: this.model });
+    const view = this.view;
+    if (!this.model || !view) return;
+    // I fantasmini del Mentor (media/ghost-*.svg), come indirizzi che la webview può caricare.
+    const ghost = (mood: string) => view.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    const ghosts = { neutral: ghost("neutral"), happy: ghost("happy"), worried: ghost("worried") };
+    void view.webview.postMessage({ type: "model", model: { ...this.model, ghosts } });
   }
 
   /** Titolo e badge della vista: "3 di 9", e quanti compiti restano. */
@@ -626,7 +631,7 @@ function html(cspSource: string, css: vscode.Uri, js: vscode.Uri): string {
   const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
   return `<!doctype html>
 <html lang="it"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource}; style-src ${cspSource}; script-src 'nonce-${nonce}';">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${css}">
 </head><body><div id="root" aria-live="polite"></div>

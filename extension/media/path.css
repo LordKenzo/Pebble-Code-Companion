@@ -168,3 +168,9 @@ button { font: inherit; color: inherit; }
 .tnames .as { color: var(--muted); flex-basis: 100%; padding-left: 14px; }
 .tnames .hint { margin: 4px 0; color: var(--muted); }
 .tnames, .tnames .hint, .tnames code { overflow-wrap: anywhere; }
+
+/* Il fantasmino-mentor (media/ghost-*.svg). */
+.ghost { width: 22px; height: 24px; vertical-align: -6px; margin-right: 6px; }
+.ghost.big { width: 56px; height: 60px; margin: 0; flex: 0 0 auto; }
+.intro.with-ghost { display: flex; gap: 12px; align-items: center; }
+.next .lvl { display: inline-flex; align-items: center; }
