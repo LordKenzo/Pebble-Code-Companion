@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Esegue i casi di valutazione del prompt di Pebble con Claude Code in modalità headless.
+"""Runs Pebble's prompt evaluation cases with Claude Code in headless mode.
 
-Uso:
-    python3 evals/run.py                 # tutti i casi
-    python3 evals/run.py 05 07           # solo i casi che iniziano con questi prefissi
-    python3 evals/run.py --model opus    # modello specifico
+Usage:
+    python3 evals/run.py                 # all cases
+    python3 evals/run.py 05 07           # only the cases starting with these prefixes
+    python3 evals/run.py --model opus    # a specific model
 
-Per ogni caso: prende la sezione "## Input", espande le righe "@include <path>",
-aggiunge la riga LANGUAGE come fa l'estensione (en per i casi che finiscono in "-en", altrimenti it),
-la manda al modello con prompts/mentor.md come system prompt (nessun tool, nessun MCP,
-cartella di lavoro vuota) e salva la risposta in evals/runs/<data-ora>/.
-Il controllo automatico segnala solo i blocchi di codice troppo lunghi; il resto
-si valuta a mano con la sezione "## Atteso" del caso.
+For each case: takes the "## Input" section, expands the "@include <path>" lines,
+adds the LANGUAGE line as the extension does (en for cases ending in "-en", otherwise it)
+unless the case already has one, sends it to the model with prompts/mentor.md as the
+system prompt (no tools, no MCP, empty working folder) and saves the answer in
+evals/runs/<date-time>/.
+The automatic check only flags code blocks that are too long; the rest is judged
+by hand against the case's "## Expected" section.
 """
 import argparse
 import datetime as dt
@@ -41,7 +42,7 @@ def system_prompt() -> str:
 def section(text: str, name: str) -> str:
     m = re.search(rf"^## {name}\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     if not m:
-        raise ValueError(f"sezione '## {name}' mancante")
+        raise ValueError(f"missing '## {name}' section")
     return m.group(1).strip()
 
 
@@ -77,7 +78,7 @@ def is_signature_only(lang: str, body: str) -> bool:
 
 
 def is_allowed_long_block(lang: str, body: str) -> bool:
-    """Stesse regole di extension/src/core/policy.ts: zona A (configurazione, comandi) e alberi passano."""
+    """Same rules as extension/src/core/policy.ts: zone A (configuration, commands), trees and zone B declarations pass."""
     parts = lang.strip().lower().split()
     l = parts[0] if parts else ""
     if l in CONFIG_LANGS or is_signature_only(lang, body):
@@ -90,7 +91,7 @@ def is_allowed_long_block(lang: str, body: str) -> bool:
 
 
 def longest_code_block(answer: str) -> int:
-    """Righe del blocco di codice più lungo. Configurazione, comandi e alberi di cartelle non contano."""
+    """Lines of the longest code block. Configuration, commands, folder trees and declarations don't count."""
     longest = 0
     for lang, body in re.findall(r"```([^\n]*)\n(.*?)```", answer, re.S):
         if is_allowed_long_block(lang, body):
@@ -108,7 +109,7 @@ def run_case(case: Path, sysprompt_file: Path, workdir: Path, model: str | None)
     if model:
         cmd += ["--model", model]
     res = subprocess.run(cmd, input=message, capture_output=True, text=True, cwd=workdir, timeout=600)
-    answer = res.stdout.strip() if res.returncode == 0 else f"ERRORE ({res.returncode}): {res.stderr.strip()}"
+    answer = res.stdout.strip() if res.returncode == 0 else f"ERROR ({res.returncode}): {res.stderr.strip()}"
     return case.stem, answer, longest_code_block(answer)
 
 
@@ -122,7 +123,7 @@ def main() -> None:
     if args.prefixes:
         cases = [c for c in cases if any(c.name.startswith(p) for p in args.prefixes)]
     if not cases:
-        sys.exit("nessun caso trovato")
+        sys.exit("no cases found")
 
     out = EVALS / "runs" / dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     out.mkdir(parents=True, exist_ok=True)
@@ -136,10 +137,10 @@ def main() -> None:
         with ThreadPoolExecutor(max_workers=5) as pool:
             results = list(pool.map(lambda c: run_case(c, sp, work, args.model), cases))
 
-    summary = ["| Caso | Blocco di codice più lungo | Controllo |", "|---|---|---|"]
+    summary = ["| Case | Longest code block | Check |", "|---|---|---|"]
     for name, answer, longest in results:
         (out / f"{name}.md").write_text(answer + "\n")
-        flag = "ok" if longest <= MAX_CODE_LINES else f"⚠ supera {MAX_CODE_LINES} righe"
+        flag = "ok" if longest <= MAX_CODE_LINES else f"⚠ over {MAX_CODE_LINES} lines"
         summary.append(f"| {name} | {longest} | {flag} |")
     (out / "_auto.md").write_text("\n".join(summary) + "\n")
     print(out)
