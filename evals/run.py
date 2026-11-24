@@ -5,9 +5,11 @@ Uso:
     python3 evals/run.py                 # tutti i casi
     python3 evals/run.py 05 07           # solo i casi che iniziano con questi prefissi
     python3 evals/run.py --model opus    # modello specifico
+    python3 evals/run.py --prompt en     # usa prompts/mentor.en.md (la riga LANGUAGE resta quella del caso)
 
 Per ogni caso: prende la sezione "## Input", espande le righe "@include <path>",
-la manda al modello con prompts/mentor.md come system prompt (nessun tool, nessun MCP,
+aggiunge la riga LANGUAGE come fa l'estensione (en per i casi che finiscono in "-en", altrimenti it),
+la manda al modello con prompts/mentor.md (o mentor.en.md con --prompt en) come system prompt (nessun tool, nessun MCP,
 cartella di lavoro vuota) e salva la risposta in evals/runs/<data-ora>/.
 Il controllo automatico segnala solo i blocchi di codice troppo lunghi; il resto
 si valuta a mano con la sezione "## Atteso" del caso.
@@ -23,12 +25,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EVALS = ROOT / "evals"
-PROMPT = ROOT / "prompts" / "mentor.md"
+PROMPTS = {"it": ROOT / "prompts" / "mentor.md", "en": ROOT / "prompts" / "mentor.en.md"}
+LANGUAGE_LINE = {
+    "it": "LANGUAGE: it — write every text in Italian, including the schema fields.",
+    "en": "LANGUAGE: en — write every text in English, including the schema fields.",
+}
 MAX_CODE_LINES = 3
 
 
-def system_prompt() -> str:
-    text = PROMPT.read_text()
+def system_prompt(lang: str) -> str:
+    text = PROMPTS[lang].read_text()
     _, sep, body = text.partition("\n---\n")
     return body.strip() if sep else text
 
@@ -96,6 +102,8 @@ def longest_code_block(answer: str) -> int:
 
 def run_case(case: Path, sysprompt_file: Path, workdir: Path, model: str | None) -> tuple[str, str, int]:
     message = expand(section(case.read_text(), "Input"))
+    if not re.search(r"^LANGUAGE:", message, re.M):
+        message += "\n" + LANGUAGE_LINE["en" if case.stem.endswith("-en") else "it"]
     cmd = ["claude", "-p", "--system-prompt-file", str(sysprompt_file), "--tools", "",
            "--strict-mcp-config", "--no-session-persistence"]
     if model:
@@ -109,6 +117,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("prefixes", nargs="*")
     ap.add_argument("--model")
+    ap.add_argument("--prompt", choices=["it", "en"], default="it")
     args = ap.parse_args()
 
     cases = sorted((EVALS / "cases").glob("*.md"))
@@ -117,13 +126,13 @@ def main() -> None:
     if not cases:
         sys.exit("nessun caso trovato")
 
-    out = EVALS / "runs" / dt.datetime.now().strftime("%Y-%m-%d_%H%M")
+    out = EVALS / "runs" / (dt.datetime.now().strftime("%Y-%m-%d_%H%M") + ("" if args.prompt == "it" else "_prompt-en"))
     out.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         sp = tmp / "system.md"
-        sp.write_text(system_prompt())
+        sp.write_text(system_prompt(args.prompt))
         work = tmp / "work"
         work.mkdir()
         with ThreadPoolExecutor(max_workers=5) as pool:
