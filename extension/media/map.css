@@ -37,6 +37,7 @@ button { font: inherit; color: inherit; }
 .dot.done { background: var(--ok); }
 .dot.current { background: var(--mentor); }
 .dot.future { border: 1px dashed var(--muted); }
+.dot.next { border: 1px dashed var(--mentor); }
 
 .body { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; }
 .map { flex: 999 1 520px; min-width: 0; position: relative; min-height: 420px; }
@@ -52,12 +53,14 @@ button { font: inherit; color: inherit; }
 .stone.done { background: var(--ok); color: var(--ok-ink); }
 .stone.current { width: 58px; height: 58px; background: var(--mentor); color: var(--mentor-ink); font-weight: 600; box-shadow: 0 0 0 8px color-mix(in srgb, var(--mentor) 15%, transparent); }
 .stone.future { background: var(--bg); border: 2px dashed var(--faint); color: var(--muted); }
+.stone.next { width: 58px; height: 58px; background: color-mix(in srgb, var(--mentor) 14%, var(--bg)); border: 2px dashed var(--mentor); color: var(--mentor); font-weight: 600; }
 .stone.selected { box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--fg); }
 .stone svg { position: static; width: 20px; height: 20px; }
 .label { position: absolute; transform: translateX(-50%); width: 160px; text-align: center; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
 .label .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .label .t { font-size: 12.5px; line-height: 1.3; }
 .label .t.future { color: var(--muted); }
+.label .k.next { color: var(--mentor); }
 .label .d { font-family: var(--mono); font-size: 11px; color: var(--faint); }
 .hint { position: absolute; left: 24px; right: 24px; bottom: 16px; color: var(--muted); font-size: 12px; }
 .bar { height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 8px; overflow: hidden; }

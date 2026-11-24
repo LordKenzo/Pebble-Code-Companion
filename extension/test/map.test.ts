@@ -47,3 +47,10 @@ test("senza roadmap né diario la mappa usa le intestazioni del percorso", () =>
   const m = buildMapModel([], parsePath(PATH).tasks, []);
   assert.deepEqual(m.steps.map((s) => s.title), ["Crea il progetto", "Descrivi con test", "Scrivi le operazioni"]);
 });
+
+test("tutti i passi preparati chiusi: il primo da preparare è il prossimo", () => {
+  const closed = PATH.replace("- [ ] D", "- [x] D");
+  const m = buildMapModel(parseRoadmap(ROADMAP + "5. Rileggi.\n"), parsePath(closed).tasks, []);
+  assert.deepEqual(m.steps.map((s) => s.state), ["done", "done", "done", "next", "future"]);
+  assert.equal(m.steps[3]!.roadmap, "Costruisci il form.");
+});

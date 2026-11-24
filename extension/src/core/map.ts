@@ -8,7 +8,8 @@ import { MAP_TEXT, type Lang } from "./i18n";
  * La mappa del sentiero (ADR-013): roadmap, percorso e diario in un solo modello per la vista.
  * I passi senza compiti sono solo titoli della roadmap (ADR-011).
  */
-export type MapState = "done" | "current" | "future";
+/** "next": il primo passo da preparare quando tutti quelli preparati sono chiusi. */
+export type MapState = "done" | "current" | "next" | "future";
 
 export interface MapStep {
   n: number;
@@ -58,6 +59,9 @@ export function buildMapModel(roadmap: readonly RoadmapStep[], tasks: readonly T
     else if (ts.length && !currentTaken) {
       state = "current";
       currentTaken = true;
+    } else if (!ts.length && !currentTaken) {
+      state = "next";
+      currentTaken = true;
     }
     const d = diary.find((x) => x.n === n);
     const entries = d?.entries ?? [];
@@ -78,7 +82,7 @@ export function buildMapModel(roadmap: readonly RoadmapStep[], tasks: readonly T
         help: texts.filter((t) => HELP.test(t)).length,
         concepts: texts.filter((t) => CONCEPT.test(t)).length,
       },
-      roadmap: state === "future" && !ts.length ? r?.text ?? null : null,
+      roadmap: (state === "future" || state === "next") && !ts.length ? r?.text ?? null : null,
     };
   });
   return {

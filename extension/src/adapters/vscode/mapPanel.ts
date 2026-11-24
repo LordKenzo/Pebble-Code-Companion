@@ -11,7 +11,7 @@ export interface MapActions {
   openPath(): void;
 }
 
-type FromView = { type: "ready" } | { type: "review"; n: number } | { type: "open"; file: "diary" | "roadmap" } | { type: "path" };
+type FromView = { type: "ready" } | { type: "review"; n: number } | { type: "open"; file: "diary" | "roadmap" } | { type: "path" } | { type: "plan" };
 
 const PEBBLE = ".pebble";
 
@@ -73,6 +73,7 @@ export class MapPanel {
   private async onMessage(m: FromView): Promise<void> {
     if (m.type === "ready") return this.refresh();
     if (m.type === "path") return this.actions.openPath();
+    if (m.type === "plan") return void vscode.commands.executeCommand("pebble.path.planNext");
     if (m.type === "open" && this.root) {
       const name = m.file === "diary" ? DIARY_FILE[1]! : "roadmap.md";
       const uri = vscode.Uri.joinPath(this.root, PEBBLE, name);
