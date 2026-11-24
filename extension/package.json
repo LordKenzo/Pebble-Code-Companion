@@ -2,8 +2,9 @@
   "name": "pebble",
   "displayName": "Pebble · Code Path Companion",
   "description": "%description%",
-  "version": "0.7.18",
+  "version": "0.7.19",
   "publisher": "lordkenzo",
+  "preview": true,
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -479,7 +480,8 @@
     "sync-prompt": "node scripts/sync-prompt.mjs",
     "build": "npm run sync-prompt && tsc --noEmit && esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --minify --outfile=dist/extension.js",
     "test": "tsc -p tsconfig.test.json && node --test \"out-test/test/*.test.js\"",
-    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository"
+    "package": "npm run build && vsce package --no-dependencies",
+    "publish:pre": "npm run build && vsce publish --pre-release --no-dependencies"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",
@@ -493,5 +495,15 @@
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
-  }
+  },
+  "keywords": [
+    "learning",
+    "mentor",
+    "tdd",
+    "tests",
+    "pair programming",
+    "code review",
+    "ai",
+    "education"
+  ]
 }
