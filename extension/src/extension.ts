@@ -124,7 +124,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   const loadSystemPrompt = async (): Promise<string> => {
-    const uri = vscode.Uri.joinPath(context.extensionUri, "media", lang() === "en" ? "mentor.en.md" : "mentor.md");
+    const uri = vscode.Uri.joinPath(context.extensionUri, "media", "mentor.md");
     return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
   };
 
