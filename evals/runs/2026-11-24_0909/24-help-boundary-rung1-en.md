@@ -1,0 +1,2 @@
+**Rung 1 · Question**
+Take the 60 kg test, which expected `[20]` but received `[15, 2.5, 1.25]`. After removing the bar and halving, `remaining` is 20 000 g. Trace it by hand: when the `for` reaches the 20 000 g plate, what does the `while` condition on line 20 evaluate to, and does that plate get pushed? Then check whether the 22.5 kg case ends the same way at its last step, with 1 250 g left and the 1 250 g plate to try.

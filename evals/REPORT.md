@@ -155,3 +155,13 @@ Aperto: gli eval sono ancora solo in italiano; servono casi in inglese prima del
 
 ## 2026-11-24 · protocollo in inglese
 Parole chiave verso il modello (`LEVEL`, `RUNG`, `WHY: yes`, `DEEP_DIVE: yes`, `STEP_TO_PREPARE`, `FILE_TO_PREPARE`, `STEP_SIGNATURES`, `LANGUAGE`, `<path>`) e istruzioni degli schemi in inglese. 23/23 casi ok, nessuna regressione: le risposte restano in italiano con `LANGUAGE: it`, gradini e intestazioni (`Gradino 1 · Domanda`, `Approfondimento · …`) invariati, scheletri con commenti in italiano.
+
+## 2026-11-24 · casi inglesi e prova "un prompt solo"
+Nuovi casi 24-26 in inglese (fixture tradotte in `fixtures/*/en/`). Il runner aggiunge la riga `LANGUAGE` come l'estensione e accetta `--prompt en`.
+
+- **Prompt italiano** (`runs/2026-11-24_0909`): 26/26 ok. I casi inglesi rispondono in inglese con intestazioni inglesi (`Rung 1 · Question`, `Let's fix the file first`), pseudocodice in inglese.
+- **Prompt inglese** (`runs/2026-11-24_0910_prompt-en`): 25/26 ok. Sui 23 casi italiani, con `LANGUAGE: it`, risponde sempre in italiano, con la stessa qualità: stessa domanda al gradino 1, stesse tre correzioni sul file che non compila, stesso rifiuto con zona A/B sotto pressione.
+  - Le intestazioni a volte si allontanano dal testo previsto: `Sistemiamo prima il file` invece di `Prima sistemiamo il file`, `Deep dive · …` invece di `Approfondimento · …`. Il parser non dipende dalle intestazioni (legge solo `Concetto/Concept`), ma l'utente le vede.
+  - Caso 14: nella firma proposta mette due costanti con il valore (`const BILANCIERE_G = 20000`), oltre il limite della zona B. È poco, ma il prompt italiano non lo fa.
+
+Conclusione: un solo prompt inglese è praticabile, a patto di fissare in una tabella le intestazioni per lingua e di rendere esplicito che in zona B le costanti non hanno valore fuori da SCAFFOLD.
