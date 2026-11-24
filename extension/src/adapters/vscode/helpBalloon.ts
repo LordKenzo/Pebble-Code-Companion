@@ -126,7 +126,7 @@ export class HelpBalloon implements vscode.Disposable {
     const text = arg.text.trim();
     if (!st || st.busy || !text) return;
     arg.thread.comments = [...arg.thread.comments, new Note(text, { name: this.T.you })];
-    st.history.push(`Sviluppatore: ${text}`);
+    st.history.push(`Developer: ${text}`);
     await this.ask(arg.thread, { kind: "reply", rung: st.rung, text });
   }
 

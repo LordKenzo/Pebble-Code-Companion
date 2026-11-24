@@ -6,20 +6,20 @@ export type Severity = z.infer<typeof Severity>;
 
 export const Note = z.object({
   severity: Severity,
-  line: z.number().int().describe("Prima riga interessata, numerata come nel file inviato"),
-  endLine: z.number().int().nullable().describe("Ultima riga interessata, o null se è una sola"),
-  anchor: z.string().describe("Da dove viene la nota: un ADR (es. ADR-002), una sezione del bootstrap, oppure 'generale'"),
+  line: z.number().int().describe("First line concerned, numbered as in the file sent"),
+  endLine: z.number().int().nullable().describe("Last line concerned, or null if it is a single line"),
+  anchor: z.string().describe("Where the note comes from: an ADR (e.g. ADR-002), a bootstrap section, or best practice"),
   problem: z.string(),
   why: z.string(),
-  try: z.string().describe("Una direzione da provare, mai il codice"),
+  try: z.string().describe("What to try; in zone C a direction, never the code"),
 });
 export type Note = z.infer<typeof Note>;
 
 export const Review = z.object({
-  summary: z.string().describe("Una riga di sintesi"),
-  notes: z.array(Note).describe("Al massimo 3 note, ordinate per impatto"),
-  question: z.string().nullable().describe("Al massimo una domanda, o null"),
-  adrProposal: z.string().nullable().describe("Titolo e motivo di un ADR da aggiungere, o null"),
+  summary: z.string().describe("A one-line summary"),
+  notes: z.array(Note).describe("At most 3 notes, ordered by impact"),
+  question: z.string().nullable().describe("At most one question, or null"),
+  adrProposal: z.string().nullable().describe("Title and reason of an ADR to add, or null"),
 });
 export type Review = z.infer<typeof Review>;
 

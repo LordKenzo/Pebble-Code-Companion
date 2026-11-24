@@ -15,12 +15,12 @@ function block(tag: string, body: string | null, attrs = ""): string {
 /** Promemoria per livello, messo accanto alla richiesta: lì il modello lo rispetta molto di più. */
 export const LEVEL_HINTS: Record<ExperienceLevel, string> = {
   entry:
-    "Lo sviluppatore sta imparando a programmare (entry). In `problem` e `why` usa parole semplici e spiega tra parentesi ogni termine tecnico la prima volta (es. dominio, adapter, transazione, ADR). In `try` scrivi 2-3 passi numerati e concreti, senza codice. Se una scelta nel file è giusta, dillo nel `summary`.",
+    "The developer is learning to program (entry). In `problem` and `why` use plain words and explain each technical term in brackets the first time (e.g. domain, adapter, transaction, ADR). In `try` write 2-3 numbered, concrete steps, without zone C code. If a choice in the file is right, say so in `summary`.",
   junior:
-    "Lo sviluppatore è junior. In `why` nomina il principio in gioco (es. separazione delle responsabilità, testabilità) e spiegalo in una frase. In `try` dai una direzione chiara e, se utile, cosa cercare per approfondire.",
+    "The developer is junior. In `why` name the principle at play (e.g. separation of concerns, testability) and explain it in one sentence. In `try` give a clear direction and, if useful, what to search for to learn more.",
   mid: "",
   senior:
-    "Lo sviluppatore è senior. Solo bug, violazioni degli ADR e trade-off non ovvi. Niente spiegazioni di concetti noti. Circa 40 parole per nota. In `try` puoi indicare due alternative con il loro costo.",
+    "The developer is senior. Only bugs, ADR violations and non-obvious trade-offs. No explanations of known concepts. About 40 words per note. In `try` you may give two alternatives with their cost.",
 };
 
 /**
@@ -36,16 +36,16 @@ export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, l
 
   return [
     "MODE: REVIEW",
-    `LIVELLO: ${level}`,
+    `LEVEL: ${level}`,
     block("bootstrap", ctx.bootstrap),
     block("architecture", ctx.architecture),
     block("decisions", decisions),
     missing.length
-      ? `Nota: nel progetto mancano ${missing.join(" e ")}. Ancora le note a "generale" e non inventare decisioni.\n`
+      ? `Note: the project is missing ${missing.join(" and ")}. Anchor the notes to "general" and don't invent decisions.\n`
       : "",
     block("file", numberLines(file.content), ` path="${file.path}" language="${file.languageId}"`),
     formatProblems(file.problems),
-    "Le righe del file sono numerate (`N | codice`): usa quei numeri in `line` ed `endLine`. Rispondi compilando lo schema richiesto.",
+    "The file's lines are numbered (`N | code`): use those numbers in `line` and `endLine`. Answer by filling in the requested schema.",
     LEVEL_HINTS[level],
     languageLine(lang),
   ]
