@@ -59,7 +59,8 @@ export class HelpBalloon implements vscode.Disposable {
   private readonly states = new Map<vscode.CommentThread, ThreadState>();
   private readonly byId = new Map<string, vscode.CommentThread>();
   private nextId = 1;
-  private readonly pebble: vscode.CommentAuthorInformation;
+  /** Pebble con il fantasmino nella sua espressione: neutro, pensieroso, contento, preoccupato. */
+  private readonly ghost: Record<"neutral" | "thinking" | "happy" | "worried", vscode.CommentAuthorInformation>;
   private get T() {
     return HELP_TEXT[this.deps.lang()];
   }
@@ -69,7 +70,8 @@ export class HelpBalloon implements vscode.Disposable {
     private readonly root: vscode.Uri | undefined,
     private readonly deps: HelpDeps,
   ) {
-    this.pebble = { name: "Pebble", iconPath: vscode.Uri.joinPath(extensionUri, "media", "icon.png") };
+    const face = (mood: string) => ({ name: "Pebble", iconPath: vscode.Uri.joinPath(extensionUri, "media", `ghost-${mood}.svg`) });
+    this.ghost = { neutral: face("neutral"), thinking: face("thinking"), happy: face("happy"), worried: face("worried") };
     this.controller.options = { prompt: this.T.prompt, placeHolder: this.T.placeholder };
   }
 
@@ -170,13 +172,13 @@ export class HelpBalloon implements vscode.Disposable {
     const st = this.states.get(thread);
     if (!st || st.busy) return;
     st.busy = true;
-    const thinking = new Note(new vscode.MarkdownString(this.T.thinking), this.pebble);
+    const thinking = new Note(new vscode.MarkdownString(this.T.thinking), this.ghost.thinking);
     thread.comments = [...thread.comments, thinking];
     thread.label = this.T.label(rungBar(st.rung), st.rung, this.T.rungs[st.rung]);
     // Le risposte precedenti perdono i tasti: valgono solo sull'ultima.
     thread.comments = thread.comments.map((c) => {
       const base = c instanceof Note ? (c as Note).base : undefined; // Comment è già assegnabile a Note: serve il cast
-      return base && c !== thinking ? new Note(this.bubble(st, base, false), this.pebble, undefined, base) : c;
+      return base && c !== thinking ? new Note(this.bubble(st, base, false), c.author, undefined, base) : c;
     });
     try {
       const doc = await vscode.workspace.openTextDocument(thread.uri);
@@ -202,8 +204,8 @@ export class HelpBalloon implements vscode.Disposable {
 
       const { body, concept } = parseHelpAnswer(stripLongCode(text, this.deps.lang()).text);
       if (concept && !st.concepts.includes(concept)) st.concepts.push(concept);
+      const fix = editorProblems(thread.uri).some((p) => p.severity === "errore");
       if (ask.kind !== "reply") {
-        const fix = editorProblems(thread.uri).some((p) => p.severity === "errore");
         const rung = ask.kind === "why" ? "why" : ask.kind === "deep" ? "deep" : fix ? "fix" : ask.rung;
         this.deps.note?.({ kind: "help", file: path, line: (thread.range?.start.line ?? 0) + 1, rung, ...(concept && { concept }) });
       }
@@ -218,11 +220,14 @@ export class HelpBalloon implements vscode.Disposable {
       ]
         .filter(Boolean)
         .join("\n\n");
-      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(this.bubble(st, base, true), this.pebble, undefined, base) : c));
+      // Il file non compila: il fantasmino è preoccupato. Una risposta giusta: è contento.
+      const right = ask.kind === "reply" && /^\*\*(Risposta · giusta|Answer · right)\*\*/m.test(body);
+      const author = fix ? this.ghost.worried : right ? this.ghost.happy : this.ghost.neutral;
+      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(this.bubble(st, base, true), author, undefined, base) : c));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const md = new vscode.MarkdownString(this.T.failed(msg));
-      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(md, this.pebble) : c));
+      thread.comments = thread.comments.map((c) => (c === thinking ? new Note(md, this.ghost.worried) : c));
     } finally {
       st.busy = false;
     }
