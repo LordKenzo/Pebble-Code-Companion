@@ -1,3 +1,4 @@
+import type { DiaryEvent } from "../../core/diary";
 import * as vscode from "vscode";
 import { estimateCost, formatUsd, type Price } from "../../core/cost";
 import { buildHelpMessage, historyLine, parseHelpAnswer, type HelpAsk, type HelpTask, type Rung } from "../../core/help";
@@ -19,6 +20,8 @@ export interface HelpDeps {
   helpContext(filePath: string): { task?: HelpTask; tests?: (TestResult & { detail?: string })[] };
   /** Lingua del fumetto e delle risposte (ADR-012). */
   lang(): Lang;
+  /** Annota nel diario del passo (ADR-013). */
+  note?(event: DiaryEvent): void;
 }
 
 interface ThreadState {
@@ -199,6 +202,11 @@ export class HelpBalloon implements vscode.Disposable {
 
       const { body, concept } = parseHelpAnswer(stripLongCode(text, this.deps.lang()).text);
       if (concept && !st.concepts.includes(concept)) st.concepts.push(concept);
+      if (ask.kind !== "reply") {
+        const fix = editorProblems(thread.uri).some((p) => p.severity === "errore");
+        const rung = ask.kind === "why" ? "why" : ask.kind === "deep" ? "deep" : fix ? "fix" : ask.rung;
+        this.deps.note?.({ kind: "help", file: path, line: (thread.range?.start.line ?? 0) + 1, rung, ...(concept && { concept }) });
+      }
       st.history.push(historyLine(body));
       const red = tests?.filter((t) => !t.ok).length ?? 0;
       const context = [this.T.line((thread.range?.start.line ?? 0) + 1), task?.title, red ? this.T.red(red) : null].filter(Boolean).join(" · ");

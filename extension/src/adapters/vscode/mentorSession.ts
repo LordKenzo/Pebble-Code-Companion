@@ -1,3 +1,4 @@
+import type { DiaryEvent } from "../../core/diary";
 import { bootstrapGuide } from "../../core/bootstrap";
 import { CHAT_TEXT, type Lang } from "../../core/i18n";
 import { editorProblems } from "./problems";
@@ -35,6 +36,8 @@ interface PendingChange {
 }
 
 export interface SessionDeps {
+  /** Annota nel diario del passo (ADR-013). */
+  note?(event: DiaryEvent): void;
   mentor(): Promise<MentorModel>;
   level(): ExperienceLevel;
   systemPrompt(): Promise<string>;
@@ -355,6 +358,7 @@ export class MentorSession {
         this.deps.lang(),
       );
       await this.deps.record(result);
+      this.deps.note?.({ kind: "review", file: file.path, notes: result.review.notes.length });
       this.diagnostics.set(file.doc.uri, toDiagnostics(file.doc, result.review.notes));
       this.history.push({ role: "pebble", text: `Review di ${file.path}: ${result.review.summary}` });
       for (const id of FOLLOW_IDS) this.view.clearActions(id);

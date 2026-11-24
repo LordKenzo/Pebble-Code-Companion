@@ -1,3 +1,4 @@
+import { DiaryWriter } from "./adapters/store/diaryStore";
 import * as vscode from "vscode";
 import { createMentor, type ProviderId, type ProviderSettings } from "./adapters/llm/factory";
 import type { Effort } from "./adapters/llm/claude";
@@ -142,6 +143,7 @@ export function activate(context: vscode.ExtensionContext): void {
     action: (id) => void session.action(id),
   }, lang);
   session = new MentorSession(chatView, diagnostics, {
+    note: (event) => diary.append(event),
     mentor: async () => {
       const s = settings();
       return createMentor(s, await context.secrets.get(secretKey(s.provider)));
@@ -166,6 +168,10 @@ export function activate(context: vscode.ExtensionContext): void {
     lang,
   }, proposals);
 
+  // Diario del sentiero (ADR-013): lo scrive Pebble dagli eventi che vede già, senza modello.
+  let pathViewRef: PathView | undefined;
+  const diary = new DiaryWriter(vscode.workspace.workspaceFolders?.[0]?.uri, lang, () => pathViewRef?.currentStepHeading() ?? null);
+
   // Vista "Percorso": i compiti di .pebble/percorso.md (ADR-007).
   const pathView = new PathView(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, context.workspaceState, () => ({
     testCommand: config().get("path.testCommand", "node --test --test-reporter=tap"),
@@ -187,7 +193,8 @@ export function activate(context: vscode.ExtensionContext): void {
       void settingsPanel.refresh();
     },
     proposals,
-  });
+  }, diary);
+  pathViewRef = pathView;
 
   // Il fumetto sulla riga (ADR-009): stesso modello e stesso registro della spesa della conversazione.
   const help = new HelpBalloon(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
@@ -205,6 +212,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     helpContext: (path) => pathView.helpContext(path),
     lang,
+    note: (event) => diary.append(event),
   });
 
   context.subscriptions.push(

@@ -11,7 +11,9 @@ import { bootstrapGuide, commonUnknowns, composeBootstrap, unknownStack, type Bo
 import { EXAMPLE_PATH as EXAMPLES, NOTICE_TEXT, VIEW_TEXT, type Lang } from "../../core/i18n";
 import { LEVELS, type ExperienceLevel as Level } from "../../core/model";
 import { buildViewModel, evaluate, parsePath, updateSeenRed, withCheckbox, type PathViewModel, type Task, type TaskState, type TaskView } from "../../core/path";
+import { taskEvents, testEvents } from "../../core/diary";
 import type { ParsedTest } from "../../core/tap";
+import type { DiaryWriter } from "../store/diaryStore";
 import { SignalCollector } from "../signals/collector";
 
 const PATH_FILE = [".pebble", "percorso.md"] as const;
@@ -99,6 +101,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     private readonly memento: vscode.Memento,
     private readonly settings: () => PathSettings,
     private readonly planner?: PlannerDeps,
+    private readonly diary?: DiaryWriter,
   ) {
     if (root) {
       this.collector = new SignalCollector(root, () => this.settings());
@@ -252,6 +255,17 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   }
 
   /** Raccoglie i segnali, valuta i compiti e aggiorna le caselle. Mai due verifiche in parallelo. */
+  /** Gli ultimi risultati dei test, per capire cosa è cambiato tra una verifica e l'altra (diario). */
+  private lastTests: ParsedTest[] | undefined;
+
+  /** Intestazione del passo corrente, per gli eventi del diario che non ne indicano uno. */
+  currentStepHeading(): string | null {
+    const step = this.model?.steps[this.model.currentStep];
+    if (!step || this.text === null) return null;
+    const n = /(\d+)/.exec(step.name)?.[1];
+    return parsePath(this.text).tasks.find((t) => t.step && /(\d+)/.exec(t.step)?.[1] === n)?.step ?? null;
+  }
+
   async verify(runTests: boolean): Promise<void> {
     if (!this.collector || this.text === null) return;
     if (this.running) {
@@ -271,6 +285,12 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       }
       const states = evaluate(tasks, { ...signals, seenRed }, { requireRedFirst: this.settings().requireRedFirst, lang: this.settings().lang });
       this.states = new Map(tasks.map((t, i) => [keyOf(t), states[i]!]));
+      // Diario (ADR-013): test diventati rossi o verdi, caselle che cambiano, passo chiuso.
+      if (runTests && run && !run.error) {
+        for (const e of testEvents(tasks, this.lastTests, run.tests, seenRed)) this.diary?.append(e.event, e.step);
+        this.lastTests = run.tests;
+      }
+      for (const e of taskEvents(tasks, states)) this.diary?.append(e.event, e.step);
       await this.applyCheckboxes();
     } finally {
       this.running = false;
@@ -369,6 +389,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       const choice = await vscode.window.showInformationMessage(N.stepProposal(data.tasks.length, step.n, step.title, extra), N.accept, N.reviewEdit, N.discard);
       if (choice === N.accept) {
         await this.writePath(proposed);
+        this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n: step.n, title: step.title });
         void vscode.window.showInformationMessage(N.stepAdded(step.n));
         this.schedule(true, 300);
       } else if (choice === N.reviewEdit) {
@@ -451,6 +472,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       if (choice !== N.createFile) return;
       await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
       await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
+      this.diary?.append({ kind: "scaffold", path: rel });
       await vscode.window.showTextDocument(uri);
       this.schedule(true, 500);
     } catch (err) {
@@ -511,6 +533,15 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     if (updated === null) {
       void vscode.window.showWarningMessage(NOTICE_TEXT[this.settings().lang].pathChanged);
       return this.refresh();
+    }
+    const all = parsePath(doc.getText()).tasks;
+    const task = all.find((t) => t.line === line);
+    if (task && task.checked !== checked) {
+      this.diary?.append(checked ? { kind: "taskDone", title: task.title } : { kind: "taskReopened", title: task.title }, task.step);
+      const sameStep = all.filter((t) => t.step === task.step);
+      if (checked && sameStep.every((t) => t.line === line || t.checked)) {
+        this.diary?.append({ kind: "stepClosed", done: sameStep.length, total: sameStep.length }, task.step);
+      }
     }
     const wasDirty = doc.isDirty;
     const edit = new vscode.WorkspaceEdit();
