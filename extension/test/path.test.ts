@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   applyStates, buildViewModel, describeCondition, evaluate, explainCondition, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
-  updateSeenRed, localStepName, type Signals,
+  updateSeenRed, localStepName, expectedTests, type Signals,
 } from "../src/core/path";
 
 const PERCORSO = [
@@ -353,4 +353,28 @@ test("i nomi dei passi seguono la lingua scelta, anche in un percorso misto", ()
   assert.deepEqual(buildViewModel(tasks, undefined, "it").steps.map((s) => s.name), ["Passo 1 · Setup", "Passo 2 · Test"]);
   assert.deepEqual(buildViewModel(tasks, undefined, "en").steps.map((s) => s.name), ["Step 1 · Setup", "Step 2 · Test"]);
   assert.equal(localStepName("Senza numero", "en"), "Senza numero");
+});
+
+test("nomi dei test attesi: nome suggerito nel compito e stato dall'ultima esecuzione", () => {
+  const md = [
+    "## Passo 2 · Dischi",
+    "- [ ] Scrivi i test",
+    '  fare: Casi: "20 kg: nessun disco", "60 kg: un 20 per lato", "120 kg: tre dischi".',
+    '  fatto quando: test "20 kg" "60 kg"',
+    "- [ ] Casi limite",
+    '  fatto quando: test "15 kg" "60 kg"',
+  ].join("\n");
+  const tasks = parsePath(md).tasks;
+  assert.deepEqual(expectedTests(tasks, null).map((t) => [t.wanted, t.suggested, t.status]), [
+    ["20 kg", "20 kg: nessun disco", "unknown"],
+    ["60 kg", "60 kg: un 20 per lato", "unknown"],
+    ["15 kg", null, "unknown"],
+  ]);
+  const run = [{ name: "20 kg: nessun disco", ok: true }, { name: "60 kg — un 20", ok: false }];
+  assert.deepEqual(expectedTests(tasks, run).map((t) => [t.status, t.actual]), [
+    ["pass", ["20 kg: nessun disco"]],
+    ["fail", ["60 kg — un 20"]],
+    ["missing", []],
+  ]);
+  assert.equal(buildViewModel(tasks, undefined, "it", run).steps[0]!.tests.length, 3);
 });

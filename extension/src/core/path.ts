@@ -372,8 +372,22 @@ export interface PathViewModel {
   steps: StepView[];
 }
 
+/** Un test che i compiti del passo si aspettano (roadmap #11). */
+export interface ExpectedTest {
+  /** Il nome cercato, dalla condizione: "60 kg". */
+  wanted: string;
+  /** Il nome completo suggerito nel compito, se c'è: "60 kg: un 20 per lato". */
+  suggested: string | null;
+  /** Dall'ultima esecuzione dei test: unknown se non sono ancora partiti. */
+  status: "pass" | "fail" | "missing" | "unknown";
+  /** I nomi reali dei test che corrispondono. */
+  actual: string[];
+}
+
 export interface StepView {
   name: string;
+  /** I test attesi dai compiti del passo, in ordine, senza doppioni. */
+  tests: ExpectedTest[];
   /** ADR citati nei compiti del passo, in ordine: "ADR-003", "ADR-004". */
   refs: string[];
   done: number;
@@ -407,7 +421,24 @@ export function localStepName(name: string, lang: Lang = "it"): string {
   return name.replace(/^(?:passo|step)\s+(\d+)/i, `${PATH_TEXT[lang].stepWord} $1`);
 }
 
-export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[], lang: Lang = "it"): PathViewModel {
+const QUOTED_NAME = /"([^"\n]+)"|“([^”\n]+)”|«([^»\n]+)»/g;
+
+/**
+ * I test attesi da un gruppo di compiti: i nomi delle condizioni `test "…"`, con il nome completo
+ * suggerito nel testo dei compiti quando c'è, e lo stato dall'ultima esecuzione (null = non ancora partiti).
+ */
+export function expectedTests(tasks: readonly Task[], run: readonly TestResult[] | null): ExpectedTest[] {
+  const quoted = tasks.flatMap((t) => [...`${t.title} ${t.todo ?? ""}`.matchAll(QUOTED_NAME)].map((m) => (m[1] ?? m[2] ?? m[3])!.trim()));
+  const wanted = [...new Set(tasks.flatMap((t) => t.conditions.flatMap((c) => (c.kind === "tests" ? c.names : []))))];
+  return wanted.map((w) => {
+    const suggested = quoted.find((q) => q !== w && q.toLowerCase().startsWith(w.toLowerCase()) && testNameMatches(q, w)) ?? null;
+    const matches = run ? run.filter((t) => testNameMatches(t.name, w)) : [];
+    const status = !run ? "unknown" : !matches.length ? "missing" : matches.every((t) => t.ok) ? "pass" : "fail";
+    return { wanted: w, suggested, status, actual: matches.map((t) => t.name) };
+  });
+}
+
+export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[], lang: Lang = "it", run: readonly TestResult[] | null = null): PathViewModel {
   const stateOf = new Map(tasks.map((t, i) => [t.line, states?.[i]] as const));
   const byStep = new Map<string, Task[]>();
   for (const t of tasks) {
@@ -424,6 +455,7 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
     const refs = [...new Set(text.match(/ADR-\d{3}/g) ?? [])].sort();
     return {
       name: localStepName(name, lang),
+      tests: expectedTests(ts, run),
       refs,
       done: ts.filter((t) => t.checked).length,
       total: ts.length,
