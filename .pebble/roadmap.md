@@ -31,6 +31,19 @@
 | 7 | Deep dive and Notebook | The balloon's concepts end up in `quaderno.md` |
 | 8 | Real trial on mini-calc, steps 1–3 | Notes on what is useful and what is noise |
 
+## Phase 3: feedback from using it (2026-11-24)
+
+Observations from the developer using Pebble on a real project. Bugs first, then features.
+
+| # | Step | Done when |
+|---|---|---|
+| 9 | **Bug: duplicate step.** Between step 2 and step 3, "Prepare step N" proposed a step identical to the one just done | PLAN_STEP never proposes tasks already in `percorso.md`; an eval case with steps 1–2 done checks that step 3 is new |
+| 10 | **Bug: mixed languages in "Other steps".** The list shows "Passo 1, Step 2": section titles written in one language and read or generated in the other | The list uses the chosen language for every step, whatever language `percorso.md` and `roadmap.md` were written in |
+| 11 | **Test names on demand.** A button, available at any step, that shows the test names the open tasks expect (the text inside `test('…', …)`), so the developer can write or rename tests without guessing | From any task, one click lists the expected test names, which ones already exist and which are missing; copyable |
+| 12 | **Review the step.** When a step is done, next to "Prepare step N", a "Review the step" button opens the Mentor, which explains what was built in the step: files, decisions, concepts met, what is left fragile | The Mentor answers with a summary of the step anchored to the code and the ADRs, without proposing new code |
+| 13 | **Projects already under way.** Pebble assumes it starts from `bootstrap.md`. For an existing project it must read the code, propose a bootstrap and ADRs that describe what is already there, and place the path at the right point | On an existing repo, "Start" proposes bootstrap, architecture and ADRs from the code, and step 1 starts from what is missing, not from the setup |
+| 14 | **Sources by level.** At entry level help must be more thorough, assume nothing and point to the chosen stack's official documentation. As the level grows, other authoritative sources (Stack Overflow, Stack Exchange, well-known blogs) can join, without excluding them earlier | Answers at entry level cite the official docs of the stack in the ADRs (e.g. the Vitest or React docs) with a link; senior answers can cite community sources; an eval per level |
+
 ## Where to start
 **Real trial on mini-calc (step 8), then the notebook (7).** The mockup's loop is all there except the notebook: path, generated steps, "Prepare the file", signals, balloon. Before adding more it's worth really using it on mini-calc and noting what is useful and what is noise. To tune with use: the "never seen failing" warning (ADR-010) also shows on tests that are legitimately green from the start, like the 20 kg case.
 
