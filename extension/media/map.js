@@ -5,6 +5,7 @@
   const root = document.getElementById("root");
   let model = null;
   let T = null;
+  let G = {};
   let picked = (vscode.getState() || {}).picked ?? null;
 
   const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27,6 +28,7 @@
     if (e.data.type !== "model") return;
     model = e.data.model;
     T = e.data.T;
+    G = e.data.ghosts || {};
     render();
   });
 
@@ -108,17 +110,27 @@
             <path class="flag" vector-effect="non-scaling-stroke" d="M${end[0]} ${end[1] - 30} L${end[0]} ${end[1] - 80} L${end[0] + 34} ${end[1] - 68} L${end[0]} ${end[1] - 56}"/>
           </svg>
           ${stones}
+          ${companion(steps, pts)}
           <div class="hint"><div class="bar"><i data-pct="${pct}"></i></div>${steps.some(ahead_) ? esc(T.futureHint) : ""}</div>
         </div>
         ${diary(steps.find((s) => s.n === picked))}
       </div>`;
 
     // Posizioni in percentuale del riquadro 1000×600, così la mappa segue la larghezza della scheda.
-    for (const el of root.querySelectorAll(".stone, .label")) {
+    for (const el of root.querySelectorAll(".stone, .label, .companion")) {
       el.style.left = `${(Number(el.dataset.x) / 1000) * 100}%`;
       el.style.top = el.dataset.below ? `calc(${(Number(el.dataset.y) / 600) * 100}% + ${el.dataset.below}px)` : `${(Number(el.dataset.y) / 600) * 100}%`;
     }
     for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
+  }
+
+  /** Il fantasmino accanto al sassolino attivo: neutro sul passo in corso, contento sul prossimo (un passo appena chiuso). */
+  function companion(steps, pts) {
+    const i = steps.findIndex((s) => s.state === "current" || s.state === "next");
+    if (i === -1) return "";
+    const mood = steps[i].state === "next" ? "happy" : "neutral";
+    if (!G[mood]) return "";
+    return `<img class="companion" src="${esc(G[mood])}" alt="" data-x="${pts[i][0] - 78}" data-y="${pts[i][1] - 84}">`;
   }
 
   function diary(s) {

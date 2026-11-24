@@ -95,3 +95,8 @@ button { font: inherit; color: inherit; }
 .btn { min-height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
 .btn.primary { border: 0; background: var(--mentor); color: var(--mentor-ink); font-weight: 600; }
 .nothing { padding: 40px 24px; color: var(--muted); }
+
+/* Il fantasmino-mentor accanto al sassolino attivo. */
+.companion { position: absolute; width: 64px; height: 69px; pointer-events: none; animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .companion { animation: none; } }

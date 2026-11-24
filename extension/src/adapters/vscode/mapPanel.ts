@@ -61,7 +61,9 @@ export class MapPanel {
   async refresh(): Promise<void> {
     if (!this.panel) return;
     const data = await this.load();
-    void this.panel.webview.postMessage({ type: "model", model: data.model, T: MAP_TEXT[this.lang()] });
+    const webview = this.panel.webview;
+    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    void webview.postMessage({ type: "model", model: data.model, T: MAP_TEXT[this.lang()], ghosts: { neutral: ghost("neutral"), happy: ghost("happy") } });
   }
 
   private async load() {
@@ -116,7 +118,7 @@ function html(cspSource: string, css: vscode.Uri, js: vscode.Uri, lang: Lang): s
   const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
   return `<!doctype html>
 <html lang="${lang}"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource}; style-src ${cspSource}; script-src 'nonce-${nonce}';">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${css}">
 </head><body><div id="root"></div>
