@@ -1,6 +1,0 @@
-## ADR-009: Il fumetto sulla riga usa la Comments API di VS Code
-Stato: proposto
-Contesto: l'aiuto su richiesta (`⌥P`) deve comparire sotto la riga, con pulsanti per salire la scala di aiuto, senza aprire un pannello lontano dal codice.
-Decisione: un `CommentController` di Pebble apre un riquadro di commento sulla riga del cursore. Ogni gradino è un commento del riquadro. Le azioni "Più concreto", "Perché conta?", "Approfondisci" e "Ho capito" sono comandi nel menu `comments/commentThread/context`, che VS Code mostra come pulsanti sotto il riquadro. Lo sviluppatore può anche rispondere a parole. "Ho capito" chiude il riquadro, e i concetti emersi finiscono nel quaderno (ADR-007).
-Alternative scartate: hover (sparisce appena muovi il mouse, nessun pulsante persistente); webview inserita nell'editor (API ancora sperimentale); decorazioni a fine riga (adatte a una frase, non a un dialogo); la chat nel pannello laterale (lontana dal codice, ed è proprio il limite emerso nella prova).
-Conseguenze: l'aspetto è quello dei commenti di VS Code e si personalizza poco, ma è stabile e familiare a chi fa review su GitHub. I riquadri vanno chiusi o ricollocati quando il file cambia molto. Il contesto mandato al modello comprende la funzione, il compito attivo, l'output dei suoi test rossi e i gradini già dati.

@@ -1,0 +1,6 @@
+## ADR-009: The balloon on the line uses VS Code's Comments API
+Status: proposed
+Context: help on request (`⌥P`) must appear under the line, with buttons to climb the help ladder, without opening a panel far from the code.
+Decision: a Pebble `CommentController` opens a comment thread on the cursor's line. Each rung is a comment in the thread. The actions "More concrete", "Why it matters", "Deep dive" and "Got it" are commands in the `comments/commentThread/context` menu, which VS Code shows as buttons under the thread. The developer can also reply in words. "Got it" closes the thread, and the concepts that came up go into the notebook (ADR-007).
+Alternatives ruled out: hover (it disappears as soon as you move the mouse, no persistent buttons); a webview inside the editor (API still experimental); end-of-line decorations (fine for a sentence, not for a dialogue); the chat in the side panel (far from the code, which is exactly the limit that emerged in the trial).
+Consequences: the look is that of VS Code comments and can't be customised much, but it's stable and familiar to anyone who reviews on GitHub. Threads must be closed or moved when the file changes a lot. The context sent to the model includes the function, the active task, the output of its red tests and the rungs already given.
