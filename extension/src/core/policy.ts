@@ -21,7 +21,7 @@ const DECL_LANGS = new Set(["ts", "typescript", "tsx", "mts", "cts"]);
 /** Segni di un corpo o di un'istruzione: se una riga ne contiene uno, il blocco non è solo dichiarazioni. */
 const STATEMENT = [
   /\breturn\b/, /\b(if|for|while|switch|catch)\s*\(/, /\b(await|throw|yield)\b/, /\bnew\s+[A-Za-z_]/, /\bconsole\./,
-  /\b(const|let|var)\s+[\w{[]/, /=>\s*\{/, /\)\s*(:\s*[^=;]+)?\{\s*[^}\s]/, /\)\s*(:\s*[^=;]+)?\{\s*$/,
+  /(?<!\bdeclare\s)\b(const|let|var)\s+[\w{[]/, /=>\s*\{/, /\)\s*(:\s*[^=;]+)?\{\s*[^}\s]/, /\)\s*(:\s*[^=;]+)?\{\s*$/,
   /^\s*(?:(?:private|public|protected|readonly|static)\s+)*[\w.]+\s*=(?![=>])/,
 ];
 

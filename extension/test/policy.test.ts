@@ -107,3 +107,9 @@ test("filtra il codice anche dentro le note e conta le violazioni", () => {
   assert.equal(r.violations, 1);
   assert.match(r.review.notes[0].problem, /Pebble ha rimosso/);
 });
+
+test("le costanti dichiarate senza valore sono struttura, non codice", () => {
+  const block = "```ts\nexport declare const BAR: Grams;\nexport declare const PLATES: readonly Grams[];\nexport interface PlateLoad {\n  readonly total: Grams;\n}\nexport function platesFor(total: Grams): PlateLoad;\n```";
+  assert.equal(stripLongCode(block).removed, 0);
+  assert.ok(stripLongCode("```ts\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\n```").removed > 0);
+});
