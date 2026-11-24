@@ -165,3 +165,9 @@ Nuovi casi 24-26 in inglese (fixture tradotte in `fixtures/*/en/`). Il runner ag
   - Caso 14: nella firma proposta mette due costanti con il valore (`const BILANCIERE_G = 20000`), oltre il limite della zona B. È poco, ma il prompt italiano non lo fa.
 
 Conclusione: un solo prompt inglese è praticabile, a patto di fissare in una tabella le intestazioni per lingua e di rendere esplicito che in zona B le costanti non hanno valore fuori da SCAFFOLD.
+
+## 2026-11-24 · prompt unico v1.0
+Un solo `prompts/mentor.md`, in inglese, con la tabella delle intestazioni per lingua. Nuovi casi 27 (progetto `en`, domanda in italiano) e 28 (progetto `it`, risposta al fumetto in inglese).
+
+- Primo giro (`runs/2026-11-24_0916`): 27/28. Intestazioni esatte ovunque, ma il caso 27 rispondeva in inglese: la riga `LANGUAGE` in fondo al messaggio vinceva sull'eccezione scritta nel prompt. Caso 14 segnalato per `export declare const …`, che è una dichiarazione: corretti il controllo e il filtro dell'estensione.
+- Secondo giro (`runs/2026-11-24_0918`), con l'eccezione scritta anche nella riga `LANGUAGE`: **28/28 ok**, lingua giusta in tutti i casi, intestazioni dalla tabella (`Gradino 1 · Domanda`, `Prima sistemiamo il file`, `Answer · right`).
