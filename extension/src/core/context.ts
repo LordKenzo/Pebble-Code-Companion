@@ -15,12 +15,12 @@ function block(tag: string, body: string | null, attrs = ""): string {
 /** Promemoria per livello, messo accanto alla richiesta: lì il modello lo rispetta molto di più. */
 export const LEVEL_HINTS: Record<ExperienceLevel, string> = {
   entry:
-    "The developer is learning to program (entry). In `problem` and `why` use plain words and explain each technical term in brackets the first time (e.g. domain, adapter, transaction, ADR). In `try` write 2-3 numbered, concrete steps, without zone C code. If a choice in the file is right, say so in `summary`.",
+    "The developer is learning to program (entry). In `problem` and `why` use plain words and explain each technical term in brackets the first time (e.g. domain, adapter, transaction, ADR). In `try` write 2-3 numbered, concrete steps, without zone C code. If a choice in the file is right, say so in `summary`. To point to more reading, only the official docs of the project's stack (start page or the section to look for), never Q&A sites.",
   junior:
     "The developer is junior. In `why` name the principle at play (e.g. separation of concerns, testability) and explain it in one sentence. In `try` give a clear direction and, if useful, what to search for to learn more.",
   mid: "",
   senior:
-    "The developer is senior. Only bugs, ADR violations and non-obvious trade-offs. No explanations of known concepts. About 40 words per note. In `try` you may give two alternatives with their cost.",
+    "The developer is senior. Only bugs, ADR violations and non-obvious trade-offs. No explanations of known concepts. About 40 words per note. In `try` you may give two alternatives with their cost, and point to a community source when it adds something the docs lack.",
 };
 
 /**

@@ -48,10 +48,10 @@ export interface HelpRequest {
 }
 
 const HELP_LEVEL: Record<ExperienceLevel, string> = {
-  entry: "Entry level: plain words, explain each technical term in brackets the first time.",
+  entry: "Entry level: plain words, explain each technical term in brackets the first time; to point to more reading, only the stack's official docs.",
   junior: "Junior level: name the principle at play when useful, in one sentence.",
   mid: "",
-  senior: "Senior level: terse, no explanations of known concepts.",
+  senior: "Senior level: terse, no explanations of known concepts; community sources are fine when they add something.",
 };
 
 const MAX_TESTS = 30;
