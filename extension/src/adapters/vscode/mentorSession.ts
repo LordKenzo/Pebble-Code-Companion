@@ -1,3 +1,5 @@
+import { bootstrapGuide } from "../../core/bootstrap";
+import { CHAT_TEXT, type Lang } from "../../core/i18n";
 import { editorProblems } from "./problems";
 import * as vscode from "vscode";
 import { estimateCost, formatUsd, type Price } from "../../core/cost";
@@ -40,46 +42,32 @@ export interface SessionDeps {
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   setting<T>(key: string, fallback: T): T;
   workspaceState: vscode.Memento;
+  /** Lingua della conversazione e delle risposte (ADR-012). */
+  lang(): Lang;
 }
 
-const BOOTSTRAP_TEMPLATE = `# Nome del progetto — bootstrap
-
-## Cosa devo fare
-Descrivi in poche righe cosa deve fare il progetto e per chi.
-
-## Vincoli
-- Linguaggio, piattaforma, librerie obbligatorie o vietate
-- Regole del dominio che non si possono sbagliare
-
-## Non so ancora
-- Come strutturare le cartelle
-- Da dove cominciare
-`;
-
 /** Domande di approfondimento proposte sotto ogni risposta. */
-const FOLLOW_UPS = {
-  "follow:deep": {
-    label: "Approfondisci",
-    question:
-      "Puoi approfondire la tua ultima risposta? Spiega meglio il perché e i punti che hai dato per scontati, e rendi più concreto il cosa fare (un gradino più in alto nella scala di aiuto).",
-  },
-  "follow:example": {
-    label: "Fammi un esempio",
-    question:
-      "Mi fai un esempio concreto della tua ultima risposta? Sali di un gradino nella scala di aiuto: se riguarda comandi o configurazione dammi il contenuto completo; se riguarda la struttura, file e firme; se riguarda la logica, un esempio su un caso analogo o i passi in pseudocodice.",
-  },
-} as const;
-const followUpActions = (): ChatAction[] => Object.entries(FOLLOW_UPS).map(([id, f]) => ({ id, label: f.label }));
+const followUps = (lang: Lang) => {
+  const C = CHAT_TEXT[lang];
+  return {
+    "follow:deep": { label: C.followDeep, question: C.followDeepQ },
+    "follow:example": { label: C.followExample, question: C.followExampleQ },
+  } as Record<string, { label: string; question: string }>;
+};
+const FOLLOW_IDS = ["follow:deep", "follow:example"];
+const followUpActions = (lang: Lang): ChatAction[] => Object.entries(followUps(lang)).map(([id, f]) => ({ id, label: f.label }));
 
-const LABELS: Record<TextMode, string> = {
-  CHAT: "Risposta",
-  NEXT: "Prossimo passo",
-  TESTS: "Test consigliati",
-  NEW_FILE: "Nuovo file",
+const labels = (lang: Lang): Record<TextMode, string> => {
+  const C = CHAT_TEXT[lang];
+  return { CHAT: C.labelChat, NEXT: C.labelNext, TESTS: C.labelTests, NEW_FILE: C.labelNewFile };
 };
 
 /** Orchestrazione della conversazione con il mentor nel pannello laterale. */
 export class MentorSession {
+  private get C() {
+    return CHAT_TEXT[this.deps.lang()];
+  }
+
   private history: Turn[] = [];
   private lastPlan: InitPlan | undefined;
   private busy = false;
@@ -130,11 +118,9 @@ export class MentorSession {
     if (!ctx.bootstrap) {
       this.view.push({
         kind: "pebble",
-        label: "Benvenuto",
-        html: renderMarkdown(
-          "Ciao, sono Pebble. Per guidarti bene mi serve un **`bootstrap.md`** nella radice del progetto: cosa vuoi costruire, i vincoli e cosa non sai ancora. Lo leggo e ti propongo come impostare il progetto.",
-        ),
-        actions: [{ id: "create-bootstrap", label: "Crea bootstrap.md", primary: true }],
+        label: this.C.labelWelcome,
+        html: renderMarkdown(this.C.needBootstrap),
+        actions: [{ id: "create-bootstrap", label: this.C.createBootstrap, primary: true }],
       });
       return;
     }
@@ -143,14 +129,14 @@ export class MentorSession {
       const doneKey = `pebble.autoInit:${root.toString()}`;
       if (this.deps.setting("autoStart", true) && !this.deps.workspaceState.get(doneKey)) {
         await this.deps.workspaceState.update(doneKey, true);
-        this.view.push({ kind: "pebble", label: "Benvenuto", html: renderMarkdown("Ho trovato **`bootstrap.md`**. Lo leggo e ti propongo come impostare il progetto.") });
+        this.view.push({ kind: "pebble", label: this.C.labelWelcome, html: renderMarkdown(this.C.foundBootstrap) });
         await this.init();
       } else {
         this.view.push({
           kind: "pebble",
-          label: "Benvenuto",
-          html: renderMarkdown("Ho trovato **`bootstrap.md`**, ma il progetto non ha ancora decisioni in `.pebble/`."),
-          actions: [{ id: "init", label: "Leggi il bootstrap e proponi il piano", primary: true }],
+          label: this.C.labelWelcome,
+          html: renderMarkdown(this.C.bootstrapNoDecisions),
+          actions: [{ id: "init", label: this.C.readBootstrap, primary: true }],
         });
       }
       return;
@@ -159,13 +145,13 @@ export class MentorSession {
     const n = ctx.decisions.length;
     this.view.push({
       kind: "pebble",
-      label: "Bentornato",
+      label: this.C.labelWelcomeBack,
       html: renderMarkdown(
         `Progetto con ${n} ${n === 1 ? "decisione" : "decisioni"} in \`.pebble/\`. Quando crei un file ti dico che ruolo ha; quando vuoi, rivedo quello che hai scritto.`,
       ),
       actions: [
-        { id: "next", label: "Qual è il prossimo passo?", primary: true },
-        { id: "review", label: "Rivedi il file aperto" },
+        { id: "next", label: this.C.whatNext, primary: true },
+        { id: "review", label: this.C.reviewOpen },
       ],
     });
   }
@@ -192,8 +178,8 @@ export class MentorSession {
       await vscode.commands.executeCommand(id.slice(4));
       return;
     }
-    if (id in FOLLOW_UPS) {
-      const f = FOLLOW_UPS[id as keyof typeof FOLLOW_UPS];
+    if (FOLLOW_IDS.includes(id)) {
+      const f = followUps(this.deps.lang())[id]!;
       this.view.push({ kind: "user", text: f.label });
       return this.text("CHAT", f.question);
     }
@@ -220,23 +206,23 @@ export class MentorSession {
 
   async init(): Promise<void> {
     const store = this.store();
-    if (!store) return this.info("Apri una cartella di progetto per iniziare.");
+    if (!store) return this.info(this.C.openFolder);
     const ctx = await store.load();
     if (!ctx.bootstrap) return this.start();
 
-    await this.run("Leggo bootstrap.md e preparo il piano…", async (mentor, system) => {
-      const { data, usage } = await mentor.generate(system, buildInitMessage(ctx.bootstrap!, this.deps.level()), InitPlan, "init_plan");
+    await this.run(this.C.readingBootstrap, async (mentor, system) => {
+      const { data, usage } = await mentor.generate(system, buildInitMessage(ctx.bootstrap!, this.deps.level(), this.deps.lang()), InitPlan, "init_plan");
       const plan = cleanPlan(data);
       const cost = await this.account(mentor, usage);
       this.lastPlan = plan.blockingQuestion ? undefined : plan;
       const actions: ChatAction[] = plan.blockingQuestion
-        ? [{ id: "init", label: "Ho aggiornato il bootstrap: riprova" }]
+        ? [{ id: "init", label: this.C.bootstrapUpdated }]
         : [
-            { id: "save-plan", label: "Salva in .pebble/", primary: true },
-            { id: "init", label: "Rigenera" },
+            { id: "save-plan", label: this.C.saveToPebble, primary: true },
+            { id: "init", label: this.C.regenerate },
           ];
-      this.view.push({ kind: "pebble", label: "Piano iniziale", file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan)), meta: meta(mentor, cost), actions });
-      this.history.push({ role: "pebble", text: initPlanToMarkdown(plan) });
+      this.view.push({ kind: "pebble", label: this.C.labelPlan, file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan, this.deps.lang())), meta: meta(mentor, cost), actions });
+      this.history.push({ role: "pebble", text: initPlanToMarkdown(plan, this.deps.lang()) });
     });
   }
 
@@ -245,41 +231,40 @@ export class MentorSession {
     if (!store || !this.lastPlan) return;
     if (await store.hasPebble()) {
       const ok = await vscode.window.showWarningMessage(
-        "La cartella .pebble/ esiste già. Sovrascrivere architettura, roadmap e decisioni con lo stesso nome?",
+        this.C.overwritePebble,
         { modal: true },
-        "Sovrascrivi",
+        this.C.overwrite,
       );
-      if (ok !== "Sovrascrivi") return;
+      if (ok !== this.C.overwrite) return;
     }
-    const files = initPlanToFiles(this.lastPlan, new Date().toISOString().slice(0, 10));
+    const files = initPlanToFiles(this.lastPlan, new Date().toISOString().slice(0, 10), this.deps.lang());
     await store.writeFiles(files);
     this.view.push({
       kind: "pebble",
-      label: "Salvato",
-      html: renderMarkdown(
-        `Ho scritto ${files.length} file in \`.pebble/\`:\n\n${files.map((f) => `- \`${f.path}\``).join("\n")}\n\nSono tuoi: modificali quando cambi idea, li userò per ogni review.`,
-      ),
-      actions: [{ id: "open-architecture", label: "Apri l'architettura" }],
+      label: this.C.labelSaved,
+      html: renderMarkdown(this.C.wroteFiles(files.length, files.map((f) => `- \`${f.path}\``).join("\n"))),
+      actions: [{ id: "open-architecture", label: this.C.openArchitecture }],
     });
   }
 
   async text(mode: TextMode, question?: string): Promise<void> {
     const store = this.store();
-    if (!store) return this.info("Apri una cartella di progetto per iniziare.");
+    if (!store) return this.info(this.C.openFolder);
     const file = this.openFile();
-    if (mode === "TESTS" && !file) return this.info("Apri il file per cui vuoi i test consigliati.");
+    if (mode === "TESTS" && !file) return this.info(this.C.openFileForTests);
     const ctx = await store.load();
-    const thinking = { CHAT: "Ci penso…", NEXT: "Guardo la roadmap…", TESTS: "Penso ai casi da coprire…", NEW_FILE: "Guardo dove sta il nuovo file…" }[mode];
+    const thinking = { CHAT: this.C.thinkingChat, NEXT: this.C.thinkingNext, TESTS: this.C.thinkingTests, NEW_FILE: this.C.thinkingNewFile }[mode];
 
     await this.run(thinking, async (mentor, system) => {
       const msg = buildTextMessage(mode, ctx, this.deps.level(), {
         file: file && (mode !== "NEXT" ? { path: file.path, content: file.content } : undefined),
         question,
         history: mode === "CHAT" ? this.history : undefined,
+        lang: this.deps.lang(),
         ...(file && mode !== "NEXT" && { problems: editorProblems(file.doc.uri) }),
       });
       if (question) this.history.push({ role: "user", text: question });
-      await this.answer(mentor, system, msg, ctx, store.rootUri, LABELS[mode], mode === "NEXT" ? undefined : file?.path);
+      await this.answer(mentor, system, msg, ctx, store.rootUri, labels(this.deps.lang())[mode], mode === "NEXT" ? undefined : file?.path);
     });
   }
 
@@ -295,9 +280,9 @@ export class MentorSession {
     const ctx = await store.load();
     const content = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)).slice(0, 20000);
     await this.view.reveal();
-    await this.run(`Nuovo file ${rel}: guardo che ruolo ha…`, async (mentor, system) => {
-      const msg = buildTextMessage("NEW_FILE", ctx, this.deps.level(), { file: { path: rel, content } });
-      await this.answer(mentor, system, msg, ctx, folder.uri, "Nuovo file", rel);
+    await this.run(this.C.newFileThinking(rel), async (mentor, system) => {
+      const msg = buildTextMessage("NEW_FILE", ctx, this.deps.level(), { file: { path: rel, content }, lang: this.deps.lang() });
+      await this.answer(mentor, system, msg, ctx, folder.uri, this.C.labelNewFile, rel);
     });
   }
 
@@ -322,12 +307,12 @@ export class MentorSession {
       const f = decisionFile({ ...change, content: stripLongCode(change.content).text }, ctx.decisions);
       const key = String(++this.pendingSeq);
       this.pending.set(key, { root, ...f, reason: change.reason });
-      changesMd += `\n\n> **${f.isNew ? "Nuova decisione" : "Modifica"} · ${f.id}** — ${change.reason}`;
+      changesMd += `\n\n> **${f.isNew ? this.C.newDecision : this.C.change} · ${f.id}** — ${change.reason}`;
       actions.push({ id: `adr-view:${key}`, label: `Vedi ${f.id}` }, { id: `adr-apply:${key}`, label: f.isNew ? `Crea ${f.id}` : `Aggiorna ${f.id}`, primary: true });
     }
     // I pulsanti di approfondimento restano solo sull'ultima risposta.
-    for (const id of Object.keys(FOLLOW_UPS)) this.view.clearActions(id);
-    actions.push(...followUpActions());
+    for (const id of FOLLOW_IDS) this.view.clearActions(id);
+    actions.push(...followUpActions(this.deps.lang()));
     this.view.push({ kind: "pebble", label, file, html: renderMarkdown(clean + changesMd), meta: meta(mentor, cost), actions });
   }
 
@@ -338,7 +323,7 @@ export class MentorSession {
     const right = this.proposals.put(`${key}/${c.id}-proposto.md`, c.content);
     const current = vscode.Uri.joinPath(c.root, ...c.path.split("/"));
     const left = c.isNew ? this.proposals.put(`${key}/${c.id}-vuoto.md`, "") : current;
-    await vscode.commands.executeCommand("vscode.diff", left, right, `${c.id}: attuale ↔ proposta di Pebble`);
+    await vscode.commands.executeCommand("vscode.diff", left, right, this.C.diffDecision(c.id));
   }
 
   private async applyChange(key: string): Promise<void> {
@@ -349,19 +334,19 @@ export class MentorSession {
     this.view.clearActions(`adr-apply:${key}`);
     this.view.push({
       kind: "pebble",
-      label: "Decisione salvata",
-      html: renderMarkdown(`${c.isNew ? "Ho creato" : "Ho aggiornato"} \`${c.path}\`. Dalla prossima richiesta ne tengo conto.`),
+      label: this.C.labelDecisionSaved,
+      html: renderMarkdown(this.C.decisionWritten(c.isNew, c.path)),
     });
     await vscode.window.showTextDocument(vscode.Uri.joinPath(c.root, ...c.path.split("/")), { preview: true, preserveFocus: true });
   }
 
   async review(): Promise<void> {
     const file = this.openFile();
-    if (!file) return this.info("Apri il file da rivedere.");
+    if (!file) return this.info(this.C.openFileToReview);
     const folder = vscode.workspace.getWorkspaceFolder(file.doc.uri);
     const store = new WorkspaceStore(folder?.uri ?? vscode.Uri.joinPath(file.doc.uri, ".."));
     await this.view.reveal();
-    await this.run(`Rivedo ${file.path}…`, async (mentor, system) => {
+    await this.run(this.C.reviewing(file.path), async (mentor, system) => {
       const result = await reviewFile(
         mentor,
         store,
@@ -369,31 +354,32 @@ export class MentorSession {
         { path: file.path, content: file.content, languageId: file.doc.languageId, problems: editorProblems(file.doc.uri) },
         this.deps.level(),
         this.deps.priceFor(mentor),
+        this.deps.lang(),
       );
       await this.deps.record(result);
       this.diagnostics.set(file.doc.uri, toDiagnostics(file.doc, result.review.notes));
       this.history.push({ role: "pebble", text: `Review di ${file.path}: ${result.review.summary}` });
-      for (const id of Object.keys(FOLLOW_UPS)) this.view.clearActions(id);
+      for (const id of FOLLOW_IDS) this.view.clearActions(id);
       this.history.push({ role: "pebble", text: result.review.notes.map((n) => `[${n.severity}] riga ${n.line}: ${n.problem} Prova: ${n.try}`).join("\n") });
-      this.view.push({ kind: "pebble", label: "Review", file: file.path, html: reviewHtml(result), meta: meta(mentor, result.costUsd), actions: followUpActions() });
+      this.view.push({ kind: "pebble", label: this.C.labelReview, file: file.path, html: reviewHtml(result, this.deps.lang()), meta: meta(mentor, result.costUsd), actions: followUpActions(this.deps.lang()) });
     });
   }
 
   private async createBootstrap(): Promise<void> {
     const r = this.root();
-    if (!r) return this.info("Apri una cartella di progetto per iniziare.");
+    if (!r) return this.info(this.C.openFolder);
     const uri = vscode.Uri.joinPath(r, "bootstrap.md");
     try {
       await vscode.workspace.fs.stat(uri);
     } catch {
-      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(BOOTSTRAP_TEMPLATE));
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(bootstrapGuide(this.deps.lang())));
     }
     await vscode.window.showTextDocument(uri);
     this.view.push({
       kind: "pebble",
       label: "bootstrap.md",
-      html: renderMarkdown("Compila il bootstrap con parole tue: non serve che sia perfetto. Quando hai finito, salvalo e premi il pulsante."),
-      actions: [{ id: "init", label: "Ho finito: proponi il piano", primary: true }],
+      html: renderMarkdown(this.C.fillBootstrap),
+      actions: [{ id: "init", label: this.C.doneProposePlan, primary: true }],
     });
   }
 
@@ -421,13 +407,13 @@ export class MentorSession {
       const message = err instanceof Error ? err.message : String(err);
       const fix: ChatAction[] =
         err instanceof ProviderError && err.kind === "auth"
-          ? [{ id: "cmd:pebble.setApiKey", label: "Imposta la chiave API" }]
+          ? [{ id: "cmd:pebble.setApiKey", label: this.C.setApiKey }]
           : err instanceof ProviderError && (err.kind === "config" || err.kind === "network")
-            ? [{ id: "cmd:pebble.openSettings", label: "Apri le impostazioni" }]
+            ? [{ id: "cmd:pebble.openSettings", label: this.C.openSettings }]
             : [];
       // Un solo "Riprova" alla volta: quello sulla scheda più recente.
       this.view.clearActions("retry");
-      const actions: ChatAction[] = [...fix, { id: "retry", label: "Riprova", primary: true }];
+      const actions: ChatAction[] = [...fix, { id: "retry", label: this.C.retry, primary: true }];
       this.view.push({ kind: "error", text: message, actions });
     } finally {
       this.busy = false;
@@ -464,15 +450,16 @@ function cleanPlan(p: InitPlan): InitPlan {
 
 const inline = (s: string) => escapeHtml(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\n/g, "<br>");
 
-function reviewHtml(r: ReviewResult): string {
+function reviewHtml(r: ReviewResult, lang: Lang): string {
+  const C = CHAT_TEXT[lang];
   const notes = r.review.notes
     .map(
-      (n) => `<div class="note"><span class="sev ${n.severity}">${n.severity}</span><b>riga ${n.line}${
+      (n) => `<div class="note"><span class="sev ${n.severity}">${C.severity[n.severity]}</span><b>${C.line} ${n.line}${
         n.endLine && n.endLine !== n.line ? `–${n.endLine}` : ""
-      }</b> · ${escapeHtml(n.anchor)}<p><b>${inline(n.problem)}</b></p><p>${inline(n.why)}</p><p><i>Prova:</i> ${inline(n.try)}</p></div>`,
+      }</b> · ${escapeHtml(n.anchor)}<p><b>${inline(n.problem)}</b></p><p>${inline(n.why)}</p><p><i>${C.try}</i> ${inline(n.try)}</p></div>`,
     )
     .join("");
-  return `<p>${inline(r.review.summary)}</p>${notes}${r.review.question ? `<blockquote><b>Domanda:</b> ${inline(r.review.question)}</blockquote>` : ""}${
-    r.review.adrProposal ? `<blockquote><b>ADR da valutare:</b> ${inline(r.review.adrProposal)}</blockquote>` : ""
+  return `<p>${inline(r.review.summary)}</p>${notes}${r.review.question ? `<blockquote><b>${C.question}</b> ${inline(r.review.question)}</blockquote>` : ""}${
+    r.review.adrProposal ? `<blockquote><b>${C.adrToConsider}</b> ${inline(r.review.adrProposal)}</blockquote>` : ""
   }`;
 }

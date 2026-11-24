@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { escapeHtml } from "./markdown";
+import { CHAT_TEXT, type Lang } from "../../core/i18n";
 
 export interface ChatAction {
   id: string;
@@ -26,12 +27,20 @@ export class ChatView implements vscode.WebviewViewProvider {
   private items: ChatItem[] = [];
   private busy = false;
 
-  constructor(private handlers: ChatHandlers) {}
+  constructor(
+    private handlers: ChatHandlers,
+    private lang: () => Lang = () => "it",
+  ) {}
+
+  /** Cambio di lingua: la pagina si ridisegna con i testi nuovi, la conversazione resta. */
+  relocalize(): void {
+    if (this.view) this.view.webview.html = html(this.view.webview.cspSource, this.lang());
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     view.webview.options = { enableScripts: true };
-    view.webview.html = html(view.webview.cspSource);
+    view.webview.html = html(view.webview.cspSource, this.lang());
     view.webview.onDidReceiveMessage((m: { type: string; text?: string; id?: string }) => {
       if (m.type === "ready") {
         this.flush();
@@ -91,9 +100,11 @@ export class ChatView implements vscode.WebviewViewProvider {
   }
 }
 
-function html(csp: string): string {
+function html(csp: string, lang: Lang): string {
+  const C = CHAT_TEXT[lang];
+  const a = (s: string) => escapeHtml(s);
   const nonce = Math.random().toString(36).slice(2);
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="${C.htmlLang}"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <style>
   html,body{height:100%}
@@ -143,13 +154,13 @@ function html(csp: string): string {
 <div id="feed"></div>
 <footer>
   <div class="chips">
-    <button data-cmd="/review" title="Rivedi il file aperto">/review</button>
-    <button data-cmd="/tests" title="Quali test scrivere per il file aperto">/tests</button>
-    <button data-cmd="/next" title="Il prossimo passo della roadmap">/next</button>
-    <button data-cmd="/init" title="Rileggi bootstrap.md e proponi l'impostazione">/init</button>
+    <button data-cmd="/review" title="${a(C.chipReview)}">/review</button>
+    <button data-cmd="/tests" title="${a(C.chipTests)}">/tests</button>
+    <button data-cmd="/next" title="${a(C.chipNext)}">/next</button>
+    <button data-cmd="/init" title="${a(C.chipInit)}">/init</button>
   </div>
-  <textarea id="input" rows="1" placeholder="Chiedi a Pebble… (Invio per inviare)" aria-label="Messaggio per Pebble"></textarea>
-  <span class="hint">Pebble guida e rivede: il codice lo scrivi tu.</span>
+  <textarea id="input" rows="1" placeholder="${a(C.inputPlaceholder)}" aria-label="${a(C.inputLabel)}"></textarea>
+  <span class="hint">${a(C.footerHint)}</span>
 </footer>
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
@@ -160,7 +171,7 @@ function html(csp: string): string {
 
   function render(items) {
     if (!items.length) {
-      feed.innerHTML = '<div class="empty">Pebble è pronto.<br>Apri un file e scrivi <b>/review</b>, oppure chiedi qualcosa sul progetto.</div>';
+      feed.innerHTML = '<div class="empty">${C.empty.replace(/'/g, "\\'")}</div>';
       return;
     }
     feed.innerHTML = items.map((i) => {

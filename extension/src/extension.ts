@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext): void {
     ready: () => void session.start(),
     send: (text) => void session.send(text),
     action: (id) => void session.action(id),
-  });
+  }, lang);
   session = new MentorSession(chatView, diagnostics, {
     mentor: async () => {
       const s = settings();
@@ -162,6 +162,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     setting: (key, fallback) => config().get(key, fallback),
     workspaceState: context.workspaceState,
+    lang,
   }, proposals);
 
   // Vista "Percorso": i compiti di .pebble/percorso.md (ADR-007).
@@ -289,7 +290,10 @@ export function activate(context: vscode.ExtensionContext): void {
       refreshStatus();
       void settingsPanel.refresh();
       // Cambio di lingua: il pannello si ridisegna subito nella lingua nuova (ADR-012).
-      if (e.affectsConfiguration("pebble.language")) void pathView.refresh();
+      if (e.affectsConfiguration("pebble.language")) {
+        void pathView.refresh();
+        chatView.relocalize();
+      }
     }),
 
     context.secrets.onDidChange((e) => {
