@@ -248,6 +248,13 @@ export class MentorSession {
     });
   }
 
+  /** "Rivedi il passo" dalla mappa (ADR-013): in chat un'etichetta breve, al modello compiti e diario del passo. */
+  async reviewStep(label: string, question: string): Promise<void> {
+    await this.view.reveal();
+    this.view.push({ kind: "user", text: label });
+    await this.text("CHAT", question);
+  }
+
   async text(mode: TextMode, question?: string): Promise<void> {
     const store = this.store();
     if (!store) return this.info(this.C.openFolder);

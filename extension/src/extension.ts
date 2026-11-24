@@ -1,3 +1,4 @@
+import { MapPanel } from "./adapters/vscode/mapPanel";
 import { DiaryWriter } from "./adapters/store/diaryStore";
 import * as vscode from "vscode";
 import { createMentor, type ProviderId, type ProviderSettings } from "./adapters/llm/factory";
@@ -196,6 +197,12 @@ export function activate(context: vscode.ExtensionContext): void {
   }, diary);
   pathViewRef = pathView;
 
+  // Mappa del sentiero (ADR-013): una scheda dell'editor con passi e diario.
+  const mapPanel = new MapPanel(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, lang, {
+    reviewStep: (label, question) => void session.reviewStep(label, question),
+    openPath: () => void vscode.commands.executeCommand("pebble.path.focus"),
+  });
+
   // Il fumetto sulla riga (ADR-009): stesso modello e stesso registro della spesa della conversazione.
   const help = new HelpBalloon(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
     mentor: async () => {
@@ -229,6 +236,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.reveal", (line: number) => pathView.reveal(line)),
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
+    vscode.commands.registerCommand("pebble.map.open", () => mapPanel.show()),
+    vscode.commands.registerCommand("pebble.map.reviewStep", (n: number) => mapPanel.reviewStep(n)),
+    mapPanel,
     vscode.commands.registerCommand("pebble.path.planNext", () => pathView.planNext()),
     vscode.commands.registerCommand("pebble.scaffoldFile", () => pathView.scaffold()),
     vscode.commands.registerCommand("pebble.start", () => vscode.commands.executeCommand(`${PathView.id}.focus`)),
@@ -296,6 +306,7 @@ export function activate(context: vscode.ExtensionContext): void {
       // Cambio di lingua: il pannello si ridisegna subito nella lingua nuova (ADR-012).
       if (e.affectsConfiguration("pebble.language")) {
         void pathView.refresh();
+        mapPanel.relocalize();
         chatView.relocalize();
         settingsPanel.relocalize();
       }

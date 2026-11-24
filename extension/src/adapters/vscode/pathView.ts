@@ -69,7 +69,9 @@ type FromWebview =
   | { type: "bootstrapWizard"; answers: BootstrapAnswers; level: string | null; unknownStack?: boolean }
   | { type: "bootstrapTemplate" }
   | { type: "openBootstrap" }
-  | { type: "init" };
+  | { type: "init" }
+  | { type: "openMap" }
+  | { type: "reviewStep"; n: number };
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -167,6 +169,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       } else if (m.type === "bootstrapTemplate") void this.writeBootstrap(bootstrapGuide(this.settings().lang), null, true);
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
+      else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
+      else if (m.type === "reviewStep") void vscode.commands.executeCommand("pebble.map.reviewStep", m.n);
     });
     view.onDidChangeVisibility(() => {
       if (view.visible) this.post();

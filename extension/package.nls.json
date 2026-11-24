@@ -53,5 +53,7 @@
   "config.path.testTimeoutSeconds": "Maximum time for the tests run by the path, in seconds.",
   "config.path.verifyOnSave": "When you save a project file, rerun the tests and update the path's boxes. It doesn't use the model and costs nothing.",
   "config.path.requireRedFirst": "A task closes only if Pebble has seen its tests fail at least once (ADR-010). Off: the task closes with a warning.",
-  "description": "Walk the path. You write the code. A pair engineer in your editor: it plans the path, prepares the structure, checks your work with your tests and helps you think."
+  "description": "Walk the path. You write the code. A pair engineer in your editor: it plans the path, prepares the structure, checks your work with your tests and helps you think.",
+  "command.map.open": "Open the path map",
+  "command.map.reviewStep": "Review a step with the Mentor"
 }

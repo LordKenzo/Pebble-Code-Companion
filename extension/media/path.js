@@ -107,7 +107,9 @@
     const action = model.planning
       ? `<span class="planning"><span class="spin"></span> ${esc(f(T.preparingStep, { n: n.n }))}</span>`
       : `<button class="btn primary" type="button" data-plan>${esc(f(T.prepareStep, { n: n.n }))}</button>`;
-    return `<div class="next"><span class="lvl">${esc(T.stepDone)}</span><p>${f(T.nextStep, { n: n.n, title: esc(n.title) })}</p>${action}</div>`;
+    const closed = /(\d+)/.exec(model.steps[model.currentStep].name);
+    const more = `<div class="more">${closed ? `<button class="btn" type="button" data-review-step="${closed[1]}">${esc(T.reviewStepBtn)}</button>` : ""}<button class="link" type="button" data-open-map>${esc(T.openMap)}</button></div>`;
+    return `<div class="next"><span class="lvl">${esc(T.stepDone)}</span><p>${f(T.nextStep, { n: n.n, title: esc(n.title) })}</p>${action}${more}</div>`;
   }
 
   function foot() {
@@ -286,6 +288,9 @@
     }
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
+    const review = e.target.closest("[data-review-step]");
+    if (review) return vscode.postMessage({ type: "reviewStep", n: Number(review.dataset.reviewStep) });
+    if (e.target.closest("[data-open-map]")) return vscode.postMessage({ type: "openMap" });
     const sc = e.target.closest("[data-scaffold]");
     if (sc) return vscode.postMessage({ type: "scaffold", path: sc.dataset.scaffold, line: Number(sc.dataset.line) });
     if (e.target.closest("[data-settings]")) return vscode.postMessage({ type: "settings" });
