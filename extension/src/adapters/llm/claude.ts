@@ -1,3 +1,4 @@
+import { PROVIDER_TEXT, type Lang } from "../../core/i18n";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
@@ -12,7 +13,7 @@ export class ClaudeMentor implements MentorModel {
   readonly provider = "Claude";
   private client: Anthropic;
 
-  constructor(readonly model: string, private effort: Effort, apiKey?: string) {
+  constructor(readonly model: string, private effort: Effort, apiKey?: string, private lang: Lang = "it") {
     this.client = apiKey ? new Anthropic({ apiKey }) : new Anthropic();
   }
 
@@ -23,7 +24,7 @@ export class ClaudeMentor implements MentorModel {
         output_config: { effort: this.effort, format: betaZodOutputFormat(schema) },
       });
       this.checkStop(res.stop_reason);
-      if (res.parsed_output == null) throw new ProviderError("Risposta del modello non leggibile.", "other");
+      if (res.parsed_output == null) throw new ProviderError(PROVIDER_TEXT[this.lang].unreadable, "other");
       return { data: res.parsed_output as T, usage: toUsage(res.usage) };
     } catch (err) {
       throw this.toProviderError(err);
@@ -58,8 +59,8 @@ export class ClaudeMentor implements MentorModel {
   }
 
   private checkStop(stop: string | null): void {
-    if (stop === "refusal") throw new ProviderError("Il modello ha rifiutato la richiesta.", "refusal");
-    if (stop === "max_tokens") throw new ProviderError("Risposta troncata: il contesto è forse troppo lungo.", "other");
+    if (stop === "refusal") throw new ProviderError(PROVIDER_TEXT[this.lang].refused, "refusal");
+    if (stop === "max_tokens") throw new ProviderError(PROVIDER_TEXT[this.lang].truncated, "other");
   }
 
   async check(): Promise<void> {
@@ -83,23 +84,23 @@ export class ClaudeMentor implements MentorModel {
   private toProviderError(err: unknown): unknown {
     if (err instanceof ProviderError) return err;
     if (err instanceof Anthropic.AuthenticationError) {
-      return new ProviderError("Chiave API di Anthropic mancante o non valida.", "auth");
+      return new ProviderError(PROVIDER_TEXT[this.lang].badKey("Anthropic"), "auth");
     }
     if (err instanceof Anthropic.NotFoundError) {
-      return new ProviderError(`Modello "${this.model}" non trovato su Anthropic.`, "config");
+      return new ProviderError(PROVIDER_TEXT[this.lang].modelNotFound(this.model, "Anthropic"), "config");
     }
     if (err instanceof Anthropic.RateLimitError) {
-      return new ProviderError("Troppe richieste ad Anthropic: riprova tra poco.", "rate");
+      return new ProviderError(PROVIDER_TEXT[this.lang].rate("Anthropic"), "rate");
     }
     if (err instanceof Anthropic.APIConnectionError) {
-      return new ProviderError("Impossibile raggiungere Anthropic: controlla la connessione.", "network");
+      return new ProviderError(PROVIDER_TEXT[this.lang].network("Anthropic"), "network");
     }
     if (err instanceof Anthropic.APIError) {
-      return new ProviderError(`Errore da Anthropic (${err.status}): ${err.message}`, "other");
+      return new ProviderError(PROVIDER_TEXT[this.lang].other("Anthropic", err.status ?? "?", err.message), "other");
     }
     // Senza chiave l'SDK può fallire già alla creazione della richiesta.
     if (err instanceof Error && /api.?key|auth/i.test(err.message)) {
-      return new ProviderError("Chiave API di Anthropic mancante.", "auth");
+      return new ProviderError(PROVIDER_TEXT[this.lang].missingKey("Anthropic"), "auth");
     }
     return err;
   }

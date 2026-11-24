@@ -1,3 +1,4 @@
+import { PROVIDER_TEXT, type Lang } from "../../core/i18n";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type { z } from "zod";
@@ -11,12 +12,14 @@ import { ProviderError } from "./errors";
  */
 export class OpenAICompatibleMentor implements MentorModel {
   private client: OpenAI;
+  private lang: Lang;
 
   constructor(
     readonly provider: string,
     readonly model: string,
-    opts: { apiKey?: string; baseURL?: string },
+    opts: { apiKey?: string; baseURL?: string; lang?: Lang },
   ) {
+    this.lang = opts.lang ?? "it";
     // I server locali non controllano la chiave, ma l'SDK ne richiede una.
     this.client = new OpenAI({ apiKey: opts.apiKey || "local", baseURL: opts.baseURL });
   }
@@ -32,9 +35,9 @@ export class OpenAICompatibleMentor implements MentorModel {
         response_format: zodResponseFormat(schema, name),
       });
       const msg = res.choices[0]?.message;
-      if (!msg) throw new ProviderError("Risposta vuota dal modello.", "other");
-      if (msg.refusal) throw new ProviderError(`Il modello ha rifiutato: ${msg.refusal}`, "refusal");
-      return { data: (msg.parsed as T | null) ?? parseLoosely(msg.content, schema), usage: toUsage(res.usage) };
+      if (!msg) throw new ProviderError(PROVIDER_TEXT[this.lang].empty, "other");
+      if (msg.refusal) throw new ProviderError(PROVIDER_TEXT[this.lang].refusedWith(msg.refusal), "refusal");
+      return { data: (msg.parsed as T | null) ?? parseLoosely(msg.content, schema, this.lang), usage: toUsage(res.usage) };
     } catch (err) {
       throw this.toProviderError(err);
     }
@@ -50,7 +53,7 @@ export class OpenAICompatibleMentor implements MentorModel {
         ],
       });
       const msg = res.choices[0]?.message;
-      if (msg?.refusal) throw new ProviderError(`Il modello ha rifiutato: ${msg.refusal}`, "refusal");
+      if (msg?.refusal) throw new ProviderError(PROVIDER_TEXT[this.lang].refusedWith(msg.refusal), "refusal");
       return { text: (msg?.content ?? "").trim(), usage: toUsage(res.usage) };
     } catch (err) {
       throw this.toProviderError(err);
@@ -78,24 +81,22 @@ export class OpenAICompatibleMentor implements MentorModel {
   private toProviderError(err: unknown): unknown {
     if (err instanceof ProviderError) return err;
     if (err instanceof OpenAI.AuthenticationError) {
-      return new ProviderError(`Chiave API di ${this.provider} mancante o non valida.`, "auth");
+      return new ProviderError(PROVIDER_TEXT[this.lang].badKey(this.provider), "auth");
     }
     if (err instanceof OpenAI.RateLimitError) {
-      return new ProviderError(`Troppe richieste a ${this.provider}: riprova tra poco.`, "rate");
+      return new ProviderError(PROVIDER_TEXT[this.lang].rate(this.provider), "rate");
     }
     if (err instanceof OpenAI.APIConnectionError) {
       return new ProviderError(
-        this.provider === "locale"
-          ? "Il server locale non risponde: è avviato (es. `ollama serve`) e l'indirizzo è corretto?"
-          : `Impossibile raggiungere ${this.provider}: controlla la connessione.`,
+        this.provider === "locale" ? PROVIDER_TEXT[this.lang].localDown : PROVIDER_TEXT[this.lang].network(this.provider),
         "network",
       );
     }
     if (err instanceof OpenAI.NotFoundError) {
-      return new ProviderError(`Modello "${this.model}" non trovato su ${this.provider}.`, "config");
+      return new ProviderError(PROVIDER_TEXT[this.lang].modelNotFound(this.model, this.provider), "config");
     }
     if (err instanceof OpenAI.APIError) {
-      return new ProviderError(`Errore da ${this.provider} (${err.status}): ${err.message}`, "other");
+      return new ProviderError(PROVIDER_TEXT[this.lang].other(this.provider, err.status ?? "?", err.message), "other");
     }
     return err;
   }
@@ -113,7 +114,7 @@ function toUsage(u: OpenAI.CompletionUsage | undefined): Usage {
 }
 
 /** Alcuni modelli locali ignorano lo schema o lo rispettano solo in parte: proviamo comunque a leggere il JSON. */
-function parseLoosely<T>(content: string | null, schema: z.ZodType<T>): T {
+function parseLoosely<T>(content: string | null, schema: z.ZodType<T>, lang: Lang): T {
   const json = (content ?? "").trim().match(/\{[\s\S]*\}/)?.[0];
   if (json) {
     try {
@@ -124,7 +125,7 @@ function parseLoosely<T>(content: string | null, schema: z.ZodType<T>): T {
     }
   }
   throw new ProviderError(
-    "Il modello non ha restituito una risposta nel formato richiesto. Con i modelli locali, prova un modello più grande.",
+    PROVIDER_TEXT[lang].badFormat,
     "other",
   );
 }

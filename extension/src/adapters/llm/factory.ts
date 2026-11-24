@@ -1,3 +1,4 @@
+import { PROVIDER_TEXT, type Lang } from "../../core/i18n";
 import type { MentorModel } from "../../core/ports";
 import { ClaudeMentor, type Effort } from "./claude";
 import { ProviderError } from "./errors";
@@ -12,6 +13,8 @@ export interface ProviderSettings {
   openaiModel: string;
   localBaseUrl: string;
   localModel: string;
+  /** Lingua dei messaggi d'errore (ADR-012). */
+  lang?: Lang;
 }
 
 export const PROVIDER_LABEL: Record<ProviderId, string> = {
@@ -24,15 +27,15 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
 export function createMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {
   switch (s.provider) {
     case "anthropic":
-      return new ClaudeMentor(s.anthropicModel, s.anthropicEffort, apiKey);
+      return new ClaudeMentor(s.anthropicModel, s.anthropicEffort, apiKey, s.lang);
     case "openai":
-      if (!s.openaiModel) throw new ProviderError("Imposta il modello OpenAI in pebble.openai.model.", "config");
-      if (!apiKey) throw new ProviderError("Chiave API di OpenAI mancante.", "auth");
-      return new OpenAICompatibleMentor("OpenAI", s.openaiModel, { apiKey });
+      if (!s.openaiModel) throw new ProviderError(PROVIDER_TEXT[s.lang ?? "it"].setOpenaiModel, "config");
+      if (!apiKey) throw new ProviderError(PROVIDER_TEXT[s.lang ?? "it"].missingKey("OpenAI"), "auth");
+      return new OpenAICompatibleMentor("OpenAI", s.openaiModel, { apiKey, ...(s.lang && { lang: s.lang }) });
     case "local":
       if (!s.localModel) {
-        throw new ProviderError("Imposta il modello locale in pebble.local.model (es. il nome che vedi con `ollama list`).", "config");
+        throw new ProviderError(PROVIDER_TEXT[s.lang ?? "it"].setLocalModel, "config");
       }
-      return new OpenAICompatibleMentor("locale", s.localModel, { baseURL: s.localBaseUrl, apiKey });
+      return new OpenAICompatibleMentor("locale", s.localModel, { baseURL: s.localBaseUrl, apiKey, ...(s.lang && { lang: s.lang }) });
   }
 }
