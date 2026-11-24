@@ -71,7 +71,8 @@ type FromWebview =
   | { type: "openBootstrap" }
   | { type: "init" }
   | { type: "openMap" }
-  | { type: "reviewStep"; n: number };
+  | { type: "reviewStep"; n: number }
+  | { type: "copy"; text: string };
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -170,6 +171,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
+      else if (m.type === "copy") {
+        void vscode.env.clipboard.writeText(m.text);
+        void vscode.window.setStatusBarMessage(VIEW_TEXT[this.settings().lang].testNamesCopied, 2500);
+      }
       else if (m.type === "reviewStep") void vscode.commands.executeCommand("pebble.map.reviewStep", m.n);
     });
     view.onDidChangeVisibility(() => {
@@ -202,7 +207,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const states = tasks.map((t) => this.states.get(keyOf(t)) ?? ({ status: "unknown", reason: "" } as TaskState));
     const next = this.roadmap && this.planner ? nextStep(parseRoadmap(this.roadmap), text) : null;
     this.model = {
-      ...buildViewModel(tasks, states, this.settings().lang),
+      ...buildViewModel(tasks, states, this.settings().lang, this.collector?.last && !this.collector.last.error ? this.collector.last.tests : null),
       t: VIEW_TEXT[this.settings().lang],
       hasFile: text !== null,
       check: this.checkInfo(),

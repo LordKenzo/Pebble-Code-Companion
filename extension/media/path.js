@@ -58,6 +58,7 @@
     root.innerHTML = `
       <div class="sec"><span>${esc(T.header)}</span><b>${f(T.ofTotal, { done: model.done, total: model.total })}</b></div>
       <div class="step">${esc(step.name)}<small>roadmap › ${esc(position)}${esc(refs)}</small><div class="bar"><i data-pct="${pct}"></i></div></div>
+      ${testNames(step)}
       <ul class="tasks">${tasks}</ul>
       ${step.done === step.total && idx === model.currentStep ? nextCard() : ""}
       ${others ? `<div class="sec"><span>${esc(T.otherSteps)}</span></div><ul class="others">${others}</ul>` : ""}
@@ -82,6 +83,27 @@
     const items = t.expect.map((x) =>
       `<li class="${x.invalid ? "invalid" : ""}"><span>${condition(x.text)}</span>${x.example ? `<code class="ex">${esc(x.example)}</code>` : ""}</li>`).join("");
     return `<div class="expect"><span class="label2">${esc(T.expectTitle)}</span><ul>${items}</ul></div>`;
+  }
+
+  /** I nomi dei test che il passo si aspetta (roadmap #11): a qualsiasi passo, da copiare. */
+  let testNamesOpen = false;
+  document.addEventListener("toggle", (e) => {
+    if (e.target.classList && e.target.classList.contains("tnames")) testNamesOpen = e.target.open;
+  }, true);
+
+  function testNames(step) {
+    if (!step.tests || !step.tests.length) return "";
+    const label = { pass: T.testPass, fail: T.testFail, missing: T.testMissing, unknown: "" };
+    const rows = step.tests.map((x) => {
+      const name = x.suggested || x.wanted;
+      const found = x.actual.length && !x.actual.includes(name) ? `<span class="as">${esc(T.testFoundAs)} “${esc(x.actual[0])}”</span>` : "";
+      return `<li class="${x.status}"><i class="tdot"></i><code>${esc(name)}</code>${label[x.status] ? `<span class="st">${esc(label[x.status])}</span>` : ""}${found}</li>`;
+    }).join("");
+    const names = step.tests.map((x) => x.suggested || x.wanted).join("\n");
+    const unknown = step.tests.every((x) => x.status === "unknown") ? `<p class="hint">${esc(T.testUnknown)}</p>` : "";
+    return `<details class="tnames"${testNamesOpen ? " open" : ""}><summary>${esc(f(T.testNames, { n: step.tests.length }))}</summary>
+      <p class="hint">${T.testNamesHint}</p><ul>${rows}</ul>${unknown}
+      <button class="btn" type="button" data-copy="${esc(names)}">${esc(T.copyTestNames)}</button></details>`;
   }
 
   /** Un test "non trovato" va spiegato: è il nome del test che conta, non quello che verifica. */
@@ -287,6 +309,8 @@
       return render(new Set());
     }
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
+    const copy = e.target.closest("[data-copy]");
+    if (copy) return vscode.postMessage({ type: "copy", text: copy.dataset.copy });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
     const review = e.target.closest("[data-review-step]");
     if (review) return vscode.postMessage({ type: "reviewStep", n: Number(review.dataset.reviewStep) });
