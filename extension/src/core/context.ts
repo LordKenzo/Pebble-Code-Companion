@@ -54,11 +54,14 @@ export function buildReviewMessage(ctx: ProjectContext, file: FileUnderReview, l
 }
 
 /**
- * Gli errori dell'editor in un blocco <problems>: "riga 3 · errore · ts: Cannot find name 'describe'".
+ * Gli errori dell'editor in un blocco <problems>: "line 3 · error · ts: Cannot find name 'describe'".
  * Vuoto se non ce ne sono. Vengono prima della logica: un file che non compila non si discute.
  */
 export function formatProblems(problems: readonly Problem[] | undefined): string {
   if (!problems?.length) return "";
-  const lines = problems.slice(0, 20).map((p) => `riga ${p.line} · ${p.severity}${p.source ? ` · ${p.source}` : ""}: ${p.message.split("\n")[0]!.trim()}`);
+  const severity: Record<string, string> = { errore: "error", avviso: "warning", info: "info" };
+  const lines = problems
+    .slice(0, 20)
+    .map((p) => `line ${p.line} · ${severity[p.severity] ?? p.severity}${p.source ? ` · ${p.source}` : ""}: ${p.message.split("\n")[0]!.trim()}`);
   return `<problems>\n${lines.join("\n")}\n</problems>`;
 }

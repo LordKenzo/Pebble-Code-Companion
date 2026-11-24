@@ -16,11 +16,11 @@ fatto quando: passa un test che si chiama "Pagina iniziale"
 </file>
 <cursor line="7">
 <problems>
-riga 1 · errore · ts: Cannot find module '@testing-library/react' or its corresponding type declarations.
-riga 3 · errore · ts: Cannot find name 'describe'. Do you need to install type definitions for a test runner?
-riga 3 · errore · ts: Cannot find name 'it'. Do you need to install type definitions for a test runner?
-riga 4 · errore · ts: Cannot find name 'expect'.
-riga 7 · errore · ts: '}' expected.
+line 1 · error · ts: Cannot find module '@testing-library/react' or its corresponding type declarations.
+line 3 · error · ts: Cannot find name 'describe'. Do you need to install type definitions for a test runner?
+line 3 · error · ts: Cannot find name 'it'. Do you need to install type definitions for a test runner?
+line 4 · error · ts: Cannot find name 'expect'.
+line 7 · error · ts: '}' expected.
 </problems>
 
 ## Atteso
