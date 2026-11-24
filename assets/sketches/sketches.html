@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
-  Schizzi del README: tre disegni a mano (rough.js + Architects Daughter, OFL), bianco e nero con l'ambra di Pebble.
-  Per rigenerarli: apri questa pagina con ?s=path | balloon | file e fai uno screenshot del canvas
+  Schizzi del README: quattro disegni a mano (rough.js + Architects Daughter, OFL), bianco e nero con l'ambra di Pebble.
+  Per rigenerarli: apri questa pagina con ?s=path | balloon | file | map e fai uno screenshot del canvas
   (la pagina imposta la dimensione della finestra giusta in window.SIZE). Il seme è fisso: escono sempre uguali.
 -->
 <html><head><meta charset="utf-8">
@@ -13,7 +13,7 @@
 const INK = "#1f1f1f", SOFT = "#6b6b6b", PAPER = "#fdfcf8", AMBER = "#d4952b", RED = "#c8473f", GREEN = "#3f8f5a";
 const FONT = "'Architects Daughter', 'Comic Sans MS', cursive";
 const which = new URLSearchParams(location.search).get("s") || "path";
-const SIZES = { path: [1180, 760], balloon: [1180, 660], file: [1180, 560] };
+const SIZES = { path: [1180, 760], balloon: [1180, 660], file: [1180, 560], map: [1180, 720] };
 const [W, H] = SIZES[which];
 window.SIZE = SIZES[which];
 
@@ -61,7 +61,7 @@ function title(s) { text(s, W - 40, 46, 30, INK, "right"); }
 
 document.fonts.load(`20px ${FONT}`).then(() => {
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
-  ({ path: drawPath, balloon: drawBalloon, file: drawFile })[which]();
+  ({ path: drawPath, balloon: drawBalloon, file: drawFile, map: drawMap })[which]();
   document.title = "ready";
 });
 
@@ -204,5 +204,73 @@ function drawFile() {
   note(["the body stays empty:", "you write it"], A, 370);
   arrow([[A - 10, 366], [A - 110, 470], [X + 380, Y + 432], [X + 48, Y + 402]]);
   note(["shown as a diff first:", "Accept · Review and edit · Discard"], A, 480, SOFT, 17);
+}
+
+// ---------- 4. The path map and its diary ----------
+function drawMap() {
+  title("The path map");
+  const X = 40, Y = 120, EW = 720, EH = 560;
+  rect(X, Y, EW, EH, { strokeWidth: 2 });
+  text("PATH MAP · 3 of 6 steps", X + 18, Y + 30, 15, SOFT);
+  line(X, Y + 44, X + EW, Y + 44, { strokeWidth: 1.2, stroke: SOFT });
+
+  // il sentiero, da sinistra in basso a destra in alto
+  const P = [[95, 620], [165, 535], [245, 580], [305, 455], [375, 500], [425, 330]];
+  rc.curve(P, o({ stroke: "#dedad0", strokeWidth: 14, roughness: 0.7 }));
+  rc.curve(P.slice(0, 4), o({ stroke: GREEN, strokeWidth: 2.2, roughness: 0.8 }));
+  rc.curve(P.slice(3), o({ stroke: SOFT, strokeWidth: 1.6, roughness: 0.8, strokeLineDash: [6, 9] }));
+  rc.linearPath([[425, 308], [425, 248], [459, 262], [425, 276]], o({ stroke: SOFT, strokeWidth: 1.8 }));
+  P.forEach(([x, y], i) => {
+    if (i < 3) {
+      rc.ellipse(x, y, 40, 36, o({ fill: GREEN, fillStyle: "solid", stroke: GREEN }));
+      rc.linearPath([[x - 9, y], [x - 2, y + 7], [x + 10, y - 7]], o({ stroke: PAPER, strokeWidth: 2.6, roughness: 0.6 }));
+    } else if (i === 3) {
+      rc.ellipse(x, y, 50, 46, o({ fill: AMBER, fillStyle: "solid", stroke: AMBER }));
+      text("4", x, y + 7, 20, INK, "center");
+    } else {
+      rc.ellipse(x, y, 38, 34, o({ fill: PAPER, fillStyle: "solid", stroke: SOFT, strokeWidth: 1.5, strokeLineDash: [5, 6] }));
+      text(String(i + 1), x, y + 6, 17, SOFT, "center");
+    }
+  });
+  rc.ellipse(245, 580, 56, 52, o({ stroke: INK, strokeWidth: 1.6 }));
+  text("Step 3 · 4/4", 245, 628, 14, SOFT, "center");
+  text("Step 4 · in progress", 278, 420, 14, AMBER, "right");
+  text("to prepare", 375, 545, 14, SOFT, "center");
+
+  // il diario del passo selezionato
+  const DX = 480;
+  line(DX, Y + 44, DX, Y + EH, { stroke: SOFT, strokeWidth: 1.2 });
+  text("STEP 3 · DIARY", DX + 18, Y + 76, 13, AMBER);
+  text("Write the operations", DX + 18, Y + 104, 19);
+  text("4/4 tasks · 8 green · 1 concept", DX + 18, Y + 130, 14, SOFT);
+  const entries = [
+    ["10:12", AMBER, "step prepared: 4 tasks"],
+    ["10:31", RED, "red “divide: 0 ÷ 0”"],
+    ["10:40", "#4b74c9", "balloon, rung 2"],
+    ["", "", "concept: errors as values"],
+    ["10:48", GREEN, "green, seen red first"],
+    ["11:20", "#8a55b5", "review: 2 notes"],
+    ["11:24", GREEN, "step closed 4/4"],
+  ];
+  entries.forEach(([t, c, s], i) => {
+    const y = Y + 172 + i * 34;
+    if (t) {
+      text(t, DX + 18, y, 13, SOFT);
+      rc.circle(DX + 74, y - 5, 9, o({ fill: c, fillStyle: "solid", stroke: c }));
+    }
+    text(s, DX + 88, y, 15, t ? INK : SOFT);
+  });
+  button("Review the step", DX + 18, Y + EH - 62, 170, true);
+
+  // annotazioni
+  note(["one pebble per step: done, in progress, or still just a roadmap title"], X + 4, 70, INK, 19);
+  arrow([[460, 82], [470, 150], [440, 240]]);
+  const A = 800;
+  note(["click one to read its diary.", "Pebble writes it as you work:", "no model, no cost"], A, 300, AMBER);
+  arrow([[A - 10, 296], [A - 30, 300], [X + EW + 8, 302]], AMBER);
+  note(["red, then green: the story", "of how you got there"], A, 440);
+  arrow([[A - 10, 436], [A - 30, 432], [X + EW + 8, 428]]);
+  note(["ask the Mentor what you built", "and what is still fragile"], A, 600);
+  arrow([[A - 10, 596], [A - 60, 610], [DX + 196, Y + EH - 45]]);
 }
 </script></body></html>

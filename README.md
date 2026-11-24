@@ -61,6 +61,9 @@ A ticked box means *your tests pass*, not *your code is correct*. A test that ch
 ### The path grows with you
 Code changes the plan: you find a case nobody thought of, rename a file, change your mind, make a new decision. So Pebble lights the path one step at a time. Only the current step is broken into tasks; when it is done, Pebble plans the next one from the code as it is now. Discoveries along the way, like a test the balloon suggested, become tasks with one click. Pebble never rewrites the path behind your back: every change is a proposal you accept or discard. The tasks you finished stay in the file. They are the pebbles behind you, the story of how you got here.
 
+### A map, and a diary of how you got there
+Open the **path map** to see the whole roadmap as a trail: the steps you finished, the one you are on, the ones that are still just a title. Click a step to read its **diary**: the plan you accepted, each test that went red and then green, where you asked for help and which concept came up, the reviews. Pebble writes the diary by itself in `.pebble/diario.md` as you work, without calling a model, and leaves your own notes alone. When a step is done, **Review the step** asks the Mentor what you built and what is still fragile.
+
 ### Quiet until called
 No pop-ups while you type, and no Clippy. Press `⌥P` on a line and a balloon opens right there, under your code. Close it and Pebble goes back to silence.
 
@@ -108,6 +111,7 @@ Pebble is not built for speed. If you already know what to write and want it wri
 5. **Write it, run your tests.** Tasks tick themselves as tests turn green.
 6. **Stuck? `⌥P`.** Climb the ladder as far as you need.
 7. **Review.** When a file is done, ask Pebble to review it against your decisions and best practices.
+8. **Look back, then go on.** When the step is closed, open the map: review the step with the Mentor, read its diary, and prepare the next one from the code as it is now.
 
 ## A look at it
 
@@ -125,6 +129,10 @@ Sketches of the experience, not screenshots: the extension is a moving prototype
 
 <p align="center"><img src="assets/sketches/prepare-file.png" alt="Sketch of a prepared file: imports, a constant, an interface and the platesFor signature, with numbered pseudocode comments inside an empty body" width="820"></p>
 
+**The path map.** The whole roadmap as a trail, and the diary of each step: what happened, in order, written by Pebble as you work.
+
+<p align="center"><img src="assets/sketches/map.png" alt="Sketch of the path map: a trail of six pebbles, three done with a check mark, step 4 in progress in amber, two still to prepare with dashed outlines and a flag at the end; next to it the diary of step 3 with timed entries for the accepted plan, a red test, a balloon with its concept, the test turning green, a review and the step closing, and a Review the step button" width="820"></p>
+
 The sketches are drawn with [rough.js](https://roughjs.com) from [`assets/sketches/sketches.html`](assets/sketches/sketches.html).
 
 ## Status
@@ -133,10 +141,10 @@ Pebble is an early, working prototype, built in the open and dogfooded on itself
 
 | | |
 |---|---|
-| **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path panel, styled like the mockup. It reads `.pebble/percorso.md`, and tasks tick themselves when you save: Pebble runs your tests (any runner with TAP output), reads the compiler errors VS Code already has, and warns you when a test has never been seen failing. **Also new:** the `⌥P` balloon on the current line: it starts with a question built from your failing tests, climbs the help ladder on request, answers your replies, and offers *why it matters* and a deep dive. When a step is done, **Prepare step N** plans the next one from your code as it is now, and shows it as a diff to accept or discard. **Prepare the file** writes the skeleton of a missing file: imports, types, signatures and pseudocode as comments, with empty bodies; for a test file, one complete example test and the other cases as `test.todo`. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
-| **In design** | The notebook, and tracking drift when files or tests are renamed. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/pair-engineer-plan.md`](docs/piano-pair-engineer.md). |
+| **Works today** (extension v0.7) | `init` from `bootstrap.md`, file review as VS Code diagnostics, a side-panel conversation, `next` and `tests` commands, the three zones enforced by both the prompt and a filter, experience levels from entry to senior, cost tracking. **New:** the Path panel, styled like the mockup. It reads `.pebble/percorso.md`, and tasks tick themselves when you save: Pebble runs your tests (any runner with TAP output), reads the compiler errors VS Code already has, and warns you when a test has never been seen failing. **Also new:** the `⌥P` balloon on the current line: it starts with a question built from your failing tests, climbs the help ladder on request, answers your replies, and offers *why it matters* and a deep dive. When a step is done, **Prepare step N** plans the next one from your code as it is now, and shows it as a diff to accept or discard. **Prepare the file** writes the skeleton of a missing file: imports, types, signatures and pseudocode as comments, with empty bodies; for a test file, one complete example test and the other cases as `test.todo`. **New in 0.7.15:** the **path map**, an editor tab with every step as a pebble and, next to it, the step's **diary** (`.pebble/diario.md`), which Pebble writes from what it already sees: accepted plans, tests turning red and green, balloons and their concepts, closed tasks, reviews. **Review the step** sends a closed step's tasks and diary to the Mentor. Providers: Anthropic, OpenAI or any OpenAI-compatible local server such as Ollama. |
+| **In design** | **Adopting a project already under way** ([ADR-014](.pebble/decisions/ADR-014-adopting-a-project.md)): Pebble reads the code, proposes the decisions it finds there for you to confirm, closes a "base camp" with the state of your tests, then opens short paths for each feature or bug, a bug always starting from a test that reproduces it. Also the notebook, and tracking drift when files or tests are renamed. See the interactive mockup in [`mockup/on-demand.html`](mockup/on-demand.html) and the plan in [`docs/pair-engineer-plan.md`](docs/pair-engineer-plan.md). |
 
-Pebble speaks **English and Italian**: set `pebble.language` (`auto` follows VS Code's language). The interface, the files Pebble writes and the model's answers all follow it. The ADRs, evals and internal docs are in Italian for now, because that is the language the project is being built in.
+Pebble speaks **English and Italian**: set `pebble.language` (`auto` follows VS Code's language). The interface, the files Pebble writes and the model's answers all follow it. When you write to Pebble in your own words, in the chat or in reply to the balloon, it answers in the language you wrote in. Pebble's own ADRs, evals and docs are in English.
 
 ## Repository layout
 
