@@ -1,0 +1,26 @@
+ 1 | import type { Grams } from "./units.ts";
+ 2 | import { ok, type Result } from "./result.ts";
+ 3 | 
+ 4 | export const BAR: Grams = 20_000;
+ 5 | export const PLATES: readonly Grams[] = [25_000, 20_000, 15_000, 10_000, 5_000, 2_500, 1_250];
+ 6 | 
+ 7 | export interface PlateLoad {
+ 8 |   readonly total: Grams;
+ 9 |   readonly perSide: readonly Grams[];
+10 | }
+11 | 
+12 | /** Plates per side for a load that can already be built. */
+13 | export function platesFor(total: Grams): Result<PlateLoad> {
+14 |   if (total < BAR) {
+15 |     return ok({ total: BAR, perSide: [] }, ["below the barbell weight"]);
+16 |   }
+17 |   let remaining = (total - BAR) / 2;
+18 |   const perSide: Grams[] = [];
+19 |   for (const plate of PLATES) {
+20 |     while (remaining > plate) {
+21 |       perSide.push(plate);
+22 |       remaining -= plate;
+23 |     }
+24 |   }
+25 |   return ok({ total, perSide });
+26 | }

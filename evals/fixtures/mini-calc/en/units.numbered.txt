@@ -1,0 +1,6 @@
+1 | /** Internally everything is in integer grams (ADR-003). */
+2 | export type Grams = number;
+3 | 
+4 | export function kgToGrams(kg: number): Grams {
+5 |   return Math.round(kg * 1000);
+6 | }
