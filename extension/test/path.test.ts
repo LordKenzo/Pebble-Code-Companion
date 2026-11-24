@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   applyStates, buildViewModel, describeCondition, evaluate, explainCondition, findExports, parseCondition, parsePath, summarizeConditions, testNameMatches, withCheckbox,
-  updateSeenRed, type Signals,
+  updateSeenRed, localStepName, type Signals,
 } from "../src/core/path";
 
 const PERCORSO = [
@@ -345,4 +345,12 @@ test("in inglese: motivi, condizioni spiegate e riassunti", () => {
   assert.equal(explainCondition({ kind: "manual" }, "en").text, "You tick it yourself, when it feels done.");
   assert.equal(summarizeConditions(task("Implementa platesFor").conditions, "en"), "3 tests · 0 errors");
   assert.equal(buildViewModel(parsePath("- [ ] A").tasks, undefined, "en").steps[0]!.name, "No step");
+});
+
+test("i nomi dei passi seguono la lingua scelta, anche in un percorso misto", () => {
+  const md = "# Percorso\n\n## Passo 1 · Setup\n- [x] A\n  fatto quando: a mano\n\n## Step 2 · Test\n- [ ] B\n  done when: manual\n";
+  const tasks = parsePath(md).tasks;
+  assert.deepEqual(buildViewModel(tasks, undefined, "it").steps.map((s) => s.name), ["Passo 1 · Setup", "Passo 2 · Test"]);
+  assert.deepEqual(buildViewModel(tasks, undefined, "en").steps.map((s) => s.name), ["Step 1 · Setup", "Step 2 · Test"]);
+  assert.equal(localStepName("Senza numero", "en"), "Senza numero");
 });

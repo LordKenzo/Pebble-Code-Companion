@@ -399,6 +399,14 @@ export interface TaskView {
   state?: { status: "done" | "open"; progress?: Progress; reason?: string; warning?: string; code?: ReasonCode; path?: string };
 }
 
+/**
+ * Il nome di un passo nella lingua scelta: "Step 2 · …" e "Passo 2 · …" diventano la stessa parola,
+ * così un percorso scritto in parte in una lingua e in parte nell'altra si legge in una sola (ADR-012).
+ */
+export function localStepName(name: string, lang: Lang = "it"): string {
+  return name.replace(/^(?:passo|step)\s+(\d+)/i, `${PATH_TEXT[lang].stepWord} $1`);
+}
+
 export function buildViewModel(tasks: readonly Task[], states?: readonly TaskState[], lang: Lang = "it"): PathViewModel {
   const stateOf = new Map(tasks.map((t, i) => [t.line, states?.[i]] as const));
   const byStep = new Map<string, Task[]>();
@@ -415,7 +423,7 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
     const text = ts.map((t) => [t.title, t.todo, t.signature].join(" ")).join(" ");
     const refs = [...new Set(text.match(/ADR-\d{3}/g) ?? [])].sort();
     return {
-      name,
+      name: localStepName(name, lang),
       refs,
       done: ts.filter((t) => t.checked).length,
       total: ts.length,
