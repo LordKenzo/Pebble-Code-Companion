@@ -142,7 +142,7 @@ export function activate(context: vscode.ExtensionContext): void {
     ready: () => void session.start(),
     send: (text) => void session.send(text),
     action: (id) => void session.action(id),
-  }, lang);
+  }, lang, context.extensionUri);
   session = new MentorSession(chatView, diagnostics, {
     note: (event) => diary.append(event),
     mentor: async () => {

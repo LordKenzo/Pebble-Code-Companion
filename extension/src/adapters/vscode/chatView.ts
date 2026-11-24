@@ -30,17 +30,24 @@ export class ChatView implements vscode.WebviewViewProvider {
   constructor(
     private handlers: ChatHandlers,
     private lang: () => Lang = () => "it",
+    /** Per i fantasmini del Mentor in media/ (ghost-*.svg). */
+    private extensionUri?: vscode.Uri,
   ) {}
+
+  private page(webview: vscode.Webview): string {
+    const ghost = (mood: string) => (this.extensionUri ? webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString() : "");
+    return html(webview.cspSource, this.lang(), { neutral: ghost("neutral"), thinking: ghost("thinking"), worried: ghost("worried") });
+  }
 
   /** Cambio di lingua: la pagina si ridisegna con i testi nuovi, la conversazione resta. */
   relocalize(): void {
-    if (this.view) this.view.webview.html = html(this.view.webview.cspSource, this.lang());
+    if (this.view) this.view.webview.html = this.page(this.view.webview);
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
-    view.webview.options = { enableScripts: true };
-    view.webview.html = html(view.webview.cspSource, this.lang());
+    view.webview.options = { enableScripts: true, ...(this.extensionUri && { localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")] }) };
+    view.webview.html = this.page(view.webview);
     view.webview.onDidReceiveMessage((m: { type: string; text?: string; id?: string }) => {
       if (m.type === "ready") {
         this.flush();
@@ -100,12 +107,12 @@ export class ChatView implements vscode.WebviewViewProvider {
   }
 }
 
-function html(csp: string, lang: Lang): string {
+function html(csp: string, lang: Lang, ghosts: { neutral: string; thinking: string; worried: string }): string {
   const C = CHAT_TEXT[lang];
   const a = (s: string) => escapeHtml(s);
   const nonce = Math.random().toString(36).slice(2);
   return `<!doctype html><html lang="${C.htmlLang}"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${csp}; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <style>
   html,body{height:100%}
   body{margin:0;padding:0;font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);color:var(--vscode-foreground);display:flex;flex-direction:column}
@@ -145,6 +152,12 @@ function html(csp: string, lang: Lang): string {
   @keyframes p{50%{opacity:.25}}
   @media (prefers-reduced-motion:reduce){.dots i{animation:none}}
   .empty{color:var(--vscode-descriptionForeground);text-align:center;padding:30px 10px;line-height:1.6}
+  /* Il fantasmino-mentor: avatar sulle risposte, pensieroso mentre aspetta, preoccupato sugli errori. */
+  .ghost{width:22px;height:24px;flex:0 0 auto;margin:-3px 0}
+  .empty .ghost{display:block;width:72px;height:78px;margin:0 auto 10px}
+  .thinking .ghost{width:28px;height:30px;animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-3px)}}
+  @media (prefers-reduced-motion:reduce){.thinking .ghost{animation:none}}
   footer{border-top:1px solid var(--vscode-panel-border);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
   .chips{display:flex;gap:4px;flex-wrap:wrap}
   .chips button{font-family:var(--vscode-editor-font-family);font-size:11px;padding:2px 8px;border-radius:999px}
@@ -167,18 +180,20 @@ function html(csp: string, lang: Lang): string {
   const feed = document.getElementById("feed");
   const input = document.getElementById("input");
   const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const G = ${JSON.stringify(ghosts)};
+  const ghost = (mood) => G[mood] ? '<img class="ghost" src="' + G[mood] + '" alt="">' : "";
   const actions = (list) => list && list.length ? '<div class="actions">' + list.map(a => '<button class="' + (a.primary ? "primary" : "") + '" data-action="' + esc(a.id) + '">' + esc(a.label) + '</button>').join("") + '</div>' : "";
 
   function render(items) {
     if (!items.length) {
-      feed.innerHTML = '<div class="empty">${C.empty.replace(/'/g, "\\'")}</div>';
+      feed.innerHTML = '<div class="empty">' + ghost("neutral") + '${C.empty.replace(/'/g, "\\'")}</div>';
       return;
     }
     feed.innerHTML = items.map((i) => {
       if (i.kind === "user") return '<div class="user">' + esc(i.text) + '</div>';
-      if (i.kind === "thinking") return '<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>' + esc(i.text) + '</div>';
-      if (i.kind === "error") return '<div class="card error"><div class="body">' + esc(i.text) + '</div>' + actions(i.actions) + '</div>';
-      return '<article class="card"><header><span class="label">' + esc(i.label) + '</span>' + (i.file ? '<span class="file">' + esc(i.file) + '</span>' : "") + '</header><div class="body">' + i.html + '</div>' + (i.meta ? '<div class="meta">' + esc(i.meta) + '</div>' : "") + actions(i.actions) + '</article>';
+      if (i.kind === "thinking") return '<div class="thinking">' + (G.thinking ? ghost("thinking") : '<span class="dots"><i></i><i></i><i></i></span>') + esc(i.text) + '</div>';
+      if (i.kind === "error") return '<div class="card error"><header>' + ghost("worried") + '<span class="label">Pebble</span></header><div class="body">' + esc(i.text) + '</div>' + actions(i.actions) + '</div>';
+      return '<article class="card"><header>' + ghost("neutral") + '<span class="label">' + esc(i.label) + '</span>' + (i.file ? '<span class="file">' + esc(i.file) + '</span>' : "") + '</header><div class="body">' + i.html + '</div>' + (i.meta ? '<div class="meta">' + esc(i.meta) + '</div>' : "") + actions(i.actions) + '</article>';
     }).join("");
     feed.scrollTop = feed.scrollHeight;
   }
