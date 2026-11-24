@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { DEFAULT_PRICES, formatUsd, type Price } from "../../core/cost";
 import { LEVELS } from "../../core/model";
+import { SETTINGS_TEXT, type Lang } from "../../core/i18n";
 import type { MentorModel } from "../../core/ports";
 import type { ProviderId } from "../llm/factory";
 
@@ -17,6 +18,7 @@ export interface SettingsState {
   keys: Record<ProviderId, boolean>;
   monthSpend: string;
   monthReviews: number;
+  language: string;
 }
 
 export interface SettingsDeps {
@@ -25,6 +27,8 @@ export interface SettingsDeps {
   mentorFor(provider: ProviderId, model: string): Promise<MentorModel>;
   setKey(provider: ProviderId): Promise<void>;
   deleteKey(provider: ProviderId): Promise<void>;
+  /** Lingua del pannello (ADR-012). */
+  lang(): Lang;
 }
 
 type FromWebview =
@@ -47,13 +51,20 @@ export class SettingsPanel {
       this.panel.reveal();
       return;
     }
-    this.panel = vscode.window.createWebviewPanel("pebble.settings", "Pebble · Impostazioni", vscode.ViewColumn.Active, {
+    this.panel = vscode.window.createWebviewPanel("pebble.settings", SETTINGS_TEXT[this.deps.lang()].panelTitle, vscode.ViewColumn.Active, {
       enableScripts: true,
       retainContextWhenHidden: true,
     });
     this.panel.onDidDispose(() => (this.panel = undefined));
     this.panel.webview.onDidReceiveMessage((m: FromWebview) => void this.handle(m));
-    this.panel.webview.html = html(this.panel.webview.cspSource);
+    this.panel.webview.html = html(this.panel.webview.cspSource, this.deps.lang());
+  }
+
+  /** Cambio di lingua: la pagina si ridisegna con i testi nuovi. */
+  relocalize(): void {
+    if (!this.panel) return;
+    this.panel.title = SETTINGS_TEXT[this.deps.lang()].panelTitle;
+    this.panel.webview.html = html(this.panel.webview.cspSource, this.deps.lang());
   }
 
   /** Da chiamare quando cambiano impostazioni, chiavi o spesa. */
@@ -89,7 +100,7 @@ export class SettingsPanel {
       case "check":
         try {
           await (await this.deps.mentorFor(m.provider, m.model)).check();
-          await this.post({ type: "check", ok: true, message: `Connessione riuscita: il modello "${m.model}" è disponibile.` });
+          await this.post({ type: "check", ok: true, message: SETTINGS_TEXT[this.deps.lang()].connectionOk(m.model) });
         } catch (err) {
           await this.post({ type: "check", ok: false, message: err instanceof Error ? err.message : String(err) });
         }
@@ -109,19 +120,20 @@ export class SettingsPanel {
   }
 }
 
-function html(csp: string): string {
+function html(csp: string, lang: Lang): string {
+  const T = SETTINGS_TEXT[lang];
   const nonce = Math.random().toString(36).slice(2);
   const levels = {
-    entry: ["Entry", "Sto imparando a programmare. Parole semplici, termini spiegati, passi numerati."],
-    junior: ["Junior", "Programmo, ma ho poca esperienza di progetto. Il perché, con il nome dei principi."],
-    mid: ["Mid", "Sono autonomo. Il comportamento predefinito."],
-    senior: ["Senior", "Solo bug, decisioni violate e trade-off. Note brevi."],
+    entry: ["Entry", T.levelEntry],
+    junior: ["Junior", T.levelJunior],
+    mid: ["Mid", T.levelMid],
+    senior: ["Senior", T.levelSenior],
   };
   const builtinPrices = Object.fromEntries(
-    Object.entries(DEFAULT_PRICES).map(([k, p]) => [k, `${formatUsd(p.input)} in · ${formatUsd(p.output)} out per milione di token`]),
+    Object.entries(DEFAULT_PRICES).map(([k, p]) => [k, T.perMillion(formatUsd(p.input), formatUsd(p.output))]),
   );
 
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="${T.htmlLang}"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <style>
   body{font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);color:var(--vscode-foreground);padding:20px 24px 48px;line-height:1.5;max-width:760px}
@@ -159,80 +171,89 @@ function html(csp: string): string {
   [hidden]{display:none!important}
   @media (max-width:520px){.field{grid-template-columns:1fr}.field .help{grid-column:1}}
 </style></head><body>
-<h1>Impostazioni di Pebble</h1>
-<p class="lead">Le modifiche si salvano subito nelle impostazioni utente di VS Code. Le chiavi API restano nel portachiavi, non nei file.</p>
+<h1>${T.title}</h1>
+<p class="lead">${T.lead}</p>
 
 <section>
-  <h2>Modello</h2>
+  <h2>${T.language}</h2>
+  <div class="choices" role="radiogroup" aria-label="${T.language}">
+    <label class="choice"><input type="radio" name="language" value="auto"><b>${T.langAuto}</b><span>${T.langAutoHelp}</span></label>
+    <label class="choice"><input type="radio" name="language" value="it"><b>${T.langIt}</b><span>${T.langItHelp}</span></label>
+    <label class="choice"><input type="radio" name="language" value="en"><b>${T.langEn}</b><span>${T.langEnHelp}</span></label>
+  </div>
+</section>
+
+<section>
+  <h2>${T.model}</h2>
   <div class="choices" role="radiogroup" aria-label="Provider">
-    <label class="choice"><input type="radio" name="provider" value="anthropic"><b>Claude</b><span>API di Anthropic. Le review più accurate.</span></label>
-    <label class="choice"><input type="radio" name="provider" value="openai"><b>OpenAI</b><span>API di OpenAI, con la tua chiave.</span></label>
-    <label class="choice"><input type="radio" name="provider" value="local"><b>Locale</b><span>Ollama, LM Studio, llama.cpp. Il codice non esce dal computer.</span></label>
+    <label class="choice"><input type="radio" name="provider" value="anthropic"><b>Claude</b><span>${T.claudeHelp}</span></label>
+    <label class="choice"><input type="radio" name="provider" value="openai"><b>OpenAI</b><span>${T.openaiHelp}</span></label>
+    <label class="choice"><input type="radio" name="provider" value="local"><b>${T.local}</b><span>${T.localHelp}</span></label>
   </div>
 
   <div data-for="anthropic">
-    <div class="field"><label for="anthropicModelSelect">Modello</label>
+    <div class="field"><label for="anthropicModelSelect">${T.model}</label>
       <select id="anthropicModelSelect" data-model-for="anthropic.model" data-input="anthropicModel"></select>
-      <input type="text" id="anthropicModel" data-key="anthropic.model" placeholder="Nome esatto del modello" hidden>
+      <input type="text" id="anthropicModel" data-key="anthropic.model" placeholder="${T.exactModel}" hidden>
       <span class="help" id="anthropicPrice"></span></div>
-    <div class="field"><label for="anthropicEffort">Profondità di ragionamento</label>
+    <div class="field"><label for="anthropicEffort">${T.effort}</label>
       <select id="anthropicEffort" data-key="anthropic.effort">
-        <option value="low">Bassa · più veloce ed economica</option>
-        <option value="medium">Media · consigliata</option>
-        <option value="high">Alta</option>
-        <option value="xhigh">Molto alta · più lenta e costosa</option>
+        <option value="low">${T.effortLow}</option>
+        <option value="medium">${T.effortMedium}</option>
+        <option value="high">${T.effortHigh}</option>
+        <option value="xhigh">${T.effortXhigh}</option>
       </select></div>
   </div>
 
   <div data-for="openai">
-    <div class="field"><label for="openaiModelSelect">Modello</label>
+    <div class="field"><label for="openaiModelSelect">${T.model}</label>
       <div class="row"><select id="openaiModelSelect" data-model-for="openai.model" data-input="openaiModel"></select>
-      <button class="secondary" data-list="openai">Aggiorna elenco</button></div>
-      <input type="text" id="openaiModel" data-key="openai.model" placeholder="Nome esatto del modello, es. gpt-6.2-sol" hidden>
+      <button class="secondary" data-list="openai">${T.refreshList}</button></div>
+      <input type="text" id="openaiModel" data-key="openai.model" placeholder="${T.exactModelOpenai}" hidden>
       <span class="help" id="openaiListInfo"></span></div>
   </div>
 
   <div data-for="local">
-    <div class="field"><label for="localBaseUrl">Indirizzo del server</label>
+    <div class="field"><label for="localBaseUrl">${T.serverUrl}</label>
       <input type="text" id="localBaseUrl" data-key="local.baseUrl">
       <span class="help">Ollama: http://localhost:11434/v1 · LM Studio: http://localhost:1234/v1</span></div>
-    <div class="field"><label for="localModel">Modello</label>
-      <div class="row"><select id="localModelSelect" aria-label="Modelli installati"></select>
-      <button class="secondary" data-list="local">Aggiorna</button></div>
-      <span class="help" id="localListInfo">I modelli locali trovano le violazioni evidenti, ma spesso non i bug sottili.</span></div>
+    <div class="field"><label for="localModel">${T.model}</label>
+      <div class="row"><select id="localModelSelect" aria-label="${T.installedModels}"></select>
+      <button class="secondary" data-list="local">${T.refresh}</button></div>
+      <span class="help" id="localListInfo">${T.localWarning}</span></div>
   </div>
 
-  <div class="row"><button id="check">Verifica connessione</button></div>
+  <div class="row"><button id="check">${T.checkConnection}</button></div>
   <div id="checkResult" class="status" hidden></div>
 </section>
 
 <section>
-  <h2>Chiavi API</h2>
+  <h2>${T.apiKeys}</h2>
   <div class="field"><label>Anthropic</label><div class="row"><span class="pill" id="key-anthropic"></span>
-    <button class="secondary" data-setkey="anthropic">Imposta</button><button class="secondary" data-delkey="anthropic">Rimuovi</button></div></div>
+    <button class="secondary" data-setkey="anthropic">${T.set}</button><button class="secondary" data-delkey="anthropic">${T.remove}</button></div></div>
   <div class="field"><label>OpenAI</label><div class="row"><span class="pill" id="key-openai"></span>
-    <button class="secondary" data-setkey="openai">Imposta</button><button class="secondary" data-delkey="openai">Rimuovi</button></div></div>
-  <div class="field"><label>Server locale</label><div class="row"><span class="pill" id="key-local"></span>
-    <button class="secondary" data-setkey="local">Imposta</button><button class="secondary" data-delkey="local">Rimuovi</button></div>
-    <span class="help">Serve solo se il tuo server locale richiede una chiave.</span></div>
+    <button class="secondary" data-setkey="openai">${T.set}</button><button class="secondary" data-delkey="openai">${T.remove}</button></div></div>
+  <div class="field"><label>${T.localServer}</label><div class="row"><span class="pill" id="key-local"></span>
+    <button class="secondary" data-setkey="local">${T.set}</button><button class="secondary" data-delkey="local">${T.remove}</button></div>
+    <span class="help">${T.localKeyHelp}</span></div>
 </section>
 
 <section>
-  <h2>Il tuo livello di esperienza</h2>
-  <div class="choices" role="radiogroup" aria-label="Livello di esperienza">
+  <h2>${T.levelTitle}</h2>
+  <div class="choices" role="radiogroup" aria-label="${T.levelLabel}">
     ${LEVELS.map((l) => `<label class="choice"><input type="radio" name="level" value="${l}"><b>${levels[l][0]}</b><span>${levels[l][1]}</span></label>`).join("")}
   </div>
-  <p class="muted">In tutti i livelli Pebble non scrive codice e dà al massimo 3 note per review.</p>
+  <p class="muted">${T.levelNote}</p>
 </section>
 
 <section>
-  <h2>Spesa</h2>
+  <h2>${T.spend}</h2>
   <div class="spend"><strong id="monthSpend"></strong><span class="muted" id="monthReviews"></span>
-    <button class="secondary" data-command="pebble.showSpend">Dettaglio</button></div>
-  <div class="field"><label for="budget">Budget mensile ($)</label>
+    <button class="secondary" data-command="pebble.showSpend">${T.detail}</button></div>
+  <div class="field"><label for="budget">${T.budget}</label>
     <input type="number" id="budget" min="0" step="1" data-key="monthlyBudgetUsd" data-number>
-    <span class="help">Superato il budget, Pebble ti avvisa. 0 = nessun budget.</span></div>
-  <div class="field" id="priceField"><label>Prezzo del modello OpenAI</label>
+    <span class="help">${T.budgetHelp}</span></div>
+  <div class="field" id="priceField"><label>${T.openaiPrice}</label>
     <div>
       <div class="prices">
         <label>Input $/M<input type="number" min="0" step="0.01" id="pIn"></label>
@@ -241,7 +262,7 @@ function html(csp: string): string {
       </div>
     </div>
     <span class="help" id="priceHelp"></span></div>
-  <p class="muted">La spesa è una stima sui token restituiti dal provider. La cifra esatta è nella console di Anthropic o OpenAI.</p>
+  <p class="muted">${T.spendNote}</p>
 </section>
 
 
@@ -250,6 +271,7 @@ function html(csp: string): string {
   const BUILTIN = ${JSON.stringify(builtinPrices)};
   const ANTHROPIC_MODELS = ${JSON.stringify(Object.keys(DEFAULT_PRICES))};
   const OTHER = "__other__";
+  const J = ${JSON.stringify(T.js)};
   let S = null;
   let openaiModels = [];
   let openaiRequested = false;
@@ -260,9 +282,9 @@ function html(csp: string): string {
     const list = [...models];
     if (current && !list.includes(current)) list.unshift(current);
     sel.innerHTML = "";
-    if (!current) sel.add(new Option(list.length ? "Scegli un modello…" : emptyLabel, ""));
+    if (!current) sel.add(new Option(list.length ? J.chooseModel : emptyLabel, ""));
     list.forEach((id) => sel.add(new Option(id, id)));
-    sel.add(new Option("Altro… (scrivi il nome)", OTHER));
+    sel.add(new Option(J.other, OTHER));
     sel.value = current || "";
   }
   const $ = (id) => document.getElementById(id);
@@ -271,30 +293,31 @@ function html(csp: string): string {
   function render() {
     document.querySelectorAll('input[name=provider]').forEach((r) => (r.checked = r.value === S.provider));
     document.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === S.experienceLevel));
+    document.querySelectorAll('input[name=language]').forEach((r) => (r.checked = r.value === S.language));
     document.querySelectorAll('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== S.provider));
     fillSelect($("anthropicModelSelect"), ANTHROPIC_MODELS, S.anthropicModel, "");
-    fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, "Premi Aggiorna elenco");
+    fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, J.pressRefreshList);
     if (S.provider === "openai" && S.keys.openai && !openaiRequested) {
       openaiRequested = true;
-      $("openaiListInfo").textContent = "Carico i modelli del tuo account…";
+      $("openaiListInfo").textContent = J.loadingAccountModels;
       vscode.postMessage({ type: "listModels", provider: "openai" });
     }
     for (const [id, v] of [["anthropicModel", S.anthropicModel], ["anthropicEffort", S.anthropicEffort], ["openaiModel", S.openaiModel], ["localBaseUrl", S.localBaseUrl], ["budget", S.monthlyBudgetUsd]]) {
       if (document.activeElement !== $(id)) $(id).value = v;
     }
-    $("anthropicPrice").textContent = BUILTIN[S.anthropicModel] ? "Prezzo: " + BUILTIN[S.anthropicModel] : "Prezzo non noto per questo modello.";
+    $("anthropicPrice").textContent = BUILTIN[S.anthropicModel] ? J.price + BUILTIN[S.anthropicModel] : J.priceUnknown;
     const sel = $("localModelSelect");
     if (S.localModel && ![...sel.options].some((o) => o.value === S.localModel)) sel.add(new Option(S.localModel, S.localModel));
-    if (!S.localModel && !sel.options.length) sel.add(new Option("Premi Aggiorna per vedere i modelli installati", ""));
+    if (!S.localModel && !sel.options.length) sel.add(new Option(J.pressRefreshLocal, ""));
     sel.value = S.localModel;
     for (const p of ["anthropic", "openai", "local"]) {
       const el = $("key-" + p);
-      el.textContent = S.keys[p] ? "impostata" : "non impostata";
+      el.textContent = S.keys[p] ? J.keySet : J.keyNotSet;
       el.classList.toggle("on", S.keys[p]);
       document.querySelector('[data-delkey="' + p + '"]').hidden = !S.keys[p];
     }
     $("monthSpend").textContent = S.monthSpend;
-    $("monthReviews").textContent = S.monthReviews + " richieste questo mese";
+    $("monthReviews").textContent = S.monthReviews + J.requestsThisMonth;
     const showPrice = S.provider === "openai" && S.openaiModel;
     $("priceField").hidden = !showPrice;
     if (showPrice) {
@@ -303,8 +326,8 @@ function html(csp: string): string {
         if (document.activeElement !== $(id)) $(id).value = p[k] ?? "";
       }
       $("priceHelp").textContent = S.prices[S.openaiModel]
-        ? "Prezzi per " + S.openaiModel + ", in dollari per milione di token."
-        : "Senza prezzo vedi solo i token. Lo trovi nella pagina prezzi di OpenAI.";
+        ? J.pricesFor.replace("{m}", S.openaiModel)
+        : J.noPrice;
     }
   }
 
@@ -316,6 +339,7 @@ function html(csp: string): string {
     const t = e.target;
     if (t.name === "provider") { S.provider = t.value; render(); set("provider", t.value); $("checkResult").hidden = true; }
     else if (t.name === "level") set("experienceLevel", t.value);
+    else if (t.name === "language") set("language", t.value);
     else if (t.id === "localModelSelect") { if (t.value) set("local.model", t.value); }
     else if (t.dataset.modelFor) {
       const input = $(t.dataset.input);
@@ -337,11 +361,11 @@ function html(csp: string): string {
       const model = currentModel();
       const r = $("checkResult");
       r.hidden = false; r.className = "status";
-      if (!model) { r.classList.add("err"); r.textContent = "Scegli prima un modello."; return; }
-      r.textContent = "Verifica in corso…";
+      if (!model) { r.classList.add("err"); r.textContent = J.chooseModelFirst; return; }
+      r.textContent = J.checking;
       vscode.postMessage({ type: "check", provider: S.provider, model });
     }
-    if (b.dataset.list) { $(b.dataset.list + "ListInfo").textContent = "Carico l'elenco…"; vscode.postMessage({ type: "listModels", provider: b.dataset.list }); }
+    if (b.dataset.list) { $(b.dataset.list + "ListInfo").textContent = J.loadingList; vscode.postMessage({ type: "listModels", provider: b.dataset.list }); }
     if (b.dataset.setkey) vscode.postMessage({ type: "setKey", provider: b.dataset.setkey });
     if (b.dataset.delkey) vscode.postMessage({ type: "deleteKey", provider: b.dataset.delkey });
     if (b.dataset.command) vscode.postMessage({ type: "command", command: b.dataset.command });
@@ -356,10 +380,10 @@ function html(csp: string): string {
       if (m.error) { info.textContent = m.error; return; }
       if (m.provider === "local") {
         const sel = $("localModelSelect"); sel.innerHTML = "";
-        if (!m.models.length) sel.add(new Option("Nessun modello installato", ""));
-        else { if (!S.localModel) sel.add(new Option("Scegli un modello…", "")); m.models.forEach((id) => sel.add(new Option(id, id))); }
+        if (!m.models.length) sel.add(new Option(J.noLocalModels, ""));
+        else { if (!S.localModel) sel.add(new Option(J.chooseModel, "")); m.models.forEach((id) => sel.add(new Option(id, id))); }
         sel.value = S.localModel;
-        info.textContent = m.models.length + " modelli installati. I modelli locali trovano le violazioni evidenti, ma spesso non i bug sottili.";
+        info.textContent = m.models.length + J.localCount;
       } else {
         // Solo modelli di testo, senza le versioni datate (gpt-5-2025-08-07), dal più recente.
         openaiModels = m.models
@@ -368,8 +392,8 @@ function html(csp: string): string {
             const ga = a.startsWith("gpt"), gb = b.startsWith("gpt");
             return ga === gb ? b.localeCompare(a, undefined, { numeric: true }) : ga ? -1 : 1;
           });
-        fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, "Nessun modello trovato");
-        info.textContent = openaiModels.length + " modelli disponibili, dal più recente.";
+        fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, J.noModelsFound);
+        info.textContent = openaiModels.length + J.openaiCount;
       }
     }
   });
