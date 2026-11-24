@@ -197,7 +197,7 @@ export class HelpBalloon implements vscode.Disposable {
       const costUsd = estimateCost(usage, this.deps.priceFor(mentor));
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd });
 
-      const { body, concept } = parseHelpAnswer(stripLongCode(text).text);
+      const { body, concept } = parseHelpAnswer(stripLongCode(text, this.deps.lang()).text);
       if (concept && !st.concepts.includes(concept)) st.concepts.push(concept);
       st.history.push(historyLine(body));
       const red = tests?.filter((t) => !t.ok).length ?? 0;
@@ -206,7 +206,7 @@ export class HelpBalloon implements vscode.Disposable {
         `<span style="color:#e3b25c;">${rungBar(st.rung)}</span> &nbsp;<sub>${context}</sub>`,
         body,
         concept ? `*${this.T.concept}:* ${concept}` : "",
-        `<sub>${mentor.provider} · ${mentor.model} · ${formatUsd(costUsd)}</sub>`,
+        `<sub>${mentor.provider} · ${mentor.model} · ${formatUsd(costUsd, this.deps.lang())}</sub>`,
       ]
         .filter(Boolean)
         .join("\n\n");
