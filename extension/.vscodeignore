@@ -6,4 +6,6 @@ scripts/**
 node_modules/**
 tsconfig*.json
 **/*.map
+*.vsix
+!README.it.md
 .gitignore
