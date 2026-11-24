@@ -977,3 +977,41 @@ const extEn: typeof extIt = {
   severity: { errore: "error", avviso: "warning", info: "info" },
 };
 export const EXT_TEXT: Record<Lang, typeof extIt> = { it: extIt, en: extEn };
+
+// ---------- diario (core/diary, ADR-013) ----------
+
+const diaryIt = {
+  title: "# Diario",
+  intro: "Lo scrive Pebble: piani accettati, test, fumetti, compiti, riletture. Puoi aggiungere note tue: Pebble non le tocca.",
+  stepPlanned: (n: number) => `passo preparato: ${n} ${n === 1 ? "compito" : "compiti"} (proposta accettata)`,
+  red: (t: string) => `rosso "${t}"`,
+  green: (t: string, seenRed: boolean) => `verde "${t}"${seenRed ? " (visto rosso prima)" : ""}`,
+  scaffold: (p: string) => `file preparato: ${p}`,
+  taskDone: (t: string) => `fatto: ${t}`,
+  taskReopened: (t: string) => `riaperto: ${t}`,
+  help: (where: string, rung: string, concept?: string) => `fumetto ${where}, ${rung}${concept ? ` · concetto: ${concept}` : ""}`,
+  rung: (n: number) => `gradino ${n}`,
+  why: "perché conta",
+  deep: "approfondimento",
+  fixFirst: "prima sistemiamo il file",
+  review: (file: string, notes: number) => `rilettura di ${file}: ${notes} ${notes === 1 ? "nota" : "note"}`,
+  stepClosed: (done: number, total: number) => `passo chiuso: ${done}/${total}`,
+};
+const diaryEn: typeof diaryIt = {
+  title: "# Diary",
+  intro: "Written by Pebble: accepted plans, tests, balloons, tasks, reviews. You can add notes of your own: Pebble leaves them alone.",
+  stepPlanned: (n) => `step prepared: ${n} ${n === 1 ? "task" : "tasks"} (proposal accepted)`,
+  red: (t) => `red "${t}"`,
+  green: (t, seenRed) => `green "${t}"${seenRed ? " (seen red first)" : ""}`,
+  scaffold: (p) => `file prepared: ${p}`,
+  taskDone: (t) => `done: ${t}`,
+  taskReopened: (t) => `reopened: ${t}`,
+  help: (where, rung, concept) => `balloon ${where}, ${rung}${concept ? ` · concept: ${concept}` : ""}`,
+  rung: (n) => `rung ${n}`,
+  why: "why it matters",
+  deep: "deep dive",
+  fixFirst: "fix the file first",
+  review: (file, notes) => `review of ${file}: ${notes} ${notes === 1 ? "note" : "notes"}`,
+  stepClosed: (done, total) => `step closed: ${done}/${total}`,
+};
+export const DIARY_TEXT: Record<Lang, typeof diaryIt> = { it: diaryIt, en: diaryEn };
