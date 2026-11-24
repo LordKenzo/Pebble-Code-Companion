@@ -1,173 +1,173 @@
-# Risultati degli eval
+# Eval results
 
-Eseguiti il 2026-11-23 con `python3 evals/run.py`: Claude Code in modalità headless, con solo il prompt di sistema, nessun tool e nessun contesto di questa conversazione.
-Le risposte complete sono in `runs/`.
+Run with `python3 evals/run.py`: Claude Code in headless mode, with only the system prompt, no tools and no context from the development conversation. The full answers are in `runs/`.
+
+Many cases are in Italian, because Pebble was born in Italian: their inputs stay as they are, and Italian quotes below (e.g. `Gradino 1 · Domanda`) are the actual output. Since v1.0 there is a single English prompt and the runner adds the `LANGUAGE` line as the extension does.
 
 ## Prompt v0.1 (`runs/2026-11-23_0946`)
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 01 INIT completo | ✅ con riserve | Tutti i punti richiesti, più il bonus sulla concorrenza del lunedì. Però ADR dentro blocchi di codice, due domande, circa 1.200 parole |
-| 02 INIT vago | ✅ con riserve | Si ferma e non inventa requisiti. Però alla domanda aggiunge un elenco di altre richieste |
-| 03 NEW_FILE dominio | ✅ | Ruolo, cosa evitare con ADR-002, una sola firma |
-| 04 NEW_FILE fuori posto | ✅ | Dice che il file non sta in domain e propone porta + adapter. Bonus: chiede se la prenotazione resta valida quando l'email non parte |
-| 05 REVIEW con difetti | ✅ | Trova pg, eccezione e `Date.now()`, in più la race condition. Note dentro blocchi di codice |
-| 06 REVIEW file pulito | ⚠️ | Gravità gonfiata: "avviso" per un parametro non usato, più una seconda nota generica |
-| 07 REVIEW race condition | ✅ | Race come prima nota, con gravità errore e ancorata a bootstrap e ADR-003. Trova anche tutti i bonus (`clock` non usato, scritture non atomiche, lista d'attesa) |
-| 08 TESTS | ✅ | Casi limite per primi, test che guida la lista d'attesa, nota sul test di integrazione per la concorrenza |
-| 09 CHAT sotto pressione | ✅ | Rifiuta in una frase, propone un adapter in memoria per la demo, checklist solida |
-| 10 CHAT aggirata, in inglese | ✅ | Risponde in inglese, nessun test completo, solo una riga d'esempio |
+| 01 full INIT | ✅ with reservations | All the required points, plus the bonus on Monday concurrency. But ADRs inside code blocks, two questions, about 1,200 words |
+| 02 vague INIT | ✅ with reservations | Stops and doesn't invent requirements. But adds a list of other requests to the question |
+| 03 NEW_FILE domain | ✅ | Role, what to avoid with ADR-002, a single signature |
+| 04 NEW_FILE out of place | ✅ | Says the file doesn't belong in domain and proposes port + adapter. Bonus: asks whether the booking stays valid when the email isn't sent |
+| 05 REVIEW with defects | ✅ | Finds pg, the exception and `Date.now()`, plus the race condition. Notes inside code blocks |
+| 06 REVIEW clean file | ⚠️ | Inflated severity: "warning" for an unused parameter, plus a second generic note |
+| 07 REVIEW race condition | ✅ | The race as first note, with error severity and anchored to the bootstrap and ADR-003. Also finds all the bonuses (unused `clock`, non-atomic writes, waiting list) |
+| 08 TESTS | ✅ | Edge cases first, a test that drives the waiting list, a note on the integration test for concurrency |
+| 09 CHAT under pressure | ✅ | Refuses in one sentence, proposes an in-memory adapter for the demo, solid checklist |
+| 10 CHAT workaround, in English | ✅ | Answers in English, no complete test, only one example line |
 
-Il criterio decisivo, *"c'è almeno una nota che non avrei trovato da solo"*, è soddisfatto in 01, 04, 05, 07 e 08.
+The decisive criterion, *"at least one note I wouldn't have found myself"*, is met in 01, 04, 05, 07 and 08.
 
-## Correzioni nella v0.2
+## Fixes in v0.2
 
-1. Note e ADR in testo normale, mai dentro blocchi di codice (servirà anche per estrarre le note in modo affidabile).
-2. Al massimo una domanda per risposta, in tutto.
-3. Indicazioni sulla lunghezza (circa 60 parole per nota, 700 per INIT, 300 per le altre modalità).
-4. Gravità ridefinita, con la regola "nel dubbio, la più bassa" e "file a posto = una riga più al massimo una nota info".
+1. Notes and ADRs in plain text, never inside code blocks (also needed to extract notes reliably).
+2. At most one question per answer, in total.
+3. Length guidance (about 60 words per note, 700 for INIT, 300 for the other modes).
+4. Severity redefined, with the rules "when in doubt, the lowest" and "file is fine = one line plus at most one info note".
 
-## Prompt v0.2 (`runs/2026-11-23_0948`, casi 01, 02, 05, 06)
+## Prompt v0.2 (`runs/2026-11-23_0948`, cases 01, 02, 05, 06)
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 01 | ✅ | ADR in testo, nessuna domanda superflua. Ancora lungo (circa 920 parole contro le 700 indicate) |
-| 02 | ✅ | Una sola domanda |
-| 05 | ✅ | Tre note in testo normale. Ha accorpato pg ed eccezione per far posto alla race condition, scelta corretta |
-| 06 | ✅ | Una riga di conferma più una nota info |
+| 01 | ✅ | ADRs in text, no superfluous questions. Still long (about 920 words against the 700 indicated) |
+| 02 | ✅ | A single question |
+| 05 | ✅ | Three notes in plain text. Merged pg and the exception to make room for the race condition, the right choice |
+| 06 | ✅ | A confirmation line plus an info note |
 
-## Modello locale (estensione v0.1, qwen3-coder:30b via Ollama)
+## Local model (extension v0.1, qwen3-coder:30b via Ollama)
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 05 REVIEW con difetti | ✅ con riserve | Trova pg, eccezione e `Date.now()` in 16 s. Righe imprecise (3 invece di 1), ADR proposto in formato lungo, nessuna race condition |
-| 07 REVIEW race condition | ❌ | Una sola nota "info generale" sulle scritture separate. Non vede la race, che è proprio la nota di valore |
+| 05 REVIEW with defects | ✅ with reservations | Finds pg, the exception and `Date.now()` in 16 s. Imprecise lines (3 instead of 1), ADR proposed in long form, no race condition |
+| 07 REVIEW race condition | ❌ | A single "general info" note on the separate writes. Doesn't see the race, which is exactly the valuable note |
 
-Conclusione: il locale va bene per le violazioni evidenti degli ADR, non per le note che giustificano il prodotto. Da rendere chiaro nelle impostazioni.
+Conclusion: local is fine for obvious ADR violations, not for the notes that justify the product. To be made clear in the settings.
 
-## OpenAI (estensione v0.2, gpt-6.2-sol)
+## OpenAI (extension v0.2, gpt-6.2-sol)
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 07 REVIEW race condition | ✅ | Race come prima nota (errore, ADR-003), lista d'attesa come seconda. 12 s, 2.619 token in, 460 out |
-| 05 a livello entry | ✅ dopo correzione | Prima della correzione era quasi identico a senior. Con il promemoria del livello nel messaggio: termini spiegati tra parentesi, passi numerati, cosa va bene nella sintesi |
-| 05 a livello senior | ✅ | Note asciutte, alternative con il loro costo (lock di riga o aggiornamento condizionale). Ha trovato anche il limite delle 12 ore esatte |
+| 07 REVIEW race condition | ✅ | The race as first note (error, ADR-003), the waiting list as second. 12 s, 2,619 tokens in, 460 out |
+| 05 at entry level | ✅ after a fix | Before the fix it was almost identical to senior. With the level reminder in the message: terms explained in brackets, numbered steps, what's good in the summary |
+| 05 at senior level | ✅ | Terse notes, alternatives with their cost (row lock or conditional update). Also found the exact-12-hours edge |
 
-Lezione: le istruzioni sul livello vanno ripetute accanto alla richiesta, non solo nel prompt di sistema.
+Lesson: level instructions must be repeated next to the request, not only in the system prompt.
 
 ## Prompt v0.4 (`runs/2026-11-23_1810`, `_1812`, `_1813`)
 
-Nasce dalla prova reale su mini-calc (estensione v0.5, gpt-6-sol). Pebble diceva "prepara package.json e tsconfig" senza mai mostrare come. Alla richiesta di un esempio ripeteva la stessa nota e attribuiva all'ADR-005 anche le regole di npm. Le buone pratiche non arrivavano mai.
+Born from the real trial on mini-calc (extension v0.5, gpt-6-sol). Pebble said "prepare package.json and tsconfig" without ever showing how. Asked for an example, it repeated the same note and attributed npm's rules to ADR-005 as well. Best practices never came up.
 
-Cambiamenti:
-1. **Tre zone.** A, comandi e configurazione: completi. B, struttura: proposte concrete, con un blocco di sole dichiarazioni fino a 20 righe. C, logica: resta il divieto.
-2. **Scala di aiuto.** Indizio, direzione precisa, esempio, riga esatta. "Fammi un esempio" fa salire di un gradino.
-3. **Buone pratiche segnalate sempre**, ancorate a `buona pratica` e non a un ADR.
-4. **Fase del progetto.** Propositivo all'avvio, socratico nella logica, compagno di progettazione nelle decisioni.
-5. **Usa il contesto che hai**: non chiede di incollare file già presenti.
-6. Il filtro `core/policy` e il controllo di `run.py` lasciano passare configurazione, comandi (non heredoc o `node -e`), alberi e blocchi di sole dichiarazioni.
+Changes:
+1. **Three zones.** A, commands and configuration: complete. B, structure: concrete proposals, with a declarations-only block of up to 20 lines. C, logic: the ban stays.
+2. **Help ladder.** Hint, precise direction, example, exact line. "Give me an example" climbs one rung.
+3. **Best practices always flagged**, anchored to `best practice` and not to an ADR.
+4. **Project phase.** Proactive at the start, Socratic in the logic, a design companion in decisions.
+5. **Use the context you have**: it doesn't ask to paste files it already has.
+6. The `core/policy` filter and the `run.py` check let through configuration, commands (not heredocs or `node -e`), trees and declarations-only blocks.
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 11 NEXT setup, entry (nuovo) | ✅ | Comandi in ordine, package.json, tsconfig e .gitignore completi con le voci spiegate, verifica con `npm run check`. Prima: "crea i file" |
-| 12 REVIEW package.json (nuovo) | ✅ con riserve | Riga corretta esatta, comando di installazione, file completi, `buona pratica` dove serve. Il glob punta a `src/` invece che a `test/` come da architettura |
-| 13 CHAT "Fammi un esempio" (nuovo) | ✅ | Sale di gradino: package.json completo con ogni voce spiegata. Inventa il nome del progetto ("one-rep-max") |
-| 14 CHAT logica protetta (nuovo) | ✅ | Rifiuta la funzione, dà la firma, l'esempio analogo del resto in monete, una checklist con gli ADR e i test da cui partire |
-| 01–10 (regressione) | ✅ | Nessun blocco di logica. 02 resta a una domanda, ma con due opzioni e una raccomandazione. 03 e 09 propongono scheletri di sole firme (ammessi dalla zona B). 01 resta lungo (circa 1.000 parole) |
+| 11 NEXT setup, entry (new) | ✅ | Commands in order, complete package.json, tsconfig and .gitignore with the entries explained, check with `npm run check`. Before: "create the files" |
+| 12 REVIEW package.json (new) | ✅ with reservations | Exact corrected line, install command, complete files, `best practice` where needed. The glob points at `src/` instead of `test/` as in the architecture |
+| 13 CHAT "Give me an example" (new) | ✅ | Climbs a rung: complete package.json with each entry explained. Invents the project name ("one-rep-max") |
+| 14 CHAT protected logic (new) | ✅ | Refuses the function, gives the signature, the analogous coin-change example, a checklist with the ADRs and the tests to start from |
+| 01–10 (regression) | ✅ | No logic blocks. 02 stays at one question, but with two options and a recommendation. 03 and 09 propose signature-only skeletons (allowed by zone B). 01 is still long (about 1,000 words) |
 
-Limite: gli eval girano con Claude (`claude -p`), mentre la prova su mini-calc usava gpt-6-sol. Va ripetuta nell'estensione con il provider che usi.
+Limit: the evals run with Claude (`claude -p`), while the mini-calc trial used gpt-6-sol. To be repeated in the extension with the provider you use.
 
-## Prompt v0.5: il fumetto, MODE: HELP (`runs/2026-11-23_2025`, `_2026`)
+## Prompt v0.5: the balloon, MODE: HELP (`runs/2026-11-23_2025`, `_2026`)
 
-Passo 2b della roadmap: il rischio più alto (fare domande utili invece di dare risposte) verificato prima di costruire l'interfaccia. Tre bug reali di mini-calc con l'output dei test rossi (fixture in `fixtures/mini-calc/src/`):
-- `>` invece di `>=` nel ciclo dei dischi;
-- kg in virgola mobile: `175 * (70 / 100)` dà 122,49999999999999 e il carico scende a 120;
-- il caso sotto i 20 kg mancante.
+Roadmap step 2b: the highest risk (asking useful questions instead of giving answers) checked before building the interface. Three real mini-calc bugs with the red test output (fixtures in `fixtures/mini-calc/src/`):
+- `>` instead of `>=` in the plates loop;
+- kg as floating point: `175 * (70 / 100)` gives 122.49999999999999 and the load drops to 120;
+- the missing below-20-kg case.
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 15 gradino 1, cursore sulla riga sbagliata | ✅ dopo correzione | Prima: ottima domanda sui 22,5 kg, ma la riga finale "Concetto: errore di confine" rivelava la risposta. Dopo: domanda sul valore 20.000 alla riga del while, senza concetto |
-| 16 gradino 4 | ✅ | Una riga di codice (`>=`), spiega l'output dei 60 kg. Propone un test di proprietà ("la somma dei dischi torna al totale"), migliore di quello atteso |
-| 17 gradino 1, virgola mobile | ✅ dopo correzione | La domanda chiede di stampare `targetKg` "cifra per cifra". Prima della correzione rivelava "aritmetica in virgola mobile" nella riga Concetto |
-| 18 gradino 2, entry | ✅ con riserve | Direzione chiara, termini spiegati, cita ADR-004 e suggerisce di guardare `result.ts`. Circa 120 parole contro le 90 indicate |
-| 19 approfondimento | ✅ con riserve | Concetto, abitudine ed esercizio (spedizione gratuita da 50 €) ben fatti, nessuna correzione. Circa 160 parole contro 140; non nota l'algoritmo greedy |
+| 15 rung 1, cursor on the wrong line | ✅ after a fix | Before: a great question on 22.5 kg, but the final line "Concept: boundary error" gave the answer away. After: a question on the value 20,000 at the while line, no concept |
+| 16 rung 4 | ✅ | One line of code (`>=`), explains the 60 kg output. Proposes a property test ("the plates add back up to the total"), better than the expected one |
+| 17 rung 1, floating point | ✅ after a fix | The question asks to print `targetKg` "digit by digit". Before the fix it revealed "floating-point arithmetic" in the Concept line |
+| 18 rung 2, entry | ✅ with reservations | Clear direction, terms explained, cites ADR-004 and suggests looking at `result.ts`. About 120 words against the 90 indicated |
+| 19 deep dive | ✅ with reservations | Concept, habit and exercise (free shipping from €50) well done, no fix. About 160 words against 140; doesn't mention the greedy algorithm |
 
-Correzione nel prompt: la riga Concetto solo dal gradino 2; al gradino 1 la domanda può dire dove guardare, non cosa c'è di sbagliato.
+Prompt fix: the Concept line only from rung 2; at rung 1 the question may say where to look, not what is wrong.
 
-Aperto: la lunghezza a livello entry tende a sforare; da ricontrollare con gpt-6-sol nell'estensione, perché questi eval girano con Claude.
+Open: length at entry level tends to overflow; to recheck with gpt-6-sol in the extension, because these evals run with Claude.
 
-## Prompt v0.6: il prossimo passo, MODE: PLAN_STEP (caso 20)
+## Prompt v0.6: the next step, MODE: PLAN_STEP (case 20)
 
-Passo 4 della roadmap: Pebble scompone il prossimo passo dal codice com'è adesso (ADR-011). Il caso usa mini-calc con il setup già fatto e chiede il passo 2.
+Roadmap step 4: Pebble breaks down the next step from the code as it is now (ADR-011). The case uses mini-calc with the setup already done and asks for step 2.
 
-| Prova | Esito | Note |
+| Run | Result | Notes |
 |---|---|---|
-| Primo giro | ⚠️ caso rotto | Il percorso incollato nel caso conteneva "## Passo 1", e il runner taglia la sezione Input alla prima riga che inizia con "## ". Spostato in un fixture incluso |
-| Secondo giro | ✅ con riserve | Non ripropone il setup, aggiunge il modulo `units` mancante (ADR-003), test prima dell'implementazione, casi anomali come esiti (ADR-004), finale "Rileggi con Pebble". Ma i nomi nelle condizioni ("22,5 kg in grammi") non comparivano tra i casi del compito dei test: il compito sarebbe rimasto su "test non trovato" |
-| Terzo giro, dopo la correzione | ✅ | Nomi esatti dei test tra virgolette nel compito dei test, condizioni con la loro parte iniziale. Verificato con `planToSection` e `testNameMatches`: nessuna condizione scartata, ogni nome nelle condizioni corrisponde a un caso elencato |
+| First | ⚠️ broken case | The path pasted into the case contained "## Passo 1", and the runner cuts the Input section at the first line starting with "## ". Moved into an included fixture |
+| Second | ✅ with reservations | Doesn't repeat the setup, adds the missing `units` module (ADR-003), tests before the implementation, anomalies as outcomes (ADR-004), final "Review with Pebble". But the names in the conditions ("22,5 kg in grammi") didn't appear among the cases of the tests task: the task would have stayed on "test not found" |
+| Third, after the fix | ✅ | Exact test names in quotes in the tests task, conditions with their leading part. Checked with `planToSection` and `testNameMatches`: no condition dropped, every name in the conditions matches a listed case |
 
-Correzione nel prompt: nel compito dei test i casi sono nomi esatti tra virgolette, che iniziano con il dato del caso; le condizioni `test "…"` usano la parte prima dei due punti.
+Prompt fix: in the tests task the cases are exact names in quotes, starting with the case's data; `test "…"` conditions use the part before the colon.
 
-Run: `runs/2026-11-23_2057`, `runs/2026-11-23_2058`, `runs/2026-11-23_2059`.
+Runs: `runs/2026-11-23_2057`, `runs/2026-11-23_2058`, `runs/2026-11-23_2059`.
 
-## Prompt v0.7: "Prepara il file", MODE: SCAFFOLD (casi 21, 22)
+## Prompt v0.7: "Prepare the file", MODE: SCAFFOLD (cases 21, 22)
 
-Passo 6 della roadmap. Il modello restituisce le parti dello scheletro, Pebble compone il testo con `composeScaffold` e scarta ogni parte con logica: costanti non letterali, tipi con corpi, firme con corpo, più di un test completo.
+Roadmap step 6. The model returns the skeleton's parts, Pebble composes the text with `composeScaffold` and drops any part with logic: non-literal constants, types with bodies, signatures with a body, more than one complete test.
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 21 scheletro di src/core/plates.ts | ✅ | Import con `.ts`, costanti in grammi dal bootstrap, `PlateLoad`, firma di `platesFor`, sei passi di pseudocodice con gli ADR, domanda "calcola a mano 142,5 kg". Nessuna parte scartata |
-| 22 file di test, primo giro | ⚠️ | Un solo test d'esempio e gli altri come `test.todo`, ma chiamava `platesPerSide`: il nome previsto (`platesFor`) stava in un altro compito del passo e `plates.ts` non esisteva ancora |
-| 22 dopo la correzione | ✅ | Con `FIRME PREVISTE NEL PASSO` usa `platesFor`. Esempio sul caso dei 15 kg (avviso), gli altri quattro casi come `test.todo`. Nessuna parte scartata |
+| 21 skeleton of src/core/plates.ts | ✅ | Imports with `.ts`, constants in grams from the bootstrap, `PlateLoad`, `platesFor`'s signature, six pseudocode steps with the ADRs, the question "work out 142.5 kg by hand". No part dropped |
+| 22 test file, first run | ⚠️ | A single example test and the others as `test.todo`, but it called `platesPerSide`: the expected name (`platesFor`) was in another task of the step and `plates.ts` didn't exist yet |
+| 22 after the fix | ✅ | With the step's expected signatures (then `FIRME PREVISTE NEL PASSO`, now `STEP_SIGNATURES`) it uses `platesFor`. Example on the 15 kg case (warning), the other four cases as `test.todo`. No part dropped |
 
-Correzione: il messaggio porta le firme previste dagli altri compiti del passo, e il prompt chiede di usarle esattamente.
+Fix: the message carries the signatures expected by the step's other tasks, and the prompt asks to use them exactly.
 
-## Prompt v0.8: gli errori dell'editor prima di tutto (caso 23, prova reale)
+## Prompt v0.8: editor errors first (case 23, real trial)
 
-Dalla prova reale sul progetto `prova` (React + Vite, con qwen3-coder locale). Vitest e Testing Library non erano installati, il compito di installazione si era spuntato per una condizione troppo debole ("esiste package.json"), e il test non compilava. Fumetto e review non ricevevano gli errori dell'editor: il fumetto ha fatto una domanda sul titolo, la review ha sostenuto che mancava un import che c'era.
+From the real trial on the `prova` project (React + Vite, with local qwen3-coder). Vitest and Testing Library weren't installed, the install task had ticked because of a too-weak condition ("package.json exists"), and the test didn't compile. Balloon and review didn't receive the editor's errors: the balloon asked a question about the title, the review claimed a missing import that was there.
 
-Correzioni: blocco `<problems>` con gli errori dell'editor nel fumetto e nella review; nel fumetto "Prima sistemiamo il file" con correzioni concrete prima di qualsiasi domanda; condizione `dipendenza nome`; comando dei test scelto dal package.json (Vitest con `--reporter=tap-flat`).
+Fixes: a `<problems>` block with the editor's errors in the balloon and the review; in the balloon, "Prima sistemiamo il file" / "Let's fix the file first" with concrete fixes before any question; the `dependency name` condition; the test command chosen from package.json (Vitest with `--reporter=tap-flat`).
 
-| Prova | Esito | Note |
+| Run | Result | Notes |
 |---|---|---|
-| Caso 23 con Claude | ✅ | Installazione, import da vitest, parentesi da chiudere con la riga, termini spiegati per il livello entry. Nessuna domanda, nessun codice di App.tsx |
-| Stesso messaggio con qwen3-coder:30b, fumetto | ✅ con riserve | Con gli errori nel contesto trova installazione e parentesi, ma non segue il formato (numera i punti come "Gradino 1, 2, 3") e scrive il contenuto di App.tsx (zona C) |
-| Stesso messaggio con qwen3-coder:30b, review | ⚠️ | Non contraddice più gli errori, ma propone Jest in un progetto Vite che pianifica Vitest, e restituisce "try" come lista invece che come testo (nell'estensione lo schema strutturato lo impedisce) |
+| Case 23 with Claude | ✅ | Install, import from vitest, the bracket to close with its line, terms explained for entry level. No question, no App.tsx code |
+| Same message with qwen3-coder:30b, balloon | ✅ with reservations | With the errors in context it finds the install and the bracket, but doesn't follow the format (numbers the points as "Gradino 1, 2, 3") and writes App.tsx's content (zone C) |
+| Same message with qwen3-coder:30b, review | ⚠️ | No longer contradicts the errors, but proposes Jest in a Vite project that plans Vitest, and returns "try" as a list instead of text (in the extension the structured schema prevents this) |
 
-Conclusione: il contesto giusto aiuta molto anche il modello locale, ma per fumetto e passi generati un modello cloud resta più affidabile nel rispettare le zone.
+Conclusion: the right context helps a lot even for the local model, but for the balloon and generated steps a cloud model is still more reliable at respecting the zones.
 
-## Prompt v0.9: inglese e italiano (ADR-012)
+## Prompt v0.9: English and Italian (ADR-012)
 
-Prompt inglese (`mentor.en.md`) tradotto regola per regola dall'italiano, più la riga `LINGUA:` in tutti i messaggi. Provato con Claude su due casi esistenti, con codice e nomi dei test in italiano e `LINGUA: en`:
+English prompt (`mentor.en.md`) translated rule by rule from the Italian one, plus a language line in every message. Tried with Claude on two existing cases, with Italian code and test names and English requested:
 
-| Caso | Esito | Note |
+| Case | Result | Notes |
 |---|---|---|
-| 23 file che non compila | ✅ | "Let's fix the file first": installazione, import da vitest, parentesi da chiudere, termini spiegati per il livello entry |
-| 15 gradino 1 | ✅ | Una domanda sul test dei 60 kg e sulla riga del while, senza nominare la soluzione né il concetto |
+| 23 file that doesn't compile | ✅ | "Let's fix the file first": install, import from vitest, bracket to close, terms explained for entry level |
+| 15 rung 1 | ✅ | One question on the 60 kg test and the while line, without naming the solution or the concept |
 
-Aperto: gli eval sono ancora solo in italiano; servono casi in inglese prima del lancio.
+## 2026-11-24 · protocol in English (`runs/2026-11-24_0902`)
+Protocol keywords to the model (`LEVEL`, `RUNG`, `WHY: yes`, `DEEP_DIVE: yes`, `STEP_TO_PREPARE`, `FILE_TO_PREPARE`, `STEP_SIGNATURES`, `LANGUAGE`, `<path>`) and schema instructions in English. 23/23 cases ok, no regressions: answers stay in Italian with `LANGUAGE: it`, rungs and headings (`Gradino 1 · Domanda`, `Approfondimento · …`) unchanged, skeletons with Italian comments.
 
-## Aperto
+## 2026-11-24 · English cases and the "single prompt" trial
+New cases 24–26 in English (fixtures translated in `fixtures/*/en/`). The runner adds the `LANGUAGE` line as the extension does.
 
-- INIT è ancora oltre la lunghezza indicata: valutare se dividere la risposta (prima le decisioni, poi su richiesta roadmap e cartelle).
-- Il controllo automatico verifica solo i blocchi di codice (con le eccezioni delle zone A e B). Il resto, per ora, si valuta a mano.
-- Mancano casi su linguaggi diversi da TypeScript e su progetti senza `.pebble/`.
+- **Italian prompt** (`runs/2026-11-24_0909`): 26/26 ok. The English cases answer in English with English headings (`Rung 1 · Question`, `Let's fix the file first`) and English pseudocode.
+- **English prompt** (`runs/2026-11-24_0910_prompt-en`): 25/26 ok. On the 23 Italian cases, with `LANGUAGE: it`, it always answers in Italian, with the same quality: the same rung-1 question, the same three fixes on the file that doesn't compile, the same refusal with zones A/B under pressure.
+  - Headings sometimes drift from the expected text: `Sistemiamo prima il file` instead of `Prima sistemiamo il file`, `Deep dive · …` instead of `Approfondimento · …`. The parser doesn't depend on headings (it only reads `Concetto/Concept`), but the user sees them.
+  - Case 14: in the proposed signature it puts two constants with their value (`const BILANCIERE_G = 20000`), beyond zone B's limit. Minor, but the Italian prompt doesn't do it.
 
-## 2026-11-24 · protocollo in inglese
-Parole chiave verso il modello (`LEVEL`, `RUNG`, `WHY: yes`, `DEEP_DIVE: yes`, `STEP_TO_PREPARE`, `FILE_TO_PREPARE`, `STEP_SIGNATURES`, `LANGUAGE`, `<path>`) e istruzioni degli schemi in inglese. 23/23 casi ok, nessuna regressione: le risposte restano in italiano con `LANGUAGE: it`, gradini e intestazioni (`Gradino 1 · Domanda`, `Approfondimento · …`) invariati, scheletri con commenti in italiano.
+Conclusion: a single English prompt is viable, provided the headings per language are fixed in a table and it's explicit that in zone B constants have no value outside SCAFFOLD.
 
-## 2026-11-24 · casi inglesi e prova "un prompt solo"
-Nuovi casi 24-26 in inglese (fixture tradotte in `fixtures/*/en/`). Il runner aggiunge la riga `LANGUAGE` come l'estensione e accetta `--prompt en`.
+## 2026-11-24 · single prompt v1.0
+A single `prompts/mentor.md`, in English, with the table of headings per language. New cases 27 (`en` project, question in Italian) and 28 (`it` project, reply to the balloon in English).
 
-- **Prompt italiano** (`runs/2026-11-24_0909`): 26/26 ok. I casi inglesi rispondono in inglese con intestazioni inglesi (`Rung 1 · Question`, `Let's fix the file first`), pseudocodice in inglese.
-- **Prompt inglese** (`runs/2026-11-24_0910_prompt-en`): 25/26 ok. Sui 23 casi italiani, con `LANGUAGE: it`, risponde sempre in italiano, con la stessa qualità: stessa domanda al gradino 1, stesse tre correzioni sul file che non compila, stesso rifiuto con zona A/B sotto pressione.
-  - Le intestazioni a volte si allontanano dal testo previsto: `Sistemiamo prima il file` invece di `Prima sistemiamo il file`, `Deep dive · …` invece di `Approfondimento · …`. Il parser non dipende dalle intestazioni (legge solo `Concetto/Concept`), ma l'utente le vede.
-  - Caso 14: nella firma proposta mette due costanti con il valore (`const BILANCIERE_G = 20000`), oltre il limite della zona B. È poco, ma il prompt italiano non lo fa.
+- First run (`runs/2026-11-24_0916`): 27/28. Exact headings everywhere, but case 27 answered in English: the `LANGUAGE` line at the end of the message won over the exception written in the prompt. Case 14 flagged for `export declare const …`, which is a declaration: the check and the extension's filter were fixed.
+- Second run (`runs/2026-11-24_0918`), with the exception also written in the `LANGUAGE` line: **28/28 ok**, the right language in every case, headings from the table (`Gradino 1 · Domanda`, `Prima sistemiamo il file`, `Answer · right`).
 
-Conclusione: un solo prompt inglese è praticabile, a patto di fissare in una tabella le intestazioni per lingua e di rendere esplicito che in zona B le costanti non hanno valore fuori da SCAFFOLD.
+## Open
 
-## 2026-11-24 · prompt unico v1.0
-Un solo `prompts/mentor.md`, in inglese, con la tabella delle intestazioni per lingua. Nuovi casi 27 (progetto `en`, domanda in italiano) e 28 (progetto `it`, risposta al fumetto in inglese).
-
-- Primo giro (`runs/2026-11-24_0916`): 27/28. Intestazioni esatte ovunque, ma il caso 27 rispondeva in inglese: la riga `LANGUAGE` in fondo al messaggio vinceva sull'eccezione scritta nel prompt. Caso 14 segnalato per `export declare const …`, che è una dichiarazione: corretti il controllo e il filtro dell'estensione.
-- Secondo giro (`runs/2026-11-24_0918`), con l'eccezione scritta anche nella riga `LANGUAGE`: **28/28 ok**, lingua giusta in tutti i casi, intestazioni dalla tabella (`Gradino 1 · Domanda`, `Prima sistemiamo il file`, `Answer · right`).
+- INIT is still over the indicated length: consider splitting the answer (decisions first, then roadmap and folders on request).
+- The automatic check only verifies code blocks (with the zone A and B exceptions). The rest, for now, is judged by hand against each case's expectations.
+- No cases yet on languages other than TypeScript or on projects without `.pebble/`.
+- The single-prompt runs were done with Claude only; local models (qwen3-coder) still need checking with English instructions.
