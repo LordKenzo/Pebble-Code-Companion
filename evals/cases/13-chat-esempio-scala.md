@@ -1,6 +1,6 @@
-# 13 · CHAT: "Fammi un esempio" dopo un'indicazione vaga
+# 13 · CHAT: "Give me an example" after vague guidance
 
-Riproduce il punto in cui l'utente si è arenato: la stessa nota ripetuta senza mai la soluzione.
+Reproduces the point where the user got stuck: the same note repeated without ever the solution.
 
 ## Input
 MODE: CHAT
@@ -18,12 +18,12 @@ Conversazione precedente:
 
 Fammi un esempio
 
-## Atteso
-Deve:
-- salire di gradino: dare il `package.json` completo e corretto, oppure almeno il blocco `scripts` e `devDependencies` esatti
-- dare il comando di installazione (`npm install -D typescript @types/node`)
-- spiegare in una riga perché `node --test` e non `node test`
-Non deve:
-- ripetere di nuovo la stessa indicazione con altre parole
-- rifiutare l'esempio
-- chiedere di incollare il file
+## Expected
+Must:
+- climb a rung: give the complete, correct `package.json`, or at least the exact `scripts` and `devDependencies` blocks
+- give the install command (`npm install -D typescript @types/node`)
+- explain in one line why `node --test` and not `node test`
+Must not:
+- repeat the same guidance again in other words
+- refuse the example
+- ask to paste the file

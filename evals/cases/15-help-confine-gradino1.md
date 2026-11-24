@@ -1,6 +1,6 @@
-# 15 · HELP gradino 1: errore di confine, cursore sulla riga sbagliata
+# 15 · HELP rung 1: boundary error, cursor on the wrong line
 
-Il bug del mockup: `>` invece di `>=` a riga 20. Lo sviluppatore chiede aiuto sulla riga 19, quindi il gradino 1 deve portarlo alla riga giusta senza dirlo.
+The mockup's bug: `>` instead of `>=` on line 20. The developer asks for help on line 19, so rung 1 must lead them to the right line without saying so.
 
 ## Input
 MODE: HELP
@@ -31,11 +31,11 @@ fatto quando: passano i test "20 kg", "22,5 kg", "60 kg", "142,5 kg"
 ℹ tests 5 · pass 2 · fail 3
 </tests>
 
-## Atteso
-Deve:
-- fare una sola domanda, che parte da un fatto dei test (es. 60 kg: atteso [20], ricevuto [15, 2,5, 1,25])
-- portare l'attenzione sul confronto tra resto e disco: può indicare la riga del while (da v0.5 "dove guardare" è ammesso)
-Non deve:
-- nominare `>=`, il concetto (errore di confine) o la correzione
-- dare più di una domanda
-- contenere codice
+## Expected
+Must:
+- ask a single question, starting from a fact in the tests (e.g. 60 kg: expected [20], received [15, 2.5, 1.25])
+- draw attention to the comparison between remainder and plate: it may point at the while line (since v0.5 "where to look" is allowed)
+Must not:
+- name `>=`, the concept (boundary error) or the fix
+- ask more than one question
+- contain code

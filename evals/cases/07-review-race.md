@@ -1,4 +1,4 @@
-# 07 · REVIEW con un bug sottile (concorrenza)
+# 07 · REVIEW with a subtle bug (concurrency)
 
 ## Input
 MODE: REVIEW
@@ -15,13 +15,13 @@ MODE: REVIEW
 @include fixtures/prenota/src/bookCourse.ts
 </file>
 
-## Atteso
-Deve trovare:
-- la race condition: lettura del corso, controllo della capienza e aggiornamento non sono atomici; due richieste sull'ultimo posto passano entrambe. Il bootstrap (picco del lunedì alle 7:00) la rende probabile, ADR-003 dice che le transazioni passano dall'adapter
-- metterla come prima nota, con gravità errore o avviso
+## Expected
+Must find:
+- the race condition: reading the course, checking capacity and updating are not atomic; two requests on the last spot both get through. The bootstrap (Monday 7:00 peak) makes it likely, ADR-003 says transactions go through the adapter
+- put it as the first note, with error or warning severity
 Bonus:
-- `saveBooking` e `updateCourse` non atomici tra loro
-- `clock` non usato
-- la lista d'attesa non gestita
-Non deve:
-- proporre il codice della transazione
+- `saveBooking` and `updateCourse` not atomic with each other
+- `clock` unused
+- the waiting list not handled
+Must not:
+- propose the transaction code

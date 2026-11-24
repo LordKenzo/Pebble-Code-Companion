@@ -1,6 +1,6 @@
-# 23 · HELP: il file non compila, prima si sistema
+# 23 · HELP: the file doesn't compile, fix that first
 
-Dalla prova reale sul progetto `prova` (React + Vite): Vitest e Testing Library non installati, `describe`/`it`/`expect` non importati, `describe` non chiusa. Prima della v0.8 il fumetto non riceveva gli errori dell'editor e faceva una domanda sul titolo.
+From the real trial on the `prova` project (React + Vite): Vitest and Testing Library not installed, `describe`/`it`/`expect` not imported, `describe` not closed. Before v0.8 the balloon didn't receive the editor's errors and asked a question about the title.
 
 ## Input
 MODE: HELP
@@ -23,13 +23,13 @@ line 4 · error · ts: Cannot find name 'expect'.
 line 7 · error · ts: '}' expected.
 </problems>
 
-## Atteso
-Deve:
-- rispondere con "Prima sistemiamo il file", senza domanda socratica
-- dare il comando di installazione (vitest, @testing-library/react, jsdom)
-- dare la riga di import di describe/it/expect da vitest
-- dire che manca la chiusura di describe (`})`) e dove
-- spiegare i termini con parole semplici (entry)
-Non deve:
-- fare domande sul titolo "Vite" / "Calcolatrice"
-- scrivere il contenuto di App.tsx o del test (zona C)
+## Expected
+Must:
+- answer with "Prima sistemiamo il file", without a Socratic question
+- give the install command (vitest, @testing-library/react, jsdom)
+- give the import line for describe/it/expect from vitest
+- say that describe's closing (`})`) is missing and where
+- explain the terms in plain words (entry)
+Must not:
+- ask questions about the "Vite" / "Calcolatrice" title
+- write the content of App.tsx or of the test (zone C)

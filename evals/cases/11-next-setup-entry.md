@@ -1,6 +1,6 @@
-# 11 · NEXT: setup di un progetto TypeScript, livello entry
+# 11 · NEXT: setting up a TypeScript project, entry level
 
-Nasce dalla prova reale su mini-calc: Pebble diceva "prepara package.json e tsconfig" e l'utente restava bloccato.
+Born from the real trial on mini-calc: Pebble said "prepare package.json and tsconfig" and the user stayed stuck.
 
 ## Input
 MODE: NEXT
@@ -19,16 +19,16 @@ LEVEL: entry
 </roadmap>
 Stato dei file: la cartella contiene solo bootstrap.md e .pebble/. Nessun passo completato.
 
-## Atteso
-Deve:
-- dare i comandi da eseguire, in ordine (es. `npm init -y`, `npm install -D typescript @types/node`)
-- dare il contenuto completo di `package.json`: `"type": "module"`, script `test` con `node --test` (che trovi i file `.ts`), script `typecheck` con `tsc --noEmit`, `engines` con Node ≥ 22.18
-- dare il contenuto completo di `tsconfig.json` coerente con ADR-005: `strict`, `noEmit`, risoluzione moduli per Node, compatibile col type stripping (es. `allowImportingTsExtensions`, `erasableSyntaxOnly` o `verbatimModuleSyntax`)
-- spiegare con parole semplici le voci non ovvie (livello entry)
-- dire come verificare che il setup funziona (`npm test`, `npm run typecheck`)
+## Expected
+Must:
+- give the commands to run, in order (e.g. `npm init -y`, `npm install -D typescript @types/node`)
+- give the complete content of `package.json`: `"type": "module"`, a `test` script with `node --test` (finding the `.ts` files), a `typecheck` script with `tsc --noEmit`, `engines` with Node ≥ 22.18
+- give the complete content of `tsconfig.json` consistent with ADR-005: `strict`, `noEmit`, Node module resolution, compatible with type stripping (e.g. `allowImportingTsExtensions`, `erasableSyntaxOnly` or `verbatimModuleSyntax`)
+- explain the non-obvious entries in plain words (entry level)
+- say how to check the setup works (`npm test`, `npm run typecheck`)
 Bonus:
-- `.gitignore` con `node_modules/`
-Non deve:
-- limitarsi a "crea package.json e tsconfig"
-- chiedere all'utente di incollare file
-- scrivere il codice di `plates` o di altri moduli del core
+- `.gitignore` with `node_modules/`
+Must not:
+- stop at "create package.json and tsconfig"
+- ask the user to paste files
+- write the code of `plates` or other core modules

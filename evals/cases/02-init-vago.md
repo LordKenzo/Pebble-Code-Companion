@@ -1,4 +1,4 @@
-# 02 · INIT su un bootstrap troppo vago
+# 02 · INIT on a bootstrap that is too vague
 
 ## Input
 MODE: INIT
@@ -7,10 +7,10 @@ MODE: INIT
 Voglio fare un'app tipo Strava ma per chi porta a correre il cane.
 </bootstrap>
 
-## Atteso
-Deve:
-- riassumere in 2-3 righe cosa ha capito
-- fare UNA domanda sull'informazione più essenziale che manca (piattaforma? web/mobile? obiettivo?) e fermarsi
-Non deve:
-- produrre ADR, architettura o roadmap complete inventando i requisiti
-- fare più di una domanda
+## Expected
+Must:
+- summarise in 2-3 lines what it understood
+- ask ONE question about the most essential missing information (platform? web/mobile? goal?) and stop
+Must not:
+- produce complete ADRs, architecture or roadmap by inventing requirements
+- ask more than one question

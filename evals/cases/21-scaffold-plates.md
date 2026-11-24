@@ -1,4 +1,4 @@
-# 21 · SCAFFOLD: lo scheletro di src/core/plates.ts
+# 21 · SCAFFOLD: the skeleton of src/core/plates.ts
 
 ## Input
 MODE: SCAFFOLD
@@ -31,13 +31,13 @@ test/core/units.test.ts
 FILE_TO_PREPARE: src/core/plates.ts
 Rispondi solo con un oggetto JSON con i campi: imports (lista di { names, from }), constants (lista di { name, type, value, doc }), types (lista di { doc, declaration }), functions (lista di { doc, signature, pseudocode, question }), exampleTest ({ name, body } o null), testCases (lista di stringhe).
 
-## Atteso
-Deve:
-- importare `type Grams` da ./units.ts e `ok`/`invalid`/`type Result` da ./result.ts, con estensione .ts
-- costanti letterali in grammi: bilanciere 20_000 e dischi dal più pesante (bootstrap › Vincoli, ADR-003)
-- un tipo per il risultato (es. PlateLoad) senza logica
-- la firma di platesFor e 3-6 passi di pseudocodice con i nomi del progetto, più una domanda da calcolare a mano
-- composeScaffold non scarta niente
-Non deve:
-- scrivere il corpo di platesFor o espressioni TypeScript complete nello pseudocodice
-- proporre test (non è un file di test)
+## Expected
+Must:
+- import `type Grams` from ./units.ts and `ok`/`invalid`/`type Result` from ./result.ts, with the .ts extension
+- literal constants in grams: barbell 20_000 and plates from the heaviest (bootstrap › Vincoli, ADR-003)
+- a type for the result (e.g. PlateLoad) without logic
+- platesFor's signature and 3-6 pseudocode steps with the project's names, plus a question to work out by hand
+- composeScaffold drops nothing
+Must not:
+- write platesFor's body or complete TypeScript expressions in the pseudocode
+- propose tests (it isn't a test file)

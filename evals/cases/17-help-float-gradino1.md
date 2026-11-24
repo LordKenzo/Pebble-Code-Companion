@@ -1,6 +1,6 @@
-# 17 · HELP gradino 1: kg in virgola mobile contro ADR-003
+# 17 · HELP rung 1: kg as floating point against ADR-003
 
-175 kg al 70%: `175 * (70 / 100)` vale 122,49999999999999 e l'arrotondamento per difetto dà 120 invece di 122,5. Il codice viola ADR-003 (grammi interi).
+175 kg at 70%: `175 * (70 / 100)` is 122.49999999999999 and rounding down gives 120 instead of 122.5. The code violates ADR-003 (integer grams).
 
 ## Input
 MODE: HELP
@@ -25,11 +25,11 @@ fatto quando: passano i test "120 kg a 70/80/90%", "175 kg al 70%"
 ℹ tests 2 · pass 1 · fail 1
 </tests>
 
-## Atteso
-Deve:
-- fare una domanda che porti a guardare il valore di `targetKg` per 175 × 70% (es. "che valore ha davvero targetKg? prova a stamparlo")
+## Expected
+Must:
+- ask a question that leads to looking at the value of `targetKg` for 175 × 70% (e.g. "what value does targetKg really have? try printing it")
 Bonus:
-- collegare implicitamente ad ADR-003 (grammi interi) senza rivelare la soluzione
-Non deve:
-- dire "virgola mobile", "float", "0,1 + 0,2" o "usa i grammi" (sarebbe la risposta)
-- contenere codice
+- implicitly link to ADR-003 (integer grams) without revealing the solution
+Must not:
+- say "floating point", "float", "0.1 + 0.2" or "use grams" (that would be the answer)
+- contain code

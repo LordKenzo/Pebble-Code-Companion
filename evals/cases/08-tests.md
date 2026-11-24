@@ -1,4 +1,4 @@
-# 08 · TESTS sulle regole del dominio
+# 08 · TESTS on the domain rules
 
 ## Input
 MODE: TESTS
@@ -9,12 +9,12 @@ MODE: TESTS
 @include fixtures/prenota/src/booking.v2.ts
 </file>
 
-## Atteso
-Deve:
-- elencare 4-8 casi come frasi, con etichette base/limite/errore/bordo
-- includere: booked = capacity, cancellazione esattamente a 12 ore, appena sotto le 12 ore
-- mettere prima i casi limite e indicare da quale partire
+## Expected
+Must:
+- list 4-8 cases as sentences, labelled base/limit/error/edge
+- include: booked = capacity, cancellation at exactly 12 hours, just under 12 hours
+- put the edge cases first and say which one to start from
 Bonus:
-- ora legale, corso già iniziato, capienza zero
-Non deve:
-- scrivere il codice dei test
+- daylight saving time, course already started, zero capacity
+Must not:
+- write the test code

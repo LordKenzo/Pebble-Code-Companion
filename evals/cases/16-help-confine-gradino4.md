@@ -1,4 +1,4 @@
-# 16 · HELP gradino 4: la riga esatta, e non di più
+# 16 · HELP rung 4: the exact line, and no more
 
 ## Input
 MODE: HELP
@@ -34,10 +34,10 @@ Gradino 2 · Direzione precisa: guarda la condizione del while a riga 20: quando
 Gradino 3 · Esempio analogo: col resto in monete, una moneta da 2 € "ci sta" anche se il resto è esattamente 2 €.
 </history>
 
-## Atteso
-Deve:
-- dare la correzione di riga 20 (`while (remaining >= plate) {`), al massimo 3 righe di codice
-- proporre un test da aggiungere sul confine (es. 70 kg, cioè 25 per lato, oppure 60 kg già presente spiegato come caso sul confine)
-Non deve:
-- riscrivere il corpo di platesFor
-- ripetere i gradini 1-3
+## Expected
+Must:
+- give the fix for line 20 (`while (remaining >= plate) {`), at most 3 lines of code
+- propose a test to add on the boundary (e.g. 70 kg, i.e. 25 per side, or the existing 60 kg explained as a boundary case)
+Must not:
+- rewrite platesFor's body
+- repeat rungs 1-3

@@ -33,13 +33,13 @@ test/core/units.test.ts
 FILE_TO_PREPARE: src/core/plates.ts
 Answer only with a JSON object with the fields: imports (list of { names, from }), constants (list of { name, type, value, doc }), types (list of { doc, declaration }), functions (list of { doc, signature, pseudocode, question }), exampleTest ({ name, body } or null), testCases (list of strings).
 
-## Atteso
-Deve:
-- doc, pseudocodice e domanda in inglese
-- importare `type Grams` da ./units.ts e `ok`/`invalid`/`type Result` da ./result.ts, con estensione .ts
-- costanti letterali in grammi: bilanciere 20_000 e dischi dal più pesante (bootstrap › Constraints, ADR-003)
-- un tipo per il risultato (es. PlateLoad) senza logica
-- la firma di platesFor e 3-6 passi di pseudocodice con i nomi del progetto, più una domanda da calcolare a mano
-Non deve:
-- scrivere il corpo di platesFor o espressioni TypeScript complete nello pseudocodice
-- proporre test (non è un file di test)
+## Expected
+Must:
+- doc, pseudocode and question in English
+- import `type Grams` from ./units.ts and `ok`/`invalid`/`type Result` from ./result.ts, with the .ts extension
+- literal constants in grams: barbell 20_000 and plates from the heaviest (bootstrap › Constraints, ADR-003)
+- a type for the result (e.g. PlateLoad) without logic
+- platesFor's signature and 3-6 pseudocode steps with the project's names, plus a question to work out by hand
+Must not:
+- write platesFor's body or complete TypeScript expressions in the pseudocode
+- propose tests (it isn't a test file)

@@ -1,4 +1,4 @@
-# 03 · NEW_FILE nel dominio
+# 03 · NEW_FILE in the domain
 
 ## Input
 MODE: NEW_FILE
@@ -11,10 +11,10 @@ MODE: NEW_FILE
 <file path="src/domain/booking.ts">
 </file>
 
-## Atteso
-Deve:
-- dire che è un file del dominio, con le regole di prenotazione e cancellazione
-- tra le cose da evitare: Postgres/I/O, HTTP, orologio di sistema, citando ADR-002
-- dare come spunto le firme principali (da v0.4: un blocco di sole dichiarazioni, al massimo 20 righe)
-Non deve:
-- scrivere corpi di funzione o istruzioni
+## Expected
+Must:
+- say it's a domain file, with the booking and cancellation rules
+- among the things to avoid: Postgres/I/O, HTTP, the system clock, citing ADR-002
+- give the main signatures as a hint (since v0.4: a declarations-only block, at most 20 lines)
+Must not:
+- write function bodies or statements

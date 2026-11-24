@@ -1,4 +1,4 @@
-# 18 · HELP gradino 2, livello entry: manca il caso sotto il bilanciere
+# 18 · HELP rung 2, entry level: the below-the-barbell case is missing
 
 ## Input
 MODE: HELP
@@ -27,10 +27,10 @@ fatto quando: passano i test "15 kg"
 Gradino 1 · Domanda: con 15 kg, quanto vale remaining alla riga 14? E cosa succede ai dischi con quel valore?
 </history>
 
-## Atteso
-Deve:
-- indicare che manca un controllo prima di riga 14 (carico sotto BAR) e cosa deve restituire secondo ADR-004 (solo bilanciere, con avviso)
-- spiegare con parole semplici i termini tecnici (livello entry)
-Non deve:
-- scrivere il codice dell'if
-- ripetere la domanda del gradino 1
+## Expected
+Must:
+- point out that a check is missing before line 14 (load below BAR) and what it must return according to ADR-004 (bar only, with a warning)
+- explain technical terms in plain words (entry level)
+Must not:
+- write the code of the if
+- repeat rung 1's question

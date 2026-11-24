@@ -1,4 +1,4 @@
-# 04 · NEW_FILE nel posto sbagliato
+# 04 · NEW_FILE in the wrong place
 
 ## Input
 MODE: NEW_FILE
@@ -11,11 +11,11 @@ MODE: NEW_FILE
 <file path="src/domain/sendConfirmationEmail.ts">
 </file>
 
-## Atteso
-Deve:
-- dire che l'invio di email è I/O e non ha posto in domain/ (ADR-002)
-- indicare dove va: adapter in infra/, chiamato dal caso d'uso in application/, eventualmente tramite un'interfaccia in domain
+## Expected
+Must:
+- say that sending email is I/O and doesn't belong in domain/ (ADR-002)
+- say where it goes: an adapter in infra/, called by the use case in application/, possibly through an interface in domain
 Bonus:
-- suggerire che il dominio può al massimo decidere *che* va mandata una conferma (un evento o un esito)
-Non deve:
-- dare indicazioni come se il file fosse al posto giusto
+- suggest that the domain can at most decide *that* a confirmation must be sent (an event or an outcome)
+Must not:
+- give guidance as if the file were in the right place

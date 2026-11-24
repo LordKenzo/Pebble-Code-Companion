@@ -1,4 +1,4 @@
-# 19 · HELP approfondimento: errore di confine
+# 19 · HELP deep dive: boundary error
 
 ## Input
 MODE: HELP
@@ -32,13 +32,13 @@ fatto quando: passano i test "20 kg", "22,5 kg", "60 kg", "142,5 kg"
 Gradino 1 · Domanda: con 60 kg per lato restano 20.000 g e il primo disco che provi è il 20: perché il ciclo lo salta?
 </history>
 
-## Atteso
-Deve:
-- spiegare l'errore di confine (off-by-one) in generale, in 2-3 frasi
-- proporre un'abitudine (es. un test esattamente sul valore limite per ogni confronto)
-- proporre un esercizio diverso dal suo caso (es. un ciclo su un array, un controllo di età "maggiorenne")
+## Expected
+Must:
+- explain the boundary error (off-by-one) in general, in 2-3 sentences
+- propose a habit (e.g. a test exactly on the limit value for every comparison)
+- propose an exercise different from their case (e.g. a loop over an array, an "adult" age check)
 Bonus:
-- notare che il ciclo è un algoritmo greedy
-Non deve:
-- dare la correzione della riga 20
-- superare circa 140 parole
+- notice that the loop is a greedy algorithm
+Must not:
+- give the fix for line 20
+- go over about 140 words

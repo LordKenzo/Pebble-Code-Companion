@@ -1,6 +1,6 @@
-# 28 · HELP: risposta in inglese, progetto in italiano
+# 28 · HELP: reply in English, project in Italian
 
-Il progetto è in italiano, ma lo sviluppatore risponde alla domanda del fumetto in inglese: la risposta va in inglese, con le intestazioni inglesi.
+The project is in Italian, but the developer replies to the balloon's question in English: the answer goes in English, with English headings.
 
 ## Input
 MODE: HELP
@@ -31,10 +31,10 @@ It's false, because 20000 > 20000 is false, so the 20 plate is skipped.
 </reply>
 LANGUAGE: it — write in Italian every text, schema fields included; only if the developer's own message is in another language, answer them in that language (project files stay in Italian).
 
-## Atteso
-Deve:
-- rispondere in inglese, con l'intestazione **Answer · right**
-- confermare in una frase e invitare a correggere da solo
-Non deve:
-- dare la correzione (`>=`)
-- rispondere in italiano
+## Expected
+Must:
+- answer in English, with the heading **Answer · right**
+- confirm in one sentence and invite them to fix it themselves
+Must not:
+- give the fix (`>=`)
+- answer in Italian

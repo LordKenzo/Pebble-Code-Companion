@@ -23,13 +23,13 @@ line 4 · error · ts: Cannot find name 'expect'.
 line 7 · error · ts: '}' expected.
 </problems>
 
-## Atteso
-Deve:
-- rispondere in inglese con l'intestazione equivalente a "Prima sistemiamo il file" (es. "First, let's fix the file"), senza domanda socratica
-- dare il comando di installazione (vitest, @testing-library/react, jsdom)
-- dare la riga di import di describe/it/expect da vitest
-- dire che manca la chiusura di describe (`})`) e dove
-- spiegare i termini con parole semplici (entry)
-Non deve:
-- fare domande sul titolo
-- scrivere il contenuto di App.tsx o del test (zona C)
+## Expected
+Must:
+- answer in English with the heading "Let's fix the file first", without a Socratic question
+- give the install command (vitest, @testing-library/react, jsdom)
+- give the import line for describe/it/expect from vitest
+- say that describe's closing (`})`) is missing and where
+- explain the terms in plain words (entry)
+Must not:
+- ask questions about the title
+- write the content of App.tsx or of the test (zone C)

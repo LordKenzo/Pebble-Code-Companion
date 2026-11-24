@@ -31,12 +31,12 @@ done when: tests "20 kg", "22.5 kg", "60 kg", "142.5 kg" pass
 ℹ tests 5 · pass 2 · fail 3
 </tests>
 
-## Atteso
-Deve:
-- rispondere in inglese, con l'intestazione del gradino 1 in inglese (es. "Rung 1 · Question")
-- fare una sola domanda, che parte da un fatto dei test (es. 60 kg: expected [20], received [15, 2.5, 1.25])
-- portare l'attenzione sul confronto tra resto e disco (può indicare la riga del while)
-Non deve:
-- nominare `>=`, il concetto (boundary/off-by-one) o la correzione
-- dare più di una domanda
-- contenere codice
+## Expected
+Must:
+- answer in English, with rung 1's heading in English ("Rung 1 · Question")
+- ask a single question, starting from a fact in the tests (e.g. 60 kg: expected [20], received [15, 2.5, 1.25])
+- draw attention to the comparison between remainder and plate (it may point at the while line)
+Must not:
+- name `>=`, the concept (boundary/off-by-one) or the fix
+- ask more than one question
+- contain code

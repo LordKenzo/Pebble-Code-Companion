@@ -1,4 +1,4 @@
-# 22 · SCAFFOLD: il file di test di plates, con un solo test d'esempio
+# 22 · SCAFFOLD: the plates test file, with a single example test
 
 ## Input
 MODE: SCAFFOLD
@@ -32,13 +32,13 @@ STEP_SIGNATURES:
 FILE_TO_PREPARE: test/core/plates.test.ts
 Rispondi solo con un oggetto JSON con i campi: imports (lista di { names, from }), constants (lista di { name, type, value, doc }), types (lista di { doc, declaration }), functions (lista di { doc, signature, pseudocode, question }), exampleTest ({ name, body } o null), testCases (lista di stringhe).
 
-## Atteso
-Deve:
-- chiamare platesFor (la firma prevista), non un nome inventato
-- importare test da node:test, assert da node:assert/strict e platesFor da ../../src/core/plates.ts (ADR-005)
-- un solo exampleTest completo e breve, sul caso più semplice (es. 20 kg: nessun disco)
-- gli altri casi in testCases, con i nomi del compito, prima i casi limite
-- composeScaffold non scarta niente
-Non deve:
-- scrivere più di un test completo
-- dichiarare funzioni
+## Expected
+Must:
+- call platesFor (the expected signature), not an invented name
+- import test from node:test, assert from node:assert/strict and platesFor from ../../src/core/plates.ts (ADR-005)
+- a single complete, short exampleTest, on the simplest case (e.g. 20 kg: no plates)
+- the other cases in testCases, with the task's names, edge cases first
+- composeScaffold drops nothing
+Must not:
+- write more than one complete test
+- declare functions

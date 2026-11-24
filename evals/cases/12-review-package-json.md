@@ -1,6 +1,6 @@
-# 12 · REVIEW: package.json sbagliato, livello junior
+# 12 · REVIEW: wrong package.json, junior level
 
-Il package.json reale della prova su mini-calc: script di test che non avvia il runner, niente TypeScript.
+The real package.json from the mini-calc trial: a test script that doesn't start the runner, no TypeScript.
 
 ## Input
 MODE: REVIEW
@@ -18,12 +18,12 @@ LEVEL: junior
 @include fixtures/mini-calc/package.broken.json
 </file>
 
-## Atteso
-Deve:
-- segnalare come errore riga 3: `node test` non avvia il test runner, e in "Prova" dare la riga corretta (es. `"test": "node --test \"test/**/*.test.ts\""`)
-- segnalare che mancano TypeScript e `@types/node` tra le devDependencies, con il comando per installarli
-- segnalare almeno una buona pratica mancante (`"type": "module"`, script `typecheck`, `name`/`private`)
-- ancorare a `buona pratica` ciò che è convenzione di npm/Node, e ad ADR-005 solo ciò che deriva davvero dalla decisione
-Non deve:
-- dare indicazioni vaghe del tipo "usa la modalità test di Node" senza la riga
-- superare 3 note
+## Expected
+Must:
+- flag line 3 as an error: `node test` doesn't start the test runner, and in "Try" give the corrected line (e.g. `"test": "node --test \"test/**/*.test.ts\""`)
+- flag that TypeScript and `@types/node` are missing from devDependencies, with the command to install them
+- flag at least one missing best practice (`"type": "module"`, a `typecheck` script, `name`/`private`)
+- anchor npm/Node conventions to best practice, and to ADR-005 only what really follows from the decision
+Must not:
+- give vague guidance like "use Node's test mode" without the line
+- go over 3 notes

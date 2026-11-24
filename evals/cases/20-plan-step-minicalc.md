@@ -1,6 +1,6 @@
-# 20 · PLAN_STEP: il passo 2 di mini-calc, con il setup già fatto
+# 20 · PLAN_STEP: mini-calc's step 2, with the setup already done
 
-Il setup del passo 1 esiste nel codice. Pebble deve scomporre il passo 2 senza riproporre il setup, con condizioni scritte nella sintassi del percorso.
+Step 1's setup exists in the code. Pebble must break down step 2 without proposing the setup again, with conditions written in the path syntax.
 
 ## Input
 MODE: PLAN_STEP
@@ -30,13 +30,13 @@ STEP_TO_PREPARE: 2 · Dischi per lato
 Dischi per lato: per un carico già componibile restituisce i dischi. Test su 20, 22,5, 60, 142,5 kg e su un carico sotto i 20.
 Rispondi solo con un oggetto JSON con i campi: reading (stringa), tasks (lista di { title, todo, signature (stringa o null), doneWhen (lista di stringhe) }), question (stringa o null).
 
-## Atteso
-Deve:
-- non riproporre il setup (esiste già)
-- cominciare con un compito "Scrivi i test …" che elenca i casi: 20, 22,5, 60, 142,5 kg e sotto i 20 kg
-- avere un compito di implementazione con la firma di platesFor in grammi (ADR-003)
-- usare solo condizioni nella sintassi del percorso (verificato con planToSection: nessuna scartata)
-- usare nei `test "…"` parti dei nomi elencati nel compito dei test
-- finire con "Rileggi con Pebble", a mano
-Non deve:
-- contenere codice (corpi di funzione o test scritti)
+## Expected
+Must:
+- not propose the setup again (it already exists)
+- start with a "Write the tests …" task listing the cases: 20, 22.5, 60, 142.5 kg and below 20 kg
+- have an implementation task with platesFor's signature in grams (ADR-003)
+- use only conditions in the path syntax (checked with planToSection: none dropped)
+- use in `test "…"` parts of the names listed in the tests task
+- end with "Rileggi con Pebble" (review with Pebble), manual
+Must not:
+- contain code (function bodies or written tests)

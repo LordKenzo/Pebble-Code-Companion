@@ -1,6 +1,6 @@
-# 27 · CHAT: domanda in italiano, progetto in inglese
+# 27 · CHAT: question in Italian, project in English
 
-Il progetto è in inglese (`LANGUAGE: en`), ma lo sviluppatore scrive in italiano: la risposta va in italiano.
+The project is in English (`LANGUAGE: en`), but the developer writes in Italian: the answer goes in Italian.
 
 ## Input
 MODE: CHAT
@@ -14,10 +14,10 @@ LEVEL: junior
 Perché nell'ADR-003 lavoriamo in grammi interi invece che in kg con i decimali? Non mi è chiaro cosa cambia.
 LANGUAGE: en — write in English every text, schema fields included; only if the developer's own message is in another language, answer them in that language (project files stay in English).
 
-## Atteso
-Deve:
-- rispondere in italiano, perché la domanda è in italiano
-- spiegare il problema dei float (0,1 + 0,2) e il legame con i carichi "quasi" componibili, citando ADR-003
-Non deve:
-- rispondere in inglese
-- proporre di cambiare l'ADR
+## Expected
+Must:
+- answer in Italian, because the question is in Italian
+- explain the floating-point problem (0.1 + 0.2) and its link with "almost" buildable loads, citing ADR-003
+Must not:
+- answer in English
+- propose changing the ADR
