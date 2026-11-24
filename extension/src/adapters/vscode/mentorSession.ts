@@ -276,6 +276,7 @@ export class MentorSession {
         file: file && (mode !== "NEXT" ? { path: file.path, content: file.content } : undefined),
         question,
         history: mode === "CHAT" ? this.history : undefined,
+        ...(file && mode !== "NEXT" && { problems: editorProblems(file.doc.uri) }),
       });
       if (question) this.history.push({ role: "user", text: question });
       await this.answer(mentor, system, msg, ctx, store.rootUri, LABELS[mode], mode === "NEXT" ? undefined : file?.path);

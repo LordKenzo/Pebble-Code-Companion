@@ -1,7 +1,7 @@
 import { languageLine, type Lang } from "./i18n";
 import { z } from "zod";
-import { LEVEL_HINTS, numberLines } from "./context";
-import type { ExperienceLevel, ProjectContext } from "./model";
+import { formatProblems, LEVEL_HINTS, numberLines } from "./context";
+import type { ExperienceLevel, Problem, ProjectContext } from "./model";
 
 // ---------- MODE: INIT (risposta strutturata, per poterla salvare in .pebble/) ----------
 
@@ -170,7 +170,7 @@ export function buildTextMessage(
   mode: TextMode,
   ctx: ProjectContext,
   level: ExperienceLevel,
-  opts: { file?: OpenFile; question?: string; history?: Turn[]; lang?: Lang } = {},
+  opts: { file?: OpenFile; question?: string; history?: Turn[]; lang?: Lang; problems?: Problem[] } = {},
 ): string {
   const history = (opts.history ?? [])
     .slice(-8)
@@ -182,6 +182,7 @@ export function buildTextMessage(
     `LIVELLO: ${level}`,
     projectBlocks(ctx),
     opts.file ? block("file", mode === "NEW_FILE" ? opts.file.content || "(vuoto)" : numberLines(opts.file.content), fileAttr) : "",
+    opts.file ? formatProblems(opts.problems) : "",
     history ? block("conversazione", history) : "",
     opts.question ? `Domanda dello sviluppatore:\n${opts.question}` : "",
     FORMAT_HINT,
