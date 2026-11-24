@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { ReviewResult } from "../../core/model";
 import { formatUsd } from "../../core/cost";
+import { EXT_TEXT, type Lang } from "../../core/i18n";
 import type { SpendData } from "./spendLedger";
 
 type State =
@@ -13,6 +14,8 @@ type State =
 export class ReviewPanel {
   private panel: vscode.WebviewPanel | undefined;
   private uri: vscode.Uri | undefined;
+
+  constructor(private readonly lang: () => Lang = () => "it") {}
 
   show(state: State): void {
     if (!this.panel) {
@@ -29,7 +32,7 @@ export class ReviewPanel {
       });
     }
     if (state.kind === "result") this.uri = state.uri;
-    this.panel.webview.html = render(state, this.panel.webview.cspSource);
+    this.panel.webview.html = render(state, this.panel.webview.cspSource, this.lang());
     this.panel.reveal(vscode.ViewColumn.Beside, true);
   }
 }
@@ -46,35 +49,35 @@ const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 /** Testo semplice con `codice` inline evidenziato. */
 const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\n/g, "<br>");
-const num = (n: number) => n.toLocaleString("it-IT");
-
-function renderSpend(data: SpendData, currentMonth: number, budget: number): string {
+function renderSpend(data: SpendData, currentMonth: number, budget: number, lang: Lang): string {
+  const T = EXT_TEXT[lang];
+  const num = (n: number) => n.toLocaleString(T.numberLocale);
   const months = Object.keys(data).sort().reverse();
-  if (!months.length) return `<p class="muted">Nessuna richiesta registrata. La spesa si conta da quando hai installato questa versione.</p>`;
-  const budgetLine = budget > 0
-    ? `<p>Budget mensile: ${formatUsd(budget)} · usato ${Math.round((currentMonth / budget) * 100)}%</p>`
-    : "";
+  if (!months.length) return `<p class="muted">${T.noRequests}</p>`;
+  const budgetLine = budget > 0 ? `<p>${T.budgetUsed(formatUsd(budget, lang), Math.round((currentMonth / budget) * 100))}</p>` : "";
   const tables = months.map((m) => {
     const rows = Object.entries(data[m]).sort(([, a], [, b]) => b.costUsd - a.costUsd);
     const total = rows.reduce((s, [, r]) => s + r.costUsd, 0);
     const unpriced = rows.reduce((s, [, r]) => s + r.unpriced, 0);
-    return `<h2>${esc(m)} · ${formatUsd(total)}${unpriced ? ` <span class="muted">+ ${unpriced} richieste senza prezzo</span>` : ""}</h2>
-<table><thead><tr><th>Modello</th><th>Richieste</th><th>Token in</th><th>Token out</th><th>Cache</th><th>Costo</th></tr></thead><tbody>
-${rows.map(([k, r]) => `<tr><td>${esc(k)}</td><td>${r.reviews}</td><td>${num(r.inputTokens)}</td><td>${num(r.outputTokens)}</td><td>${num(r.cacheReadTokens + r.cacheWriteTokens)}</td><td>${r.unpriced === r.reviews ? "–" : formatUsd(r.costUsd)}</td></tr>`).join("")}
+    return `<h2>${esc(m)} · ${formatUsd(total, lang)}${unpriced ? ` <span class="muted">${T.unpricedRequests(unpriced)}</span>` : ""}</h2>
+<table><thead><tr>${T.columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>
+${rows.map(([k, r]) => `<tr><td>${esc(k)}</td><td>${r.reviews}</td><td>${num(r.inputTokens)}</td><td>${num(r.outputTokens)}</td><td>${num(r.cacheReadTokens + r.cacheWriteTokens)}</td><td>${r.unpriced === r.reviews ? "–" : formatUsd(r.costUsd, lang)}</td></tr>`).join("")}
 </tbody></table>`;
   }).join("");
   return `${budgetLine}${tables}
-<p class="muted">Stima calcolata sui prezzi di listino e sui token restituiti dal provider. La cifra esatta è nella console di Anthropic o OpenAI. I prezzi dei modelli non noti si impostano in <code>pebble.prices</code>.</p>
-<button data-command="pebble.resetSpend">Azzera il conteggio</button>`;
+<p class="muted">${T.spendNote}</p>
+<button data-command="pebble.resetSpend">${T.resetCount}</button>`;
 }
 
-function render(state: State, csp: string): string {
+function render(state: State, csp: string, lang: Lang): string {
+  const T = EXT_TEXT[lang];
+  const num = (n: number) => n.toLocaleString(T.numberLocale);
   const nonce = Math.random().toString(36).slice(2);
   let body: string;
   if (state.kind === "spend") {
-    body = renderSpend(state.data, state.currentMonth, state.budget);
+    body = renderSpend(state.data, state.currentMonth, state.budget, lang);
   } else if (state.kind === "loading") {
-    body = `<p class="muted">Pebble sta rivedendo <code>${esc(state.file)}</code> con ${esc(state.provider)}…</p>`;
+    body = `<p class="muted">${T.reviewing(esc(state.file), esc(state.provider))}</p>`;
   } else if (state.kind === "error") {
     body = `<div class="card err"><p>${inline(state.message)}</p>${
       state.action ? `<button data-command="${esc(state.action.command)}">${esc(state.action.label)}</button>` : ""
@@ -84,25 +87,25 @@ function render(state: State, csp: string): string {
     const notes = review.notes
       .map(
         (n) => `<article class="card">
-  <header><span class="sev ${n.severity}">${n.severity}</span>
-    <a href="#" data-line="${n.line}">riga ${n.line}${n.endLine && n.endLine !== n.line ? `–${n.endLine}` : ""}</a>
+  <header><span class="sev ${n.severity}">${T.severity[n.severity]}</span>
+    <a href="#" data-line="${n.line}">${T.line} ${n.line}${n.endLine && n.endLine !== n.line ? `–${n.endLine}` : ""}</a>
     <span class="anchor">${esc(n.anchor)}</span></header>
   <p><b>${inline(n.problem)}</b></p>
   <p class="muted">${inline(n.why)}</p>
-  <p><span class="label">Prova:</span> ${inline(n.try)}</p>
+  <p><span class="label">${T.try}</span> ${inline(n.try)}</p>
 </article>`,
       )
       .join("");
     body = `<p class="summary">${inline(review.summary)}</p>
-${notes || `<p class="muted">Nessuna nota.</p>`}
-${review.question ? `<div class="q"><span class="label">Domanda</span><p>${inline(review.question)}</p></div>` : ""}
-${review.adrProposal ? `<div class="q"><span class="label">ADR da valutare</span><p>${inline(review.adrProposal)}</p></div>` : ""}
-${violations ? `<p class="muted">Pebble ha rimosso ${violations} blocco/i di codice dalla risposta (ADR-003).</p>` : ""}
-<footer class="muted">${esc(provider)} · ${esc(model)} · livello ${esc(level)}<br>
-${num(usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens)} token in (${num(usage.cacheReadTokens)} da cache) · ${num(usage.outputTokens)} out · <a href="#" data-command="pebble.showSpend">${esc(formatUsd(costUsd))}</a></footer>`;
+${notes || `<p class="muted">${T.noNotes}</p>`}
+${review.question ? `<div class="q"><span class="label">${T.question}</span><p>${inline(review.question)}</p></div>` : ""}
+${review.adrProposal ? `<div class="q"><span class="label">${T.adrToConsider}</span><p>${inline(review.adrProposal)}</p></div>` : ""}
+${violations ? `<p class="muted">${T.removedBlocks(violations)}</p>` : ""}
+<footer class="muted">${esc(provider)} · ${esc(model)} · ${T.level} ${esc(level)}<br>
+${T.tokens(num(usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens), num(usage.cacheReadTokens), num(usage.outputTokens))} · <a href="#" data-command="pebble.showSpend">${esc(formatUsd(costUsd, lang))}</a></footer>`;
   }
 
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="${T.htmlLang}"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <style>
   body{font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);color:var(--vscode-foreground);padding:12px 16px;line-height:1.5}
@@ -133,7 +136,7 @@ ${num(usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens)} token
   th{color:var(--vscode-descriptionForeground);font-weight:normal}
   button{background:var(--vscode-button-background);color:var(--vscode-button-foreground);border:0;padding:5px 12px;border-radius:3px;cursor:pointer}
 </style></head><body>
-<h1>Pebble · <span class="file">${state.kind === "spend" ? "spesa" : esc(state.file)}</span><a class="gear" href="#" data-command="pebble.openSettings">Impostazioni</a></h1>
+<h1>Pebble · <span class="file">${state.kind === "spend" ? T.spendTitle : esc(state.file)}</span><a class="gear" href="#" data-command="pebble.openSettings">${T.settings}</a></h1>
 ${body}
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();

@@ -11,13 +11,13 @@ import { SpendLedger } from "./adapters/vscode/spendLedger";
 import { SettingsPanel } from "./adapters/vscode/settingsPanel";
 import { formatUsd, resolvePrice, type Price } from "./core/cost";
 import { LEVELS, type ExperienceLevel } from "./core/model";
-import { resolveLang, type Lang } from "./core/i18n";
+import { EXT_TEXT, resolveLang, type Lang } from "./core/i18n";
 
 const secretKey = (p: ProviderId) => `pebble.apiKey.${p}`;
 
 export function activate(context: vscode.ExtensionContext): void {
   const diagnostics = vscode.languages.createDiagnosticCollection("pebble");
-  const panel = new ReviewPanel();
+  const panel = new ReviewPanel(() => lang());
   const ledger = new SpendLedger(context.globalState);
 
   const config = () => vscode.workspace.getConfiguration("pebble");
@@ -35,10 +35,8 @@ export function activate(context: vscode.ExtensionContext): void {
     const m = ledger.monthTotal();
     const budget = config().get<number>("monthlyBudgetUsd", 0);
     const over = budget > 0 && m.costUsd >= budget;
-    status.text = `$(milestone) Pebble · ${level()} · ${formatUsd(m.costUsd)}`;
-    status.tooltip = `Pebble: ${m.reviews} richieste a Pebble questo mese, spesa stimata ${formatUsd(m.costUsd)}${
-      budget > 0 ? ` su ${formatUsd(budget)} di budget` : ""
-    }${m.unpriced ? ` (+${m.unpriced} senza prezzo)` : ""}. Clic per aprire il mentor.`;
+    status.text = `$(milestone) Pebble · ${level()} · ${formatUsd(m.costUsd, lang())}`;
+    status.tooltip = EXT_TEXT[lang()].statusTooltip(m.reviews, formatUsd(m.costUsd, lang()), budget > 0 ? formatUsd(budget, lang()) : "", m.unpriced);
     status.backgroundColor = over ? new vscode.ThemeColor("statusBarItem.warningBackground") : undefined;
     status.show();
   };
@@ -53,14 +51,15 @@ export function activate(context: vscode.ExtensionContext): void {
       openaiModel: c.get("openai.model", ""),
       localBaseUrl: c.get("local.baseUrl", "http://localhost:11434/v1"),
       localModel: c.get("local.model", ""),
+      lang: lang(),
     };
   };
 
-  const PROVIDER_NAMES: Record<ProviderId, string> = {
+  const providerNames = (): Record<ProviderId, string> => ({
     anthropic: "Anthropic (Claude)",
     openai: "OpenAI",
-    local: "server locale",
-  };
+    local: EXT_TEXT[lang()].localServer,
+  });
 
   /** Chiede e salva la chiave API; se il provider non è indicato, lo chiede. */
   const askKey = async (provider?: ProviderId): Promise<void> => {
@@ -69,22 +68,22 @@ export function activate(context: vscode.ExtensionContext): void {
       const current = settings().provider;
       const pick = await vscode.window.showQuickPick(
         (["anthropic", "openai", "local"] as ProviderId[])
-          .map((p) => ({ label: PROVIDER_NAMES[p], id: p }))
+          .map((p) => ({ label: providerNames()[p], id: p }))
           .sort((a, b) => (a.id === current ? -1 : b.id === current ? 1 : 0)),
-        { placeHolder: "Per quale provider?" },
+        { placeHolder: EXT_TEXT[lang()].whichProvider },
       );
       id = pick?.id;
     }
     if (!id) return;
     const key = await vscode.window.showInputBox({
-      prompt: `Chiave API per ${PROVIDER_NAMES[id]}. Resta nel portachiavi di VS Code, non nei file del progetto.`,
+      prompt: EXT_TEXT[lang()].keyPrompt(providerNames()[id]),
       password: true,
       ignoreFocusOut: true,
     });
     if (key === undefined) return;
     if (key.trim()) {
       await context.secrets.store(secretKey(id), key.trim());
-      void vscode.window.showInformationMessage(`Pebble: chiave per ${PROVIDER_NAMES[id]} salvata.`);
+      void vscode.window.showInformationMessage(EXT_TEXT[lang()].keySaved(providerNames()[id]));
     } else {
       await context.secrets.delete(secretKey(id));
     }
@@ -108,6 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
         keys,
         monthSpend: formatUsd(m.costUsd),
         monthReviews: m.reviews,
+        language: c.get<string>("language", "auto"),
       };
     },
     mentorFor: async (provider, model) => {
@@ -120,6 +120,7 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteKey: async (provider) => {
       await context.secrets.delete(secretKey(provider));
     },
+    lang,
   });
 
   const loadSystemPrompt = async (): Promise<string> => {
@@ -156,7 +157,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const spent = ledger.monthTotal().costUsd;
       if (budget > 0 && spent >= budget && spent - (entry.costUsd ?? 0) < budget) {
         void vscode.window
-          .showWarningMessage(`Pebble: hai superato il budget mensile (${formatUsd(spent)} su ${formatUsd(budget)}).`, "Mostra la spesa")
+          .showWarningMessage(EXT_TEXT[lang()].overBudget(formatUsd(spent, lang()), formatUsd(budget, lang())), EXT_TEXT[lang()].showSpend)
           .then((a) => a && vscode.commands.executeCommand("pebble.showSpend"));
       }
     },
@@ -254,15 +255,10 @@ export function activate(context: vscode.ExtensionContext): void {
     status,
 
     vscode.commands.registerCommand("pebble.setLevel", async () => {
-      const labels: Record<ExperienceLevel, string> = {
-        entry: "Entry · sto imparando a programmare",
-        junior: "Junior · programmo, ma ho poca esperienza di progetto",
-        mid: "Mid · sono autonomo",
-        senior: "Senior · solo bug, ADR e trade-off, niente ovvietà",
-      };
+      const labels: Record<ExperienceLevel, string> = EXT_TEXT[lang()].levels;
       const pick = await vscode.window.showQuickPick(
         LEVELS.map((l) => ({ label: labels[l], id: l, picked: l === level() })),
-        { placeHolder: `Livello attuale: ${level()}` },
+        { placeHolder: EXT_TEXT[lang()].currentLevel(level()) },
       );
       if (pick) await config().update("experienceLevel", pick.id, vscode.ConfigurationTarget.Global);
     }),
@@ -277,8 +273,8 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
 
     vscode.commands.registerCommand("pebble.resetSpend", async () => {
-      const ok = await vscode.window.showWarningMessage("Azzerare il conteggio della spesa di Pebble?", { modal: true }, "Azzera");
-      if (ok !== "Azzera") return;
+      const ok = await vscode.window.showWarningMessage(EXT_TEXT[lang()].resetSpend, { modal: true }, EXT_TEXT[lang()].reset);
+      if (ok !== EXT_TEXT[lang()].reset) return;
       await ledger.reset();
       refreshStatus();
       void settingsPanel.refresh();
@@ -293,6 +289,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (e.affectsConfiguration("pebble.language")) {
         void pathView.refresh();
         chatView.relocalize();
+        settingsPanel.relocalize();
       }
     }),
 

@@ -146,9 +146,7 @@ export class MentorSession {
     this.view.push({
       kind: "pebble",
       label: this.C.labelWelcomeBack,
-      html: renderMarkdown(
-        `Progetto con ${n} ${n === 1 ? "decisione" : "decisioni"} in \`.pebble/\`. Quando crei un file ti dico che ruolo ha; quando vuoi, rivedo quello che hai scritto.`,
-      ),
+      html: renderMarkdown(this.C.welcomeBack(n)),
       actions: [
         { id: "next", label: this.C.whatNext, primary: true },
         { id: "review", label: this.C.reviewOpen },
@@ -212,7 +210,7 @@ export class MentorSession {
 
     await this.run(this.C.readingBootstrap, async (mentor, system) => {
       const { data, usage } = await mentor.generate(system, buildInitMessage(ctx.bootstrap!, this.deps.level(), this.deps.lang()), InitPlan, "init_plan");
-      const plan = cleanPlan(data);
+      const plan = cleanPlan(data, this.deps.lang());
       const cost = await this.account(mentor, usage);
       this.lastPlan = plan.blockingQuestion ? undefined : plan;
       const actions: ChatAction[] = plan.blockingQuestion
@@ -221,7 +219,7 @@ export class MentorSession {
             { id: "save-plan", label: this.C.saveToPebble, primary: true },
             { id: "init", label: this.C.regenerate },
           ];
-      this.view.push({ kind: "pebble", label: this.C.labelPlan, file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan, this.deps.lang())), meta: meta(mentor, cost), actions });
+      this.view.push({ kind: "pebble", label: this.C.labelPlan, file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan, this.deps.lang())), meta: meta(mentor, cost, this.deps.lang()), actions });
       this.history.push({ role: "pebble", text: initPlanToMarkdown(plan, this.deps.lang()) });
     });
   }
@@ -298,13 +296,13 @@ export class MentorSession {
   ): Promise<void> {
     const { data, usage } = await mentor.generate(system, msg, TextAnswer, "answer");
     const cost = await this.account(mentor, usage);
-    const clean = stripLongCode(data.answer).text;
+    const clean = stripLongCode(data.answer, this.deps.lang()).text;
     this.history.push({ role: "pebble", text: clean });
 
     const actions: ChatAction[] = [];
     let changesMd = "";
     for (const change of data.decisionChanges.slice(0, 3)) {
-      const f = decisionFile({ ...change, content: stripLongCode(change.content).text }, ctx.decisions);
+      const f = decisionFile({ ...change, content: stripLongCode(change.content, this.deps.lang()).text }, ctx.decisions);
       const key = String(++this.pendingSeq);
       this.pending.set(key, { root, ...f, reason: change.reason });
       changesMd += `\n\n> **${f.isNew ? this.C.newDecision : this.C.change} · ${f.id}** — ${change.reason}`;
@@ -313,7 +311,7 @@ export class MentorSession {
     // I pulsanti di approfondimento restano solo sull'ultima risposta.
     for (const id of FOLLOW_IDS) this.view.clearActions(id);
     actions.push(...followUpActions(this.deps.lang()));
-    this.view.push({ kind: "pebble", label, file, html: renderMarkdown(clean + changesMd), meta: meta(mentor, cost), actions });
+    this.view.push({ kind: "pebble", label, file, html: renderMarkdown(clean + changesMd), meta: meta(mentor, cost, this.deps.lang()), actions });
   }
 
   /** Confronto tra l'ADR attuale e quello proposto. */
@@ -361,7 +359,7 @@ export class MentorSession {
       this.history.push({ role: "pebble", text: `Review di ${file.path}: ${result.review.summary}` });
       for (const id of FOLLOW_IDS) this.view.clearActions(id);
       this.history.push({ role: "pebble", text: result.review.notes.map((n) => `[${n.severity}] riga ${n.line}: ${n.problem} Prova: ${n.try}`).join("\n") });
-      this.view.push({ kind: "pebble", label: this.C.labelReview, file: file.path, html: reviewHtml(result, this.deps.lang()), meta: meta(mentor, result.costUsd), actions: followUpActions(this.deps.lang()) });
+      this.view.push({ kind: "pebble", label: this.C.labelReview, file: file.path, html: reviewHtml(result, this.deps.lang()), meta: meta(mentor, result.costUsd, this.deps.lang()), actions: followUpActions(this.deps.lang()) });
     });
   }
 
@@ -422,13 +420,13 @@ export class MentorSession {
   }
 }
 
-function meta(mentor: MentorModel, cost: number | null): string {
-  return `${mentor.provider} · ${mentor.model} · ${formatUsd(cost)}`;
+function meta(mentor: MentorModel, cost: number | null, lang: Lang = "it"): string {
+  return `${mentor.provider} · ${mentor.model} · ${formatUsd(cost, lang)}`;
 }
 
 /** Filtro "niente codice" (ADR-003) su tutti i testi del piano; l'albero delle cartelle resta com'è. */
-function cleanPlan(p: InitPlan): InitPlan {
-  const c = (s: string) => stripLongCode(s).text;
+function cleanPlan(p: InitPlan, lang: Lang = "it"): InitPlan {
+  const c = (s: string) => stripLongCode(s, lang).text;
   const cn = (s: string | null) => (s === null ? null : c(s));
   return {
     ...p,
