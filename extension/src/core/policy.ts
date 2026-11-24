@@ -1,7 +1,7 @@
+import { EXT_TEXT, type Lang } from "./i18n";
 import type { Review } from "./model";
 
 export const MAX_CODE_LINES = 3;
-const NOTICE = "[Pebble ha rimosso un blocco di codice troppo lungo: il codice lo scrivi tu.]";
 
 /** Zona A del prompt: configurazione e comandi, che Pebble può dare completi. */
 const CONFIG_LANGS = new Set([
@@ -48,7 +48,8 @@ export function isAllowedLongBlock(lang: string, body: string): boolean {
  * Rimuove i blocchi ``` con più di MAX_CODE_LINES righe non vuote, tranne configurazione,
  * comandi da terminale, alberi di cartelle e blocchi di sole dichiarazioni (fino a MAX_SIGNATURE_LINES).
  */
-export function stripLongCode(text: string): { text: string; removed: number } {
+export function stripLongCode(text: string, lang: Lang = "it"): { text: string; removed: number } {
+  const NOTICE = EXT_TEXT[lang].codeRemoved;
   let removed = 0;
   const out = text.replace(/```([^\n]*)\n([\s\S]*?)```/g, (whole, lang: string, body: string) => {
     const lines = body.split("\n").filter((l) => l.trim()).length;
@@ -60,10 +61,10 @@ export function stripLongCode(text: string): { text: string; removed: number } {
 }
 
 /** Applica il filtro a tutti i testi della review e la limita a 3 note. */
-export function applyPolicy(review: Review): { review: Review; violations: number } {
+export function applyPolicy(review: Review, lang: Lang = "it"): { review: Review; violations: number } {
   let violations = 0;
   const clean = (s: string) => {
-    const r = stripLongCode(s);
+    const r = stripLongCode(s, lang);
     violations += r.removed;
     return r.text;
   };

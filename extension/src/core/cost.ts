@@ -1,3 +1,4 @@
+import { EXT_TEXT, type Lang } from "./i18n";
 import type { Usage } from "./model";
 
 /** Prezzi in dollari per milione di token. */
@@ -45,8 +46,8 @@ export function estimateCost(usage: Usage, price: Price | undefined): number | n
 }
 
 /** Formatta un costo piccolo in modo leggibile: $0.0123, $1.24. */
-export function formatUsd(v: number | null): string {
-  if (v === null) return "prezzo non configurato";
+export function formatUsd(v: number | null, lang: Lang = "it"): string {
+  if (v === null) return EXT_TEXT[lang].noPrice;
   if (v === 0) return "$0";
   return v < 0.1 ? `$${v.toFixed(4)}` : `$${v.toFixed(2)}`;
 }

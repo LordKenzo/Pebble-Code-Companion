@@ -17,7 +17,7 @@ export async function reviewFile(
 ): Promise<ReviewResult> {
   const ctx = await store.load();
   const { data: raw, usage } = await model.generate(systemPrompt, buildReviewMessage(ctx, file, level, lang), Review, "review");
-  const { review, violations } = applyPolicy(raw);
+  const { review, violations } = applyPolicy(raw, lang);
   return {
     review,
     violations,
