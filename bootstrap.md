@@ -1,27 +1,27 @@
 # Pebble — bootstrap
 
-## Cosa devo fare
-Un'estensione per Visual Studio Code che fa da senior engineer mentre scrivo codice.
-Non scrive codice: dà indicazioni, linee guida, review e suggerisce test.
+## What I want to build
+A Visual Studio Code extension that acts as a senior engineer while I write code.
+It doesn't write code: it gives directions, guidelines, reviews and suggests tests.
 
-Flusso:
-- leggo un `bootstrap.md` del progetto e propongo architettura, struttura e primo passo
-- salvo le decisioni in `.pebble/` (architecture.md + ADR)
-- alla creazione di un file: ruolo, responsabilità, cosa evitare, al massimo una firma come spunto
-- al salvataggio: review rispetto agli ADR e al bootstrap, mostrata come Diagnostics + pannello
-- su richiesta: `/review`, `/tests`, `/next`
-- se mi chiedono codice: rifiuto e do una checklist
+Flow:
+- read the project's `bootstrap.md` and propose architecture, structure and a first step
+- save the decisions in `.pebble/` (architecture.md + ADRs)
+- when a file is created: its role, responsibilities, what to avoid, at most one signature as a hint
+- on save: a review against the ADRs and the bootstrap, shown as Diagnostics + a panel
+- on request: `/review`, `/tests`, `/next`
+- if asked for code: refuse and give a checklist
 
-## Vincoli
-- Estensione VS Code in TypeScript
-- LLM via API (Claude come prima scelta), chiave fornita dall'utente
-- Mai blocchi di codice oltre poche righe: vincolo nel prompt e filtro a valle
-- Costi contenuti: debounce, review solo sul diff, solo su trigger
-- Lo stato del progetto vive in file leggibili e versionabili (`.pebble/`), non in un database
+## Constraints
+- VS Code extension in TypeScript
+- LLM via API (Claude as first choice), key provided by the user
+- Never code blocks beyond a few lines: a constraint in the prompt and a filter downstream
+- Low costs: debounce, review only the diff, only on triggers
+- The project's state lives in readable, versionable files (`.pebble/`), not in a database
 
-## Non so ancora
-- Chat participant nativo di VS Code o webview tutta mia?
-- Come decidere quando una modifica è "sostanziale" e merita una review
-- Come misurare se i consigli sono utili (feedback 👍/👎? consigli ignorati?)
-- Modello di business: open source, freemium, licenza per team?
-- Da dove cominciare
+## What I don't know yet
+- VS Code's native chat participant or my own webview?
+- How to decide when a change is "substantial" and deserves a review
+- How to measure whether the advice is useful (👍/👎 feedback? ignored advice?)
+- Business model: open source, freemium, team licence?
+- Where to start

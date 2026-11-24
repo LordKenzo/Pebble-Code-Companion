@@ -1,46 +1,47 @@
-# Architettura di Pebble
+# Pebble's architecture
 
-> Generato in MODE: INIT dal bootstrap del 2026-11-23, aggiornato la sera stessa per il percorso (ADR-006…009). Stato: proposto.
+> Generated in MODE: INIT from the bootstrap on 2026-11-23, updated the same evening for the path (ADR-006…009). Status: proposed.
 
-## Lettura del bootstrap
-Un'estensione VS Code che fa da pair engineer. Guida lungo un percorso di compiti, prepara firme e pseudocodice, e aiuta su richiesta senza mai scrivere la logica (ADR-003, ADR-006).
-Il valore sta in due cose: la qualità dei consigli e il fatto che siano ancorati alle decisioni del progetto.
-Quindi il prompt è il prodotto; l'estensione è il modo di consegnarlo al momento giusto.
+## Reading the bootstrap
+A VS Code extension that acts as a pair engineer. It guides along a path of tasks, prepares signatures and pseudocode, and helps on request without ever writing the logic (ADR-003, ADR-006).
+The value lies in two things: the quality of the advice and the fact that it is anchored to the project's decisions.
+So the prompt is the product; the extension is the way to deliver it at the right moment.
 
-## Livelli
+## Layers
 
 ```
 vscode adapter ─┐
-llm adapter ────┼──▶ core (puro)
+llm adapter ────┼──▶ core (pure)
 store adapter ──┘
 ```
 
-- **core**: logica pura, nessun import da `vscode` né chiamate di rete. Costruisce il contesto, sceglie la modalità, applica il filtro sulle zone, interpreta le risposte, legge e aggiorna il percorso, decide quali compiti sono fatti dati i segnali. Si testa senza editor e senza API.
-- **adapters**: tutto ciò che parla con l'esterno. Implementano interfacce definite nel core.
-  - `vscode`: comandi, eventi su file, Diagnostics, pannello
-  - `llm`: provider del modello (ADR-005)
-  - `store`: lettura e scrittura di `.pebble/`, compresi percorso e quaderno (ADR-002, ADR-007)
-  - `signals`: errori dell'editor e test in TAP (ADR-008)
+- **core**: pure logic, no imports from `vscode` and no network calls. It builds the context, picks the mode, applies the zone filter, interprets the answers, reads and updates the path, and decides which tasks are done given the signals. It is tested without an editor and without APIs.
+- **adapters**: everything that talks to the outside world. They implement interfaces defined in the core.
+  - `vscode`: commands, file events, Diagnostics, panels
+  - `llm`: model providers (ADR-005)
+  - `store`: reading and writing `.pebble/`, including the path and the notebook (ADR-002, ADR-007)
+  - `signals`: editor errors and TAP test output (ADR-008)
 
-Regola: le dipendenze puntano sempre verso `core`. Il core non sa che esiste VS Code.
+Rule: dependencies always point towards `core`. The core doesn't know VS Code exists.
 
-## Struttura delle cartelle
+## Folder structure
 
 ```
 src/
   core/
-    context/      raccoglie bootstrap, ADR, file e diff in un contesto per il modello
-    modes/        una definizione per modalità: INIT, PLAN_STEP, SCAFFOLD, HELP, REVIEW, TESTS, NEXT, CHAT
-    policy/       filtro sulle tre zone e limiti sulle risposte (ADR-003)
-    path/         percorso: parsing di percorso.md, evaluate(compiti, segnali) (ADR-007, ADR-008)
-    scaffold/     compone lo scheletro del file da dati strutturati (ADR-003)
-    notebook/     quaderno dei concetti (ADR-007)
-    model/        tipi: Nota, Gravità, Ancora, Decisione, Compito, Concetto
+    context/      gathers bootstrap, ADRs, files and diffs into a context for the model
+    modes/        one definition per mode: INIT, PLAN_STEP, SCAFFOLD, HELP, REVIEW, TESTS, NEXT, CHAT
+    policy/       filter on the three zones and limits on the answers (ADR-003)
+    path/         the path: parsing percorso.md, evaluate(tasks, signals) (ADR-007, ADR-008)
+    scaffold/     composes the file skeleton from structured data (ADR-003)
+    notebook/     notebook of concepts (ADR-007)
+    i18n/         Italian and English catalogs (ADR-012)
+    model/        types: Note, Severity, Anchor, Decision, Task, Concept
   adapters/
-    vscode/       estensione, comandi, Diagnostics, vista Percorso e Quaderno, fumetto (ADR-009), conversazione
-    llm/          provider Claude, OpenAI e locali (ADR-005)
-    store/        file in .pebble/
-    signals/      errori dell'editor e comando di test con output TAP (ADR-008)
-prompts/          prompt di sistema e versioni
-evals/            casi di valutazione del prompt
+    vscode/       extension, commands, Diagnostics, Path and Notebook views, balloon (ADR-009), conversation
+    llm/          Claude, OpenAI and local providers (ADR-005)
+    store/        files in .pebble/
+    signals/      editor errors and the test command with TAP output (ADR-008)
+prompts/          system prompt and versions
+evals/            prompt evaluation cases
 ```

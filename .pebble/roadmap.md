@@ -1,38 +1,38 @@
 # Roadmap
 
-## Fase 1: mentor in chat (v0.1–v0.6)
+## Phase 1: mentor in chat (v0.1–v0.6)
 
-| # | Passo | Stato |
+| # | Step | Status |
 |---|---|---|
-| 1 | Casi di valutazione del prompt in `evals/` | ✅ 14 casi, prompt v0.4 |
-| 2 | Formato strutturato per REVIEW, mappato su Diagnostics | ✅ |
-| 3 | `core/policy`: filtro sulle zone con i suoi test | ✅ (aggiornato a tre zone, ADR-003) |
-| 4 | Runner degli eval da riga di comando | ✅ `evals/run.py` con Claude Code |
-| 5 | Estensione minima: review del file → Diagnostics e pannello | ✅ |
-| 6 | `init` da `bootstrap.md` che scrive `.pebble/` | ✅ |
-| 7 | Trigger automatici su nuovo file e salvataggio | ⛔ abbandonato (ADR-006) |
-| 7b | Livello di esperienza e registro della spesa | ✅ |
-| 8 | Prova su un progetto reale | ✅ mini-calc: troppo generico e troppo passivo, da qui la fase 2 |
+| 1 | Prompt evaluation cases in `evals/` | ✅ 14 cases, prompt v0.4 |
+| 2 | Structured format for REVIEW, mapped to Diagnostics | ✅ |
+| 3 | `core/policy`: zone filter with its tests | ✅ (updated to three zones, ADR-003) |
+| 4 | Command-line eval runner | ✅ `evals/run.py` with Claude Code |
+| 5 | Minimal extension: file review → Diagnostics and panel | ✅ |
+| 6 | `init` from `bootstrap.md` that writes `.pebble/` | ✅ |
+| 7 | Automatic triggers on new file and save | ⛔ dropped (ADR-006) |
+| 7b | Experience level and spending log | ✅ |
+| 8 | Trial on a real project | ✅ mini-calc: too generic and too passive, hence phase 2 |
 
-## Fase 2: il percorso (piano in `docs/piano-pair-engineer.md`)
+## Phase 2: the path (plan in `docs/pair-engineer-plan.md`)
 
-| # | Passo | Fatto quando |
+| # | Step | Done when |
 |---|---|---|
-| 0 ✅ | Commit della v0.6 e ADR della nuova direzione (003, 004 superato, 006–009) | `.pebble/` descrive il percorso |
-| 1 ✅ | `core/path`: parsing di `percorso.md` ed `evaluate`, con test | Coperti: test verde, test che torna rosso, file mancante, compito a mano, righe sconosciute conservate |
-| 2 ✅ | Vista Percorso da un `percorso.md` scritto a mano per il passo 2 di mini-calc | In VS Code vedi i compiti e li spunti a mano, e il file si aggiorna |
-| 2b ✅ | **Prompt del fumetto (MODE: HELP) e i suoi eval, senza interfaccia.** 3-4 bug reali di mini-calc (`>`/`>=`, kg in float, caso sotto i 20 kg) con l'output dei test rossi | Il gradino 1 è una domanda che non rivela la soluzione e cita l'output del test; il gradino 4 non supera 3 righe; nessun corpo di funzione |
-| 3 ✅ | Segnali: errori dell'editor e test TAP al salvataggio, con la cronologia "visto rosso" (ADR-010) | Scrivendo `platesFor` su mini-calc, i compiti si spuntano da soli; un test mai visto fallire mostra l'avviso |
-| 4 ✅ | MODE: PLAN_STEP: i compiti del prossimo passo, generati dal codice com'è adesso e proposti come diff (ADR-011), con eval | Chiuso il passo 1 di mini-calc, "Prepara il passo 2" propone compiti simili a quelli scritti a mano, con i casi di test e un primo test d'esempio |
-| 4b | Il sentiero che cresce: condizioni da aggiornare quando un file o un test sparisce, "Aggiungi al percorso" dal fumetto e dalla review, passi chiusi compressi (ADR-011) | Rinominare `plates.ts` segnala i compiti da aggiornare e propone la correzione |
-| 5 ✅ | Fumetto `⌥P` con i quattro gradini e "Perché conta?", con eval | Sul bug `>`/`>=` parte da una domanda e non scrive mai il corpo |
-| 6 ✅ | Prepara il file: MODE: SCAFFOLD, scheletro composto da Pebble con anteprima | `plates.ts` nasce con firma e pseudocodice, senza corpo |
-| 7 | Approfondisci e Quaderno | I concetti del fumetto finiscono in `quaderno.md` |
-| 8 | Prova reale su mini-calc, passi 1–3 | Note su cosa è utile e cosa è rumore |
+| 0 ✅ | Commit v0.6 and the ADRs of the new direction (003, 004 superseded, 006–009) | `.pebble/` describes the path |
+| 1 ✅ | `core/path`: parsing `percorso.md` and `evaluate`, with tests | Covered: green test, test that goes red again, missing file, manual task, unknown lines preserved |
+| 2 ✅ | Path view from a hand-written `percorso.md` for mini-calc's step 2 | In VS Code you see the tasks and tick them by hand, and the file updates |
+| 2b ✅ | **Balloon prompt (MODE: HELP) and its evals, without UI.** 3-4 real mini-calc bugs (`>`/`>=`, kg as floats, the below-20-kg case) with the red test output | Rung 1 is a question that doesn't reveal the solution and quotes the test output; rung 4 stays within 3 lines; no function body |
+| 3 ✅ | Signals: editor errors and TAP tests on save, with the "seen red" history (ADR-010) | Writing `platesFor` in mini-calc, tasks tick themselves; a test never seen failing shows the warning |
+| 4 ✅ | MODE: PLAN_STEP: the next step's tasks, generated from the code as it is now and proposed as a diff (ADR-011), with evals | With mini-calc's step 1 done, "Prepare step 2" proposes tasks similar to the hand-written ones, with the test cases and a first example test |
+| 4b | The growing path: conditions to update when a file or test disappears, "Add to the path" from the balloon and the review, closed steps collapsed (ADR-011) | Renaming `plates.ts` flags the tasks to update and proposes the fix |
+| 5 ✅ | `⌥P` balloon with the four rungs and "Why it matters", with evals | On the `>`/`>=` bug it starts with a question and never writes the body |
+| 6 ✅ | Prepare the file: MODE: SCAFFOLD, skeleton composed by Pebble with a preview | `plates.ts` is born with signature and pseudocode, no body |
+| 6b ✅ | Multilingual: Italian and English, single English prompt (ADR-012) | Interface, generated files and answers follow `pebble.language`; 28 evals ok |
+| 7 | Deep dive and Notebook | The balloon's concepts end up in `quaderno.md` |
+| 8 | Real trial on mini-calc, steps 1–3 | Notes on what is useful and what is noise |
 
-## Da dove partire
-**Prova reale su mini-calc (passo 8), poi il quaderno (7).** Il ciclo del mockup c'è tutto tranne il quaderno: percorso, passi generati, "Prepara il file", segnali, fumetto. Prima di aggiungere altro conviene usarlo davvero su mini-calc, con gpt-6-sol, e annotare cosa è utile e cosa è rumore. Da tarare con l'uso: l'avviso "mai visto fallire" (ADR-010) compare anche su test legittimamente verdi dall'inizio, come il caso dei 20 kg.
+## Where to start
+**Real trial on mini-calc (step 8), then the notebook (7).** The mockup's loop is all there except the notebook: path, generated steps, "Prepare the file", signals, balloon. Before adding more it's worth really using it on mini-calc and noting what is useful and what is noise. To tune with use: the "never seen failing" warning (ADR-010) also shows on tests that are legitimately green from the start, like the 20 kg case.
 
-## Da decidere più avanti
-- Prompt, ADR ed eval in inglese, ora che il repo è pubblico.
-- Modello di business: il progetto è open source con licenza MIT; un'eventuale offerta per team non cambia l'architettura.
+## To decide later
+- Business model: the project is open source under the MIT licence; a possible team offering doesn't change the architecture.
