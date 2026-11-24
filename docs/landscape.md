@@ -1,37 +1,37 @@
-# Panorama: cosa esiste già
+# Landscape: what already exists
 
-Sintesi delle analisi fatte con Claude e Gemini (novembre 2026). Il mercato cambia in fretta: da riverificare prima di decisioni importanti.
+Summary of the analyses done with Claude and Gemini (November 2026). The market changes fast: check again before important decisions.
 
-## Strumenti vicini all'idea
+## Tools close to the idea
 
-| Strumento | Cosa fa | Cosa manca rispetto a Pebble |
+| Tool | What it does | What it lacks compared to Pebble |
 |---|---|---|
-| Kiro (AWS), GitHub Spec Kit | Sviluppo spec-driven: requisiti → design → task | Poi il codice lo scrive l'AI |
-| Roo Code, Cline (custom modes) | Modalità "Architect"/"Reviewer" senza permessi di scrittura, regole in `.clinerules` | Va configurato a mano; nessun flusso legato al ciclo di vita del file |
-| Cursor rules, Copilot instructions, `CLAUDE.md` | Linee guida di progetto | Pensate per guidare l'AI che scrive, non lo sviluppatore |
-| Claude Code, output style "Learning" | Lascia `TODO(human)` da scrivere a te | Terminale e sessione singola, nessuna memoria del progetto |
-| CodeRabbit (anche estensione VS Code), Sourcery, Copilot review | Review su modifiche locali o PR | Regole generiche, non legate alle decisioni del progetto |
-| Qodo (ex CodiumAI) | Analisi del comportamento, edge case, test | Spinge verso la generazione dei test |
+| Kiro (AWS), GitHub Spec Kit | Spec-driven development: requirements → design → tasks | Then the AI writes the code |
+| Roo Code, Cline (custom modes) | "Architect"/"Reviewer" modes without write permissions, rules in `.clinerules` | Must be configured by hand; no flow tied to the file's life cycle |
+| Cursor rules, Copilot instructions, `CLAUDE.md` | Project guidelines | Meant to guide the AI that writes, not the developer |
+| Claude Code, "Learning" output style | Leaves `TODO(human)` for you to write | Terminal and single session, no project memory |
+| CodeRabbit (also a VS Code extension), Sourcery, Copilot review | Review of local changes or PRs | Generic rules, not tied to the project's decisions |
+| Qodo (formerly CodiumAI) | Behaviour analysis, edge cases, tests | Pushes towards generating the tests |
 
-## Cosa distingue Pebble
+## What sets Pebble apart
 
-1. **Rifiuto di scrivere codice per scelta.** È il prodotto, non una configurazione.
-2. **Memoria di progetto.** `bootstrap.md` → `.pebble/` (architettura + ADR), usata in ogni review.
-3. **Ciclo di vita del file.** Interviene alla creazione e al salvataggio, non solo sulla PR.
+1. **It doesn't write your logic, by design.** That's the product, not a setting.
+2. **Project memory.** `bootstrap.md` → `.pebble/` (architecture + ADRs), used in every answer.
+3. **A path checked by your tests.** Small steps that tick themselves when your tests and the compiler agree, not only feedback on the PR.
 
-## Perché può servire
+## Why it can matter
 
-- **Debito cognitivo da AI**: generare 500 righe è facile, mantenerle senza averne capito il design no.
-- **Deriva architetturale**: al decimo file si inizia a sporcare l'impianto; serve qualcuno che confronti ogni file con le decisioni iniziali.
-- **TDD leggero**: suggerire i casi di test mentre scrivi, non a fine giornata.
+- **Cognitive debt from AI**: generating 500 lines is easy, maintaining them without having understood the design isn't.
+- **Architectural drift**: by the tenth file the structure starts getting messy; someone needs to compare each file with the initial decisions.
+- **Light TDD**: suggesting test cases while you write, not at the end of the day.
 
-## Utenti target
+## Target users
 
-- Sviluppatori che vogliono restare padroni del proprio codice
-- Junior e studenti (mentore, non scorciatoia)
-- Team che vogliono coerenza architetturale
+- Developers who want to stay in charge of their own code
+- Juniors and students (a mentor, not a shortcut)
+- Teams that want architectural consistency
 
-## Rischio principale
+## Main risk
 
-L'effetto Clippy. Se i consigli sono troppi o generici, viene disattivato in due giorni.
-Contromisure: trigger precisi, pannello discreto, severità regolabile, consigli sempre ancorati al progetto.
+The Clippy effect. If the advice is too frequent or generic, it gets switched off within two days.
+Countermeasures: help only on request (ADR-006), a discreet panel, adjustable experience level, advice always anchored to the project.

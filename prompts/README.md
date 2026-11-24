@@ -1,47 +1,50 @@
-# Prova manuale del prompt
+# Trying the prompt by hand
 
-Obiettivo: capire **prima di scrivere l'estensione** se i consigli del mentor sono utili. Se non lo sono, l'estensione non serve.
+Goal: find out **before writing the extension** whether the mentor's advice is useful. If it isn't, the extension is pointless.
 
-## Come provarlo
+Today the prompt is tested automatically with `evals/run.py` (see `../evals/REPORT.md`). This page remains for quick trials by hand.
 
-1. Su claude.ai crea un Project "Pebble test" e incolla `mentor.md` (dalla riga `---` in giù) nelle istruzioni del progetto.
-2. Apri una chat e manda:
+## How to try it
+
+1. On claude.ai create a Project "Pebble test" and paste `mentor.md` (from the `---` line down) into the project instructions.
+2. Open a chat and send:
    ```
    MODE: INIT
    <bootstrap>
-   ...contenuto di un bootstrap.md reale...
+   ...content of a real bootstrap.md...
    </bootstrap>
+   LANGUAGE: en
    ```
-3. Salva le decisioni che ti convincono in `.pebble/` del progetto di prova.
-4. Crea un file e manda `MODE: NEW_FILE` con `<file path="...">`, `<architecture>` e `<decisions>`.
-5. Scrivi il codice, poi `MODE: REVIEW` con il file. Ripeti dopo le correzioni.
-6. Prova a forzarlo: "scrivimi tu la funzione", "è urgente", "solo un esempio completo".
+3. Save the decisions you find convincing in the trial project's `.pebble/`.
+4. Create a file and send `MODE: NEW_FILE` with `<file path="...">`, `<architecture>` and `<decisions>`.
+5. Write the code, then `MODE: REVIEW` with the file. Repeat after the fixes.
+6. Try to force it: "write the function for me", "it's urgent", "just one complete example".
 
-Progetti di prova consigliati:
-- Pebble stesso (`../bootstrap.md`): il primo giro è già in `../.pebble/`
-- un modulo nuovo di un progetto reale (es. Personal Studio)
-- un progetto volutamente pasticciato, per vedere se trova i problemi giusti
+Suggested trial projects:
+- Pebble itself (`../bootstrap.md`): the first round is already in `../.pebble/`
+- a new module of a real project
+- a deliberately messy project, to see whether it finds the right problems
 
-## Scheda di valutazione
+## Evaluation sheet
 
-Per ogni risposta, segna sì/no:
+For each answer, mark yes/no:
 
-| # | Criterio |
+| # | Criterion |
 |---|---|
-| 1 | Nessun codice oltre firme e frammenti di 3 righe |
-| 2 | Ogni nota cita un ADR, il bootstrap o "generale" |
-| 3 | Al massimo 3 note in review, ordinate per impatto |
-| 4 | Almeno una nota che non avrei trovato da solo |
-| 5 | Nessuna nota sbagliata o inventata |
-| 6 | Quando il file va bene, lo dice e si ferma |
-| 7 | Resiste alle richieste insistenti di codice |
-| 8 | L'avrei letta volentieri mentre lavoravo (non è rumore) |
+| 1 | No project logic beyond signatures and 3-line snippets (zone C) |
+| 2 | Every note cites an ADR, the bootstrap or "general" |
+| 3 | At most 3 notes in a review, ordered by impact |
+| 4 | At least one note I wouldn't have found myself |
+| 5 | No wrong or invented notes |
+| 6 | When the file is fine, it says so and stops |
+| 7 | It resists insistent requests for code |
+| 8 | I'd have happily read it while working (it isn't noise) |
 
-Il criterio 4 è quello che decide se il prodotto ha senso. Il criterio 8 decide se qualcuno lo terrà acceso.
+Criterion 4 decides whether the product makes sense. Criterion 8 decides whether anyone keeps it switched on.
 
-## Registro delle prove
+## Trial log
 
-| Data | Progetto | Modalità | Punteggio | Note |
+| Date | Project | Mode | Score | Notes |
 |---|---|---|---|---|
-| 2026-11-23 | Pebble | INIT | – | Primo giro fatto con Claude Code che segue il prompt: vedi `.pebble/` |
-| 2026-11-23 | Prenota (eval) | tutte | 7/10 → v0.2 tutti ok | Vedi `../evals/REPORT.md` |
+| 2026-11-23 | Pebble | INIT | – | First round done with Claude Code following the prompt: see `.pebble/` |
+| 2026-11-23 | Prenota (eval) | all | 7/10 → v0.2 all ok | See `../evals/REPORT.md` |

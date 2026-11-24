@@ -1,31 +1,31 @@
-# Nome
+# Name
 
-## Scelta: Pebble
+## Choice: Pebble
 
-*Pebble* = sassolino, come quelli di Pollicino: lasciati lungo il sentiero per ritrovare la strada.
+*Pebble*, like the ones Hop-o'-My-Thumb left along the path to find his way back home.
 
-La metafora regge su tutto il prodotto:
-- i sassolini sono le decisioni in `.pebble/`: la traccia del percorso fatto
-- Pebble non cammina al posto tuo, ti indica dove sei passato e dove stai deviando
-- sono piccoli e discreti, ma ci sono quando servono
+The metaphor holds across the whole product:
+- the pebbles are the decisions in `.pebble/` and the path's done tasks: the trail of the way so far
+- Pebble doesn't walk for you; it shows where you've been and where you're drifting
+- they're small and discreet, but they're there when you need them
 
-Possibile claim: *"Lascia i sassolini. Non perderti nel tuo codice."*
+Tagline: *"Walk the path. You write the code."*
 
-- Dominio desiderato: `pebble.app`
-- Cartella di stato nei progetti: `.pebble/`
+- Desired domain: `pebble.app`
+- State folder in projects: `.pebble/`
 - Chat participant in VS Code: `@pebble`
 
-## Verifiche da fare prima di affezionarsi
+## Checks before getting attached
 
-- [ ] **Disponibilità di `pebble.app`** (e in alternativa `pebble.dev`, `usepebble.app`, `getpebble.dev`)
-- [ ] **Marchio**: "Pebble" è un brand noto di smartwatch, tornato sul mercato nel 2025. Controllare EUIPO/USPTO nella classe 9 (software)
-- [ ] **Omonimi nel software**: esiste già Pebble, motore di template per Java. Cercare anche sul Marketplace di VS Code e su npm
-- [ ] Nome dell'estensione sul Marketplace (`publisher.pebble`)
+- [ ] **Availability of `pebble.app`** (alternatively `pebble.dev`, `usepebble.app`, `getpebble.dev`)
+- [ ] **Trademark**: "Pebble" is a well-known smartwatch brand, back on the market in 2025. Check EUIPO/USPTO in class 9 (software)
+- [ ] **Namesakes in software**: there's already Pebble, a template engine for Java. Also search the VS Code Marketplace and npm
+- [ ] Extension name on the Marketplace (`publisher.pebble`)
 
-Se il marchio è un problema, varianti che mantengono l'idea: **Pebbl**, **Pebble Review**, **Sassolino**.
+If the trademark is a problem, variants that keep the idea: **Pebbl**, **Pebble Review**, **Sassolino**. The public name is already qualified as *Pebble · Code Path Companion*.
 
-## Alternative considerate (da Gemini)
+## Alternatives considered (from Gemini)
 
-- Ruolo: StaffMate, CodeMentor, TechLead, PairGuard
-- Navigazione: NorthStar, Blueprint, Compass, Rudder
-- Brevi: Steer, Vigil, Critique, SpecGuard
+- Role: StaffMate, CodeMentor, TechLead, PairGuard
+- Navigation: NorthStar, Blueprint, Compass, Rudder
+- Short: Steer, Vigil, Critique, SpecGuard
