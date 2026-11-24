@@ -44,6 +44,6 @@ In an untrusted folder Pebble works but doesn't run test commands. Trust the fol
 npm install
 npm test
 npm run package
-code --install-extension pebble-0.7.11.vsix --force
+code --install-extension pebble-0.7.12.vsix --force
 ```
 The prompts are copied from `../prompts/mentor.en.md` and `../prompts/mentor.md` on every build.
