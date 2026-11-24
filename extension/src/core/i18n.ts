@@ -188,7 +188,7 @@ export const BOOTSTRAP_TEXT: Record<Lang, typeof bootstrapIt> = { it: bootstrapI
 
 /** Riga per i messaggi al modello: in quale lingua scrivere ogni testo, anche i campi dello schema. */
 export const languageLine = (lang: Lang) =>
-  lang === "it" ? "LANGUAGE: it — write every text in Italian, including the schema fields." : "LANGUAGE: en — write every text in English, including the schema fields.";
+  `LANGUAGE: ${lang} — write in ${lang === "it" ? "Italian" : "English"} every text, schema fields included; only if the developer's own message is in another language, answer them in that language (project files stay in ${lang === "it" ? "Italian" : "English"}).`;
 
 // ---------- la vista Percorso (media/path.js) ----------
 // Stringhe con segnaposto {nome}: la webview riceve dati, non funzioni. Possono contenere HTML fidato.

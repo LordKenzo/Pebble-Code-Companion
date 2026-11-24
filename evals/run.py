@@ -5,11 +5,10 @@ Uso:
     python3 evals/run.py                 # tutti i casi
     python3 evals/run.py 05 07           # solo i casi che iniziano con questi prefissi
     python3 evals/run.py --model opus    # modello specifico
-    python3 evals/run.py --prompt en     # usa prompts/mentor.en.md (la riga LANGUAGE resta quella del caso)
 
 Per ogni caso: prende la sezione "## Input", espande le righe "@include <path>",
 aggiunge la riga LANGUAGE come fa l'estensione (en per i casi che finiscono in "-en", altrimenti it),
-la manda al modello con prompts/mentor.md (o mentor.en.md con --prompt en) come system prompt (nessun tool, nessun MCP,
+la manda al modello con prompts/mentor.md come system prompt (nessun tool, nessun MCP,
 cartella di lavoro vuota) e salva la risposta in evals/runs/<data-ora>/.
 Il controllo automatico segnala solo i blocchi di codice troppo lunghi; il resto
 si valuta a mano con la sezione "## Atteso" del caso.
@@ -25,16 +24,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EVALS = ROOT / "evals"
-PROMPTS = {"it": ROOT / "prompts" / "mentor.md", "en": ROOT / "prompts" / "mentor.en.md"}
+PROMPT = ROOT / "prompts" / "mentor.md"
 LANGUAGE_LINE = {
-    "it": "LANGUAGE: it — write every text in Italian, including the schema fields.",
-    "en": "LANGUAGE: en — write every text in English, including the schema fields.",
+    "it": "LANGUAGE: it — write in Italian every text, schema fields included; only if the developer's own message is in another language, answer them in that language (project files stay in Italian).",
+    "en": "LANGUAGE: en — write in English every text, schema fields included; only if the developer's own message is in another language, answer them in that language (project files stay in English).",
 }
 MAX_CODE_LINES = 3
 
 
-def system_prompt(lang: str) -> str:
-    text = PROMPTS[lang].read_text()
+def system_prompt() -> str:
+    text = PROMPT.read_text()
     _, sep, body = text.partition("\n---\n")
     return body.strip() if sep else text
 
@@ -64,7 +63,7 @@ MAX_SIGNATURE_LINES = 20
 DECL_LANGS = {"ts", "typescript", "tsx", "mts", "cts"}
 STATEMENT = [re.compile(x) for x in (
     r"\breturn\b", r"\b(if|for|while|switch|catch)\s*\(", r"\b(await|throw|yield)\b", r"\bnew\s+[A-Za-z_]", r"\bconsole\.",
-    r"\b(const|let|var)\s+[\w{[]", r"=>\s*\{", r"\)\s*(:\s*[^=;]+)?\{\s*[^}\s]", r"\)\s*(:\s*[^=;]+)?\{\s*$",
+    r"(?<!\bdeclare\s)\b(const|let|var)\s+[\w{[]", r"=>\s*\{", r"\)\s*(:\s*[^=;]+)?\{\s*[^}\s]", r"\)\s*(:\s*[^=;]+)?\{\s*$",
     r"^\s*(?:(?:private|public|protected|readonly|static)\s+)*[\w.]+\s*=(?![=>])",
 )]
 
@@ -117,7 +116,6 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("prefixes", nargs="*")
     ap.add_argument("--model")
-    ap.add_argument("--prompt", choices=["it", "en"], default="it")
     args = ap.parse_args()
 
     cases = sorted((EVALS / "cases").glob("*.md"))
@@ -126,13 +124,13 @@ def main() -> None:
     if not cases:
         sys.exit("nessun caso trovato")
 
-    out = EVALS / "runs" / (dt.datetime.now().strftime("%Y-%m-%d_%H%M") + ("" if args.prompt == "it" else "_prompt-en"))
+    out = EVALS / "runs" / dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     out.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         sp = tmp / "system.md"
-        sp.write_text(system_prompt(args.prompt))
+        sp.write_text(system_prompt())
         work = tmp / "work"
         work.mkdir()
         with ThreadPoolExecutor(max_workers=5) as pool:
