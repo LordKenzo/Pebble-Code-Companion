@@ -180,3 +180,13 @@ From real use on a React calculator: step 2 ("describe with tests") was generate
 | 29 tests-only step | ✅ | Tests, signatures and "run them and read why they fail"; `reading` says the operations come in step 3. Italian conditions |
 | 30 step already done | ✅ | `reading` says `calculate` and its tests already exist from step 2; proposes only the missing tests (invalid input on line 4, negatives, decimals) and the review |
 | 20 (regression) | ✅ | Same quality as before; the review task is titled "Revisione con Pebble" instead of the expected "Rileggi con Pebble" |
+
+## 2026-11-24 · sources by level, prompt v1.1 (cases 31–33, `runs/2026-11-24_2124`)
+The prompt now says where to send the developer to read more: at entry level only the official documentation of the stack in the ADRs, saying which section to open; junior adds well-known references such as MDN; mid and senior may cite community sources when they add something. Never an invented URL: prefer a guide's start page or the name of the section.
+
+| Case | Result | Notes |
+|---|---|---|
+| 31 chat, entry | ✅ | Explains "mock" with an everyday comparison and links it to jsdom having no clipboard. Points to *vitest.dev › Guide › Mocking* and *testing-library.com › user-event › Clipboard*; no Q&A sites, no deep URLs |
+| 32 chat, senior | ✅ with reservations | No basics, the two options with their cost, a better third way (`user-event`) with a 2-line fragment and a declaration-only module. No community source (allowed, not required). Long for senior, about 300 words |
+| 33 deep dive, entry | ✅ | Floating point in plain words, a habit tied to ADR-003 and an exercise in the Node console; no reading pointer (allowed) |
+| 14, 15, 19, 23 (regression) | ✅ | Unchanged |
