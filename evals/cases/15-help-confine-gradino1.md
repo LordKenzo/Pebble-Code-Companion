@@ -4,8 +4,8 @@ Il bug del mockup: `>` invece di `>=` a riga 20. Lo sviluppatore chiede aiuto su
 
 ## Input
 MODE: HELP
-LIVELLO: junior
-GRADINO: 1
+LEVEL: junior
+RUNG: 1
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>

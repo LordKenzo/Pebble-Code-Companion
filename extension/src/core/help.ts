@@ -48,10 +48,10 @@ export interface HelpRequest {
 }
 
 const HELP_LEVEL: Record<ExperienceLevel, string> = {
-  entry: "Livello entry: parole semplici, spiega tra parentesi ogni termine tecnico la prima volta.",
-  junior: "Livello junior: nomina il principio in gioco quando serve, in una frase.",
+  entry: "Entry level: plain words, explain each technical term in brackets the first time.",
+  junior: "Junior level: name the principle at play when useful, in one sentence.",
   mid: "",
-  senior: "Livello senior: asciutto, niente spiegazioni di concetti noti.",
+  senior: "Senior level: terse, no explanations of known concepts.",
 };
 
 const MAX_TESTS = 30;
@@ -75,9 +75,9 @@ export function formatTests(tests: readonly (TestResult & { detail?: string })[]
 
 export function buildHelpMessage(req: HelpRequest): string {
   const { ask } = req;
-  const head = ["MODE: HELP", `LIVELLO: ${req.level}`];
-  if (ask.kind === "rung") head.push(`GRADINO: ${ask.rung}`);
-  else head.push(`GRADINO: ${ask.rung}`, ask.kind === "why" ? "PERCHÉ: sì" : ask.kind === "deep" ? "APPROFONDISCI: sì" : "");
+  const head = ["MODE: HELP", `LEVEL: ${req.level}`];
+  if (ask.kind === "rung") head.push(`RUNG: ${ask.rung}`);
+  else head.push(`RUNG: ${ask.rung}`, ask.kind === "why" ? "WHY: yes" : ask.kind === "deep" ? "DEEP_DIVE: yes" : "");
 
   const task = req.task
     ? block("task", [req.task.title, req.task.todo && `fare: ${req.task.todo}`, req.task.signature && `firma: ${req.task.signature}`, ...req.task.when.map((w) => `fatto quando: ${w}`)].filter(Boolean).join("\n"))

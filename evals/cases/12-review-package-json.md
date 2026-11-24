@@ -4,7 +4,7 @@ Il package.json reale della prova su mini-calc: script di test che non avvia il 
 
 ## Input
 MODE: REVIEW
-LIVELLO: junior
+LEVEL: junior
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md
 </bootstrap>

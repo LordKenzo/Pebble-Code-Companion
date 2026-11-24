@@ -37,8 +37,8 @@ test("con una domanda bloccante il piano mostra solo la domanda", () => {
 
 test("INIT porta livello e bootstrap", () => {
   const m = buildInitMessage("# B", "entry");
-  assert.match(m, /^MODE: INIT\nLIVELLO: entry\n<bootstrap>\n# B/);
-  assert.match(m, /spiega tra parentesi/);
+  assert.match(m, /^MODE: INIT\nLEVEL: entry\n<bootstrap>\n# B/);
+  assert.match(m, /explain each technical term in brackets/);
 });
 
 test("NEXT non include il file aperto, CHAT include la conversazione recente", () => {
@@ -51,7 +51,7 @@ test("NEXT non include il file aperto, CHAT include la conversazione recente", (
   assert.match(chat, /<file path="a.ts">\n1 \| x/);
   assert.doesNotMatch(chat, /msg3\b/);
   assert.match(chat, /msg11/);
-  assert.match(chat, /Domanda dello sviluppatore:\nPerché\?/);
+  assert.match(chat, /Developer's question:\nPerché\?/);
 });
 
 test("toglie la numerazione messa dal modello nel titolo", () => {

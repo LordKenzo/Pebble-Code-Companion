@@ -130,12 +130,12 @@ test("riconosce i file di test", () => {
 
 test("il messaggio dice quale file preparare e se è di test", () => {
   const m = buildScaffoldMessage({ bootstrap: null, architecture: null, decisions: [] }, "test/core/plates.test.ts", undefined, [{ path: "src/core/units.ts", content: "export type Grams = number;" }], "entry");
-  assert.ok(m.startsWith("MODE: SCAFFOLD\nLIVELLO: entry"));
+  assert.ok(m.startsWith("MODE: SCAFFOLD\nLEVEL: entry"));
   assert.match(m, /<file path="src\/core\/units.ts">\n1 \| export type Grams = number;\n<\/file>/);
-  assert.match(m, /FILE DA PREPARARE: test\/core\/plates.test.ts \(file di test\)/);
-  assert.doesNotMatch(m, /FIRME PREVISTE/);
+  assert.match(m, /FILE_TO_PREPARE: test\/core\/plates.test.ts \(test file\)/);
+  assert.doesNotMatch(m, /STEP_SIGNATURES/);
   const withSigs = buildScaffoldMessage({ bootstrap: null, architecture: null, decisions: [] }, "test/a.test.ts", undefined, [], "mid", ["platesFor(total: Grams): Result<PlateLoad>"]);
-  assert.match(withSigs, /FIRME PREVISTE NEL PASSO:\n- platesFor\(total: Grams\): Result<PlateLoad>\nFILE DA PREPARARE/);
+  assert.match(withSigs, /STEP_SIGNATURES:\n- platesFor\(total: Grams\): Result<PlateLoad>\nFILE_TO_PREPARE/);
 });
 
 test("in inglese: i commenti dello scheletro", () => {

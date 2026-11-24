@@ -18,7 +18,7 @@ const base: HelpRequest = {
 
 test("messaggio come negli eval: modo, gradino, ADR, compito, file numerato, cursore, test", () => {
   const m = buildHelpMessage(base);
-  assert.ok(m.startsWith("MODE: HELP\nLIVELLO: junior\nGRADINO: 1"));
+  assert.ok(m.startsWith("MODE: HELP\nLEVEL: junior\nRUNG: 1"));
   assert.match(m, /<decisions>[\s\S]*ADR-003/);
   assert.match(m, /<task>\nImplementa platesFor\nfare: scorri i dischi\nfirma: platesFor\(total: Grams\)\nfatto quando: passano i test "60 kg"\n<\/task>/);
   assert.match(m, /<file path="src\/core\/plates.ts">\n1 \| a\n2 \| b\n3 \| while/);
@@ -36,17 +36,17 @@ test("i test rossi vengono prima, con il motivo rientrato", () => {
 
 test("risposta, perché e approfondimento hanno le loro righe", () => {
   const reply = buildHelpMessage({ ...base, ask: { kind: "reply", rung: 1, text: "il while salta l'uguaglianza" }, history: ["Gradino 1 · Domanda: perché salta il 20?"] });
-  assert.match(reply, /GRADINO: 1/);
+  assert.match(reply, /RUNG: 1/);
   assert.match(reply, /<history>\nGradino 1 · Domanda: perché salta il 20\?\n<\/history>/);
   assert.match(reply, /<reply>\nil while salta l'uguaglianza\n<\/reply>/);
-  assert.match(buildHelpMessage({ ...base, ask: { kind: "why", rung: 2 } }), /GRADINO: 2\nPERCHÉ: sì/);
-  assert.match(buildHelpMessage({ ...base, ask: { kind: "deep", rung: 1 } }), /APPROFONDISCI: sì/);
+  assert.match(buildHelpMessage({ ...base, ask: { kind: "why", rung: 2 } }), /RUNG: 2\nWHY: yes/);
+  assert.match(buildHelpMessage({ ...base, ask: { kind: "deep", rung: 1 } }), /DEEP_DIVE: yes/);
 });
 
 test("senza compito e senza test il messaggio resta valido", () => {
   const m = buildHelpMessage({ ...base, task: undefined, tests: undefined, level: "entry" });
   assert.doesNotMatch(m, /<task>|<tests>/);
-  assert.match(m, /Livello entry: parole semplici/);
+  assert.match(m, /Entry level: plain words/);
 });
 
 test("separa la riga Concetto dal corpo", () => {

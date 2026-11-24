@@ -4,8 +4,8 @@ Dalla prova reale sul progetto `prova` (React + Vite): Vitest e Testing Library 
 
 ## Input
 MODE: HELP
-LIVELLO: entry
-GRADINO: 1
+LEVEL: entry
+RUNG: 1
 <task>
 Prepara la pagina iniziale
 fare: In src/App.tsx sostituisci la schermata dimostrativa di Vite con un titolo «Calcolatrice».

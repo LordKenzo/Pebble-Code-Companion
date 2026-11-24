@@ -4,7 +4,7 @@ Nasce dalla prova reale su mini-calc: Pebble diceva "prepara package.json e tsco
 
 ## Input
 MODE: NEXT
-LIVELLO: entry
+LEVEL: entry
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md
 </bootstrap>

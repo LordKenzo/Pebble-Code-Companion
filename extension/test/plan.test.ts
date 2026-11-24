@@ -97,12 +97,12 @@ test("il messaggio contiene percorso, elenco dei file, contenuti e il passo da p
     [{ path: "package.json", content: '{ "name": "x" }' }, { path: "README.md" }],
     "junior",
   );
-  assert.ok(m.startsWith("MODE: PLAN_STEP\nLIVELLO: junior"));
-  assert.match(m, /<percorso>\n# Percorso/);
+  assert.ok(m.startsWith("MODE: PLAN_STEP\nLEVEL: junior"));
+  assert.match(m, /<path>\n# Percorso/);
   assert.match(m, /<files>\npackage.json\nREADME.md\n<\/files>/);
   assert.match(m, /<file path="package.json">\n1 \| \{ "name": "x" \}\n<\/file>/);
   assert.doesNotMatch(m, /<file path="README.md">/);
-  assert.match(m, /PASSO DA PREPARARE: 2 · Dischi per lato\nDischi per lato: per un carico/);
+  assert.match(m, /STEP_TO_PREPARE: 2 · Dischi per lato\nDischi per lato: per un carico/);
 });
 
 test("titolo breve di un passo", () => {

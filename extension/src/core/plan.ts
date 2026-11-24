@@ -11,18 +11,18 @@ import { parseCondition, parsePath } from "./path";
  */
 
 export const PlannedTask = z.object({
-  title: z.string().describe("Titolo breve, all'imperativo: 'Implementa platesFor'"),
-  todo: z.string().describe("Una o due frasi concrete: cosa fare, citando gli ADR che c'entrano"),
-  signature: z.string().nullable().describe("La firma della funzione da scrivere, se il compito ne ha una; altrimenti null"),
+  title: z.string().describe("Short title, imperative: 'Implement platesFor'"),
+  todo: z.string().describe("One or two concrete sentences: what to do, citing the relevant ADRs"),
+  signature: z.string().nullable().describe("The signature of the function to write, if the task has one; otherwise null"),
   doneWhen: z
     .array(z.string())
-    .describe('Condizioni nella sintassi del percorso: test "nome", file percorso esporta simbolo, nessun errore in percorso, a mano'),
+    .describe('Conditions in the path syntax of the LANGUAGE (it: test "name", file p esporta x, nessun errore in p, dipendenza x, a mano; en: test "name", file p exports x, no errors in p, dependency x, manual)'),
 });
 
 export const PlanStep = z.object({
-  reading: z.string().describe("1-2 frasi: cosa c'è già nel codice per questo passo e cosa manca"),
-  tasks: z.array(PlannedTask).describe("Da 3 a 7 compiti, in ordine; l'ultimo è 'Rileggi con Pebble', a mano"),
-  question: z.string().nullable().describe("Al massimo una domanda che cambia il passo, o null"),
+  reading: z.string().describe("1-2 sentences: what is already in the code for this step and what is missing"),
+  tasks: z.array(PlannedTask).describe("3 to 7 tasks, in order; the last one is the review with Pebble, manual"),
+  question: z.string().nullable().describe("At most one question that changes the step, or null"),
 });
 export type PlanStep = z.infer<typeof PlanStep>;
 
@@ -105,13 +105,13 @@ export function buildPlanMessage(
     .join("\n");
   return [
     "MODE: PLAN_STEP",
-    `LIVELLO: ${level}`,
+    `LEVEL: ${level}`,
     projectBlocks(ctx),
-    pathMarkdown?.trim() ? `<percorso>\n${pathMarkdown.trim()}\n</percorso>` : "",
+    pathMarkdown?.trim() ? `<path>\n${pathMarkdown.trim()}\n</path>` : "",
     `<files>\n${list}\n</files>`,
     contents,
-    `PASSO DA PREPARARE: ${step.n} · ${step.title}\n${step.text}`,
-    "Rispondi compilando lo schema.",
+    `STEP_TO_PREPARE: ${step.n} · ${step.title}\n${step.text}`,
+    "Answer by filling in the schema.",
     languageLine(lang),
   ]
     .filter(Boolean)

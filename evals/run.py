@@ -6,7 +6,7 @@ Uso:
     python3 evals/run.py 05 07           # solo i casi che iniziano con questi prefissi
     python3 evals/run.py --model opus    # modello specifico
 
-Per ogni caso: prende la sezione "## Input", espande le righe "@include <percorso>",
+Per ogni caso: prende la sezione "## Input", espande le righe "@include <path>",
 la manda al modello con prompts/mentor.md come system prompt (nessun tool, nessun MCP,
 cartella di lavoro vuota) e salva la risposta in evals/runs/<data-ora>/.
 Il controllo automatico segnala solo i blocchi di codice troppo lunghi; il resto

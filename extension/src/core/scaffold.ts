@@ -15,23 +15,23 @@ export const Scaffold = z.object({
   imports: z.array(z.object({ names: z.array(z.string()), from: z.string() })).describe('Import: names come "ok", "type Result"'),
   constants: z
     .array(z.object({ name: z.string(), type: z.string().nullable(), value: z.string(), doc: z.string().nullable() }))
-    .describe("Costanti con valori letterali presi dal bootstrap (numeri, stringhe, liste di numeri)"),
+    .describe("Constants with literal values taken from the bootstrap (numbers, strings, lists of numbers)"),
   types: z.array(z.object({ doc: z.string().nullable(), declaration: z.string() })).describe("Dichiarazioni export type / export interface, senza logica"),
   functions: z
     .array(
       z.object({
         doc: z.string().nullable(),
-        signature: z.string().describe("Solo la firma: export function nome(parametri): Tipo"),
-        pseudocode: z.array(z.string()).describe("Passi di pseudocodice in italiano, uno per riga"),
-        question: z.string().nullable().describe("Una domanda su cui ragionare prima di scrivere, o null"),
+        signature: z.string().describe("Only the signature: export function name(parameters): Type"),
+        pseudocode: z.array(z.string()).describe("Pseudocode steps in the language given by LANGUAGE, one per line"),
+        question: z.string().nullable().describe("A question to think about before writing, or null"),
       }),
     )
-    .describe("Funzioni da scrivere: firma e pseudocodice, mai il corpo"),
+    .describe("Functions to write: signature and pseudocode, never the body"),
   exampleTest: z
-    .object({ name: z.string(), body: z.string().describe("Il corpo del test, al massimo 12 righe") })
+    .object({ name: z.string(), body: z.string().describe("The test body, at most 12 lines") })
     .nullable()
-    .describe("Solo nei file di test: un primo test completo, come esempio dello stile"),
-  testCases: z.array(z.string()).describe("Solo nei file di test: i nomi degli altri test da scrivere, prima i casi limite"),
+    .describe("Only in test files: one first complete test, as an example of the style"),
+  testCases: z.array(z.string()).describe("Only in test files: the names of the other tests to write, edge cases first"),
 });
 export type Scaffold = z.infer<typeof Scaffold>;
 
@@ -149,7 +149,7 @@ export function buildScaffoldMessage(
     : "";
   return [
     "MODE: SCAFFOLD",
-    `LIVELLO: ${level}`,
+    `LEVEL: ${level}`,
     projectBlocks(ctx),
     taskBlock,
     `<files>\n${files.map((f) => f.path).join("\n")}\n</files>`,
@@ -157,9 +157,9 @@ export function buildScaffoldMessage(
       .filter((f) => f.content !== undefined)
       .map((f) => `<file path="${f.path}">\n${numberLines(f.content!)}\n</file>`)
       .join("\n"),
-    stepSignatures.length ? `FIRME PREVISTE NEL PASSO:\n${stepSignatures.map((x) => `- ${x}`).join("\n")}` : "",
-    `FILE DA PREPARARE: ${path}${isTestFile(path) ? " (file di test)" : ""}`,
-    "Rispondi compilando lo schema.",
+    stepSignatures.length ? `STEP_SIGNATURES:\n${stepSignatures.map((x) => `- ${x}`).join("\n")}` : "",
+    `FILE_TO_PREPARE: ${path}${isTestFile(path) ? " (test file)" : ""}`,
+    "Answer by filling in the schema.",
     languageLine(lang),
   ]
     .filter(Boolean)

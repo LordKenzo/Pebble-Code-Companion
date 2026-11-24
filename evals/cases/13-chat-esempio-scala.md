@@ -4,7 +4,7 @@ Riproduce il punto in cui l'utente si è arenato: la stessa nota ripetuta senza 
 
 ## Input
 MODE: CHAT
-LIVELLO: entry
+LEVEL: entry
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>

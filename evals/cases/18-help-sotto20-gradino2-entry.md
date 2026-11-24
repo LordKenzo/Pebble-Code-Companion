@@ -2,8 +2,8 @@
 
 ## Input
 MODE: HELP
-LIVELLO: entry
-GRADINO: 2
+LEVEL: entry
+RUNG: 2
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>

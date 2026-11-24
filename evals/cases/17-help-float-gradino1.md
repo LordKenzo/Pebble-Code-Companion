@@ -4,8 +4,8 @@
 
 ## Input
 MODE: HELP
-LIVELLO: mid
-GRADINO: 1
+LEVEL: mid
+RUNG: 1
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>

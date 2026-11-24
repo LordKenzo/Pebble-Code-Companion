@@ -2,7 +2,7 @@
 
 ## Input
 MODE: SCAFFOLD
-LIVELLO: junior
+LEVEL: junior
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md
 </bootstrap>
@@ -28,7 +28,7 @@ test/core/units.test.ts
 <file path="src/core/result.ts">
 @include fixtures/mini-calc/src/result.numbered.txt
 </file>
-FILE DA PREPARARE: src/core/plates.ts
+FILE_TO_PREPARE: src/core/plates.ts
 Rispondi solo con un oggetto JSON con i campi: imports (lista di { names, from }), constants (lista di { name, type, value, doc }), types (lista di { doc, declaration }), functions (lista di { doc, signature, pseudocode, question }), exampleTest ({ name, body } o null), testCases (lista di stringhe).
 
 ## Atteso

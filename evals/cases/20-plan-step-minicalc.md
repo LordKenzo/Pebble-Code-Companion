@@ -4,7 +4,7 @@ Il setup del passo 1 esiste nel codice. Pebble deve scomporre il passo 2 senza r
 
 ## Input
 MODE: PLAN_STEP
-LIVELLO: junior
+LEVEL: junior
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md
 </bootstrap>
@@ -14,9 +14,9 @@ LIVELLO: junior
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>
-<percorso>
+<path>
 @include fixtures/mini-calc/percorso.step1-done.md
-</percorso>
+</path>
 <files>
 package.json
 package-lock.json
@@ -26,7 +26,7 @@ test/smoke.test.ts
 <file path="package.json">
 @include fixtures/mini-calc/package.step1.numbered.txt
 </file>
-PASSO DA PREPARARE: 2 · Dischi per lato
+STEP_TO_PREPARE: 2 · Dischi per lato
 Dischi per lato: per un carico già componibile restituisce i dischi. Test su 20, 22,5, 60, 142,5 kg e su un carico sotto i 20.
 Rispondi solo con un oggetto JSON con i campi: reading (stringa), tasks (lista di { title, todo, signature (stringa o null), doneWhen (lista di stringhe) }), question (stringa o null).
 

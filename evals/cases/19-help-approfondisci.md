@@ -2,8 +2,8 @@
 
 ## Input
 MODE: HELP
-LIVELLO: junior
-APPROFONDISCI: sì
+LEVEL: junior
+DEEP_DIVE: yes
 <decisions>
 @include fixtures/mini-calc/decisions.md
 </decisions>

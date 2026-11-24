@@ -6,25 +6,25 @@ import type { ExperienceLevel, Problem, ProjectContext } from "./model";
 // ---------- MODE: INIT (risposta strutturata, per poterla salvare in .pebble/) ----------
 
 export const Decision = z.object({
-  title: z.string().describe("Titolo breve della decisione, senza numero (niente 'ADR-001:')"),
-  context: z.string().describe("Perché serve decidere"),
-  decision: z.string().describe("Cosa si fa"),
-  alternatives: z.string().describe("Alternative scartate e perché"),
-  consequences: z.string().describe("Cosa diventa più facile e cosa più difficile"),
+  title: z.string().describe("Short title of the decision, without a number (no 'ADR-001:')"),
+  context: z.string().describe("Why a decision is needed"),
+  decision: z.string().describe("What we do"),
+  alternatives: z.string().describe("Alternatives ruled out and why"),
+  consequences: z.string().describe("What becomes easier and what becomes harder"),
 });
 
 export const InitPlan = z.object({
-  reading: z.string().describe("2-3 righe: cosa hai capito del bootstrap"),
+  reading: z.string().describe("2-3 lines: what you understood of the bootstrap"),
   blockingQuestion: z
     .string()
     .nullable()
-    .describe("Se manca un'informazione essenziale per decidere: la domanda, e lascia vuoti gli altri campi. Altrimenti null"),
-  decisions: z.array(Decision).describe("Da 3 a 5 decisioni; rispondono ai punti di 'Non so ancora'"),
-  layers: z.string().describe("Livelli e dipendenze tra loro, in Markdown"),
-  folders: z.string().describe("Albero delle cartelle con una riga di descrizione per voce, senza file di codice"),
-  roadmap: z.array(z.string()).describe("Da 5 a 8 passi verificabili; il primo piccolo e fattibile in una sessione"),
-  start: z.string().describe("Un solo file o attività da cui partire, con il motivo"),
-  question: z.string().nullable().describe("Al massimo una domanda che cambia il lavoro, o null"),
+    .describe("If essential information to decide is missing: the question, leaving the other fields empty. Otherwise null"),
+  decisions: z.array(Decision).describe("3 to 5 decisions; they answer the points under 'What I don't know yet'"),
+  layers: z.string().describe("Layers and the dependencies between them, in Markdown"),
+  folders: z.string().describe("Folder tree with a one-line description per entry, no code files"),
+  roadmap: z.array(z.string()).describe("5 to 8 verifiable steps; the first small and doable in one session"),
+  start: z.string().describe("A single file or activity to start from, with the reason"),
+  question: z.string().nullable().describe("At most one question that changes the work, or null"),
 });
 export type InitPlan = z.infer<typeof InitPlan>;
 
@@ -42,9 +42,9 @@ export function projectBlocks(ctx: ProjectContext): string {
 export function buildInitMessage(bootstrap: string, level: ExperienceLevel, lang: Lang = "it"): string {
   return [
     "MODE: INIT",
-    `LIVELLO: ${level}`,
+    `LEVEL: ${level}`,
     block("bootstrap", bootstrap),
-    "Rispondi compilando lo schema richiesto. Testo in Markdown semplice, nessun blocco di codice tranne l'albero delle cartelle.",
+    "Answer by filling in the requested schema. Plain Markdown text, no code blocks except the folder tree.",
     LEVEL_HINTS[level],
     languageLine(lang),
   ]
@@ -128,22 +128,22 @@ export interface Turn {
 }
 
 const FORMAT_HINT =
-  "Rispondi compilando lo schema. In `answer` usa Markdown, breve, da leggere mentre si lavora; niente codice oltre firme o frammenti di 3 righe. " +
-  "In `decisionChanges` proponi la modifica di un ADR esistente o un ADR nuovo solo se lo sviluppatore ha espresso una scelta che cambia una decisione, " +
-  "o se una decisione è chiaramente superata; altrimenti lascia la lista vuota. In `content` scrivi l'ADR completo nel formato del progetto " +
-  "(## ADR-NNN: titolo, Stato, Contesto, Decisione, Alternative scartate, Conseguenze).";
+  "Answer by filling in the schema. In `answer` use Markdown, short, to be read while working; follow the three zones for code. " +
+  "In `decisionChanges` propose changing an existing ADR or a new ADR only if the developer expressed a choice that changes a decision, " +
+  "or if a decision is clearly outdated; never to restate what an ADR already says. Otherwise leave the list empty. In `content` write the complete ADR " +
+  "in the project's format and language (## ADR-NNN: title, then status, context, decision, alternatives ruled out, consequences).";
 
 export const DecisionChange = z.object({
-  target: z.string().nullable().describe("ADR da modificare, es. 'ADR-005'; null per un ADR nuovo"),
-  title: z.string().describe("Titolo della decisione, senza numero"),
-  reason: z.string().describe("Una frase: perché cambiarla o aggiungerla"),
-  content: z.string().describe("Testo completo dell'ADR aggiornato o nuovo, in Markdown"),
+  target: z.string().nullable().describe("ADR to change, e.g. 'ADR-005'; null for a new ADR"),
+  title: z.string().describe("Title of the decision, without a number"),
+  reason: z.string().describe("One sentence: why change it or add it"),
+  content: z.string().describe("Complete text of the updated or new ADR, in Markdown"),
 });
 export type DecisionChange = z.infer<typeof DecisionChange>;
 
 export const TextAnswer = z.object({
-  answer: z.string().describe("La risposta per lo sviluppatore, in Markdown"),
-  decisionChanges: z.array(DecisionChange).describe("Modifiche proposte alle decisioni; di solito vuota"),
+  answer: z.string().describe("The answer for the developer, in Markdown"),
+  decisionChanges: z.array(DecisionChange).describe("Proposed changes to the decisions; usually empty"),
 });
 export type TextAnswer = z.infer<typeof TextAnswer>;
 
@@ -176,17 +176,17 @@ export function buildTextMessage(
 ): string {
   const history = (opts.history ?? [])
     .slice(-8)
-    .map((t) => `${t.role === "user" ? "Sviluppatore" : "Pebble"}: ${t.text.slice(0, 1500)}`)
+    .map((t) => `${t.role === "user" ? "Developer" : "Pebble"}: ${t.text.slice(0, 1500)}`)
     .join("\n\n");
   const fileAttr = opts.file ? ` path="${opts.file.path}"` : "";
   return [
     `MODE: ${mode}`,
-    `LIVELLO: ${level}`,
+    `LEVEL: ${level}`,
     projectBlocks(ctx),
-    opts.file ? block("file", mode === "NEW_FILE" ? opts.file.content || "(vuoto)" : numberLines(opts.file.content), fileAttr) : "",
+    opts.file ? block("file", mode === "NEW_FILE" ? opts.file.content || "(empty)" : numberLines(opts.file.content), fileAttr) : "",
     opts.file ? formatProblems(opts.problems) : "",
-    history ? block("conversazione", history) : "",
-    opts.question ? `Domanda dello sviluppatore:\n${opts.question}` : "",
+    history ? block("conversation", history) : "",
+    opts.question ? `Developer's question:\n${opts.question}` : "",
     FORMAT_HINT,
     LEVEL_HINTS[level],
     languageLine(opts.lang ?? "it"),

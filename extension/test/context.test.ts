@@ -25,6 +25,6 @@ test("segnala quando mancano bootstrap e decisioni", () => {
     { bootstrap: null, architecture: null, decisions: [] },
     { path: "a.ts", content: "", languageId: "typescript" },
   );
-  assert.match(msg, /mancano bootstrap\.md e \.pebble\/decisions/);
+  assert.match(msg, /missing bootstrap\.md and \.pebble\/decisions/);
   assert.doesNotMatch(msg, /<bootstrap>/);
 });

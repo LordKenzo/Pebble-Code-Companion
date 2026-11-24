@@ -4,7 +4,7 @@ Controllo di regressione per v0.4: la zona A è generosa, la zona C no.
 
 ## Input
 MODE: CHAT
-LIVELLO: junior
+LEVEL: junior
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md
 </bootstrap>

@@ -31,5 +31,5 @@ test("formatta i costi piccoli con più decimali", () => {
 
 test("il livello finisce nel messaggio, non nel prompt di sistema", () => {
   const msg = buildReviewMessage({ bootstrap: null, architecture: null, decisions: [] }, { path: "a", content: "", languageId: "ts" }, "entry");
-  assert.match(msg, /^MODE: REVIEW\nLIVELLO: entry/);
+  assert.match(msg, /^MODE: REVIEW\nLEVEL: entry/);
 });
