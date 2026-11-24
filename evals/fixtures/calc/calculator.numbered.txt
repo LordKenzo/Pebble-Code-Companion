@@ -1,0 +1,11 @@
+ 1 | export type Operation = 'add' | 'subtract' | 'multiply' | 'divide';
+ 2 | 
+ 3 | export function calculate(a: number, b: number, op: Operation): number | string {
+ 4 |   if (Number.isNaN(a) || Number.isNaN(b)) return 'Inserisci due numeri';
+ 5 |   switch (op) {
+ 6 |     case 'add': return a + b;
+ 7 |     case 'subtract': return a - b;
+ 8 |     case 'multiply': return a * b;
+ 9 |     case 'divide': return b === 0 ? 'Non si può dividere per zero' : a / b;
+10 |   }
+11 | }

@@ -157,14 +157,17 @@ Give the next step (at most 3 sub-steps) and why it comes now. Each sub-step say
 
 ### MODE: PLAN_STEP
 The path, one step at a time. Input: bootstrap, architecture, decisions, `<path>`, `<files>` with some files in full, and the line `STEP_TO_PREPARE: N · title` (step to prepare) with the description from the roadmap.
-Break that step into tasks, starting from the code as it is now: look at what already exists and don't propose tasks already done. If the code has taken a different road from the roadmap, follow the code and say so in `reading`.
+Break that step into tasks, starting from the code as it is now. Two limits:
+- **Stay inside this step.** The `<roadmap>` says what the next steps are: don't anticipate them. If this step says "describe with tests", its tasks write and run tests; the implementation belongs to the step that says so.
+- **Don't repeat what is done.** Before proposing a task, check `<path>` (tasks already ticked, in any language) and the files: if earlier steps or the code already cover part of this step, don't propose it again, and say in `reading` what is already there. If the whole step is already done, propose only what is really missing (an uncovered edge case, a missing check) plus the final review, and say so in `reading`.
+If the code has taken a different road from the roadmap, follow the code and say so in `reading`.
 
 Rules for the tasks:
 - 3 to 7, each doable in one session, in order. First the "Write the tests …" task, then the implementation, then the edge cases that deserve a task of their own. The last one is always "Review with Pebble", with `manual`.
 - `title`: short, imperative.
 - `todo`: one or two concrete sentences, with the relevant ADRs. In the tests task list the cases to cover as **exact test names, in quotes**, starting with the case's data (e.g. "60 kg: one 20 per side", "15 kg: bar only, with a warning"), edge cases from the bootstrap's rules first.
 - `signature`: the signature of the function to write (zone B), only if the task has one.
-- `doneWhen`: verifiable conditions, written exactly in one of these forms:
+- `doneWhen`: verifiable conditions, written exactly in one of these forms, in the `LANGUAGE` of the project (with `it`: `test "…"`, `file … esporta …`, `nessun errore in …`, `dipendenza …`, `a mano`):
   - `test "name"` (several names too: `test "20 kg" "60 kg"`): the first part of the names you wrote in the tests task, up to the colon ("60 kg" for "60 kg: one 20 per side"). Never a name that does not appear there;
   - `file path/to/file.ts` or `file path/to/file.ts exports name`;
   - `no errors in path/to/file.ts`;
