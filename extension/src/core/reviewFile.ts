@@ -1,3 +1,4 @@
+import type { Lang } from "./i18n";
 import { buildReviewMessage } from "./context";
 import { estimateCost, type Price } from "./cost";
 import { Review, type ExperienceLevel, type FileUnderReview, type ReviewResult } from "./model";
@@ -12,9 +13,10 @@ export async function reviewFile(
   file: FileUnderReview,
   level: ExperienceLevel,
   price: Price | undefined,
+  lang: Lang = "it",
 ): Promise<ReviewResult> {
   const ctx = await store.load();
-  const { data: raw, usage } = await model.generate(systemPrompt, buildReviewMessage(ctx, file, level), Review, "review");
+  const { data: raw, usage } = await model.generate(systemPrompt, buildReviewMessage(ctx, file, level, lang), Review, "review");
   const { review, violations } = applyPolicy(raw);
   return {
     review,

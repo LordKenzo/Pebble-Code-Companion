@@ -1,4 +1,4 @@
-import { languageLine, type Lang } from "./i18n";
+import { INIT_TEXT, languageLine, type Lang } from "./i18n";
 import { z } from "zod";
 import { formatProblems, LEVEL_HINTS, numberLines } from "./context";
 import type { ExperienceLevel, Problem, ProjectContext } from "./model";
@@ -66,37 +66,39 @@ const slug = (s: string) =>
     .replace(/-$/, "");
 
 /** Il piano mostrato nella chat. */
-export function initPlanToMarkdown(p: InitPlan): string {
-  if (p.blockingQuestion) return `${p.reading}\n\n**Prima di proporti un piano mi serve una risposta:** ${p.blockingQuestion}`;
+export function initPlanToMarkdown(p: InitPlan, lang: Lang = "it"): string {
+  const T = INIT_TEXT[lang];
+  if (p.blockingQuestion) return `${p.reading}\n\n${T.needAnswer} ${p.blockingQuestion}`;
   const adrs = p.decisions
-    .map((d, i) => `**ADR-${pad(i + 1)} · ${cleanTitle(d.title)}**\n${d.decision}\n*Scartato:* ${d.alternatives}`)
+    .map((d, i) => `**ADR-${pad(i + 1)} · ${cleanTitle(d.title)}**\n${d.decision}\n*${T.ruledOut}* ${d.alternatives}`)
     .join("\n\n");
   return [
     p.reading,
-    `### Decisioni proposte\n${adrs}`,
-    `### Architettura\n${p.layers}\n\n\`\`\`\n${p.folders.replace(/^```\w*\n?|```$/g, "").trim()}\n\`\`\``,
-    `### Roadmap\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}`,
-    `### Da dove partire\n${p.start}`,
-    p.question ? `**Domanda:** ${p.question}` : "",
+    `### ${T.decisions}\n${adrs}`,
+    `### ${T.architecture}\n${p.layers}\n\n\`\`\`\n${p.folders.replace(/^```\w*\n?|```$/g, "").trim()}\n\`\`\``,
+    `### ${T.roadmap}\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}`,
+    `### ${T.start}\n${p.start}`,
+    p.question ? `**${T.question}** ${p.question}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
 }
 
 /** I file da scrivere in .pebble/ (ADR-002), con percorsi relativi alla radice del progetto. */
-export function initPlanToFiles(p: InitPlan, date: string): { path: string; content: string }[] {
-  const header = `> Generato da Pebble (MODE: INIT) dal bootstrap del ${date}. Stato: proposto. Modificalo pure: Pebble rispetta quello che c'è scritto qui.\n`;
+export function initPlanToFiles(p: InitPlan, date: string, lang: Lang = "it"): { path: string; content: string }[] {
+  const T = INIT_TEXT[lang];
+  const header = T.generated(date);
   const files = [
     {
       path: ".pebble/architecture.md",
-      content: `# Architettura\n\n${header}\n## Lettura del bootstrap\n\n${p.reading}\n\n## Livelli\n\n${p.layers}\n\n## Cartelle\n\n\`\`\`\n${p.folders
+      content: `${T.archTitle}\n\n${header}\n${T.reading}\n\n${p.reading}\n\n${T.layers}\n\n${p.layers}\n\n${T.folders}\n\n\`\`\`\n${p.folders
         .replace(/^```\w*\n?|```$/g, "")
         .trim()}\n\`\`\`\n`,
     },
     {
       path: ".pebble/roadmap.md",
-      content: `# Roadmap\n\n${header}\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}\n\n## Da dove partire\n\n${p.start}\n${
-        p.question ? `\n## Domanda aperta\n\n${p.question}\n` : ""
+      content: `# ${T.roadmap}\n\n${header}\n${p.roadmap.map((s, i) => `${i + 1}. ${s.replace(/^\s*\d+[.)]\s*/, "")}`).join("\n")}\n\n## ${T.start}\n\n${p.start}\n${
+        p.question ? `\n${T.openQuestion}\n\n${p.question}\n` : ""
       }`,
     },
   ];
@@ -105,7 +107,7 @@ export function initPlanToFiles(p: InitPlan, date: string): { path: string; cont
     const title = cleanTitle(d.title);
     files.push({
       path: `.pebble/decisions/${id}-${slug(title)}.md`,
-      content: `## ${id}: ${title}\nStato: proposto\nContesto: ${d.context}\nDecisione: ${d.decision}\nAlternative scartate: ${d.alternatives}\nConseguenze: ${d.consequences}\n`,
+      content: `## ${id}: ${title}\n${T.adrStatus}\n${T.adrContext} ${d.context}\n${T.adrDecision} ${d.decision}\n${T.adrAlternatives} ${d.alternatives}\n${T.adrConsequences} ${d.consequences}\n`,
     });
   });
   return files;
