@@ -1,8 +1,18 @@
+<p align="center"><img src="https://raw.githubusercontent.com/LordKenzo/pebble-code-companion/main/assets/banner.jpg" alt="Pebble, the Code Path Companion: a developer at the keyboard and a trail of glowing pebbles through a night forest" width="900"></p>
+
 # Pebble · Code Path Companion
 
 **Cammina sul sentiero, il codice lo scrivi tu.** Un pair engineer in VS Code: trasforma il progetto in un percorso di piccoli passi, prepara ogni file con firme e pseudocodice, verifica i progressi con i tuoi test e ti aiuta a ragionare quando sei bloccato. Non scrive mai la logica del progetto al posto tuo.
 
 *Read it in English: [README.md](README.md).*
+
+## Beta: cosa aspettarsi
+Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Prima di provarlo:
+- **Serve un modello.** Una chiave API di Anthropic o OpenAI (**Pebble: Imposta la chiave API**), oppure un server locale come Ollama, gratuito e con il codice che resta sul tuo computer. I modelli locali seguono le regole di Pebble meno bene di quelli cloud.
+- **Parte da un progetto nuovo.** Pebble ti guida da `bootstrap.md`; l'adozione di un progetto già avviato è progettata ma non ancora pronta.
+- **È onesto sulle spunte.** Un compito spuntato vuol dire che i tuoi test passano, non che il codice è corretto.
+- **Nessuna telemetria.** Pebble non raccoglie niente. Il tuo codice va solo al provider che scegli.
+- Segnalazioni e bug: [issue su GitHub](https://github.com/LordKenzo/pebble-code-companion/issues).
 
 ## Per iniziare
 1. Apri la vista **Pebble** nella barra laterale (l'icona con i sassolini), oppure lancia **Pebble: Inizia**.
@@ -16,6 +26,8 @@
 - **Prepara il file**: import, tipi, la firma e lo pseudocodice come commenti, con il corpo vuoto. Per un file di test, un test completo d'esempio e gli altri casi come `test.todo`. Mostrato come diff: **Accetta**, **Revisiona e modifica** o **Scarta**.
 - **Prepara il passo N**: chiuso un passo, Pebble prepara il successivo partendo dal codice com'è adesso.
 - **Il fumetto** (**Alt+P**, Option+P su Mac, o tasto destro → *Pebble, aiutami qui*): se il file non compila sistema prima quello, in modo concreto; altrimenti parte da una domanda costruita sul test rosso e sale la scala di aiuto solo quando lo chiedi (*Più concreto*, *Perché conta?*, *Approfondisci*). Puoi rispondere alle sue domande.
+- **Nomi dei test a richiesta**: ogni passo elenca i nomi dei test che i compiti si aspettano, con lo stato (verde, rosso, non trovato), pronti da copiare.
+- **La mappa del sentiero** (icona mappa in testa al pannello Percorso): la roadmap intera come un sentiero di sassolini, e accanto il **diario** di ogni passo, che Pebble scrive in `.pebble/diario.md` mentre lavori, senza modello. **Rivedi il passo** chiede al Mentor cosa hai costruito e cosa resta fragile.
 - **La conversazione con il Mentor**: domande libere, `/review`, `/tests`, `/next`, `/init`. Le review compaiono anche come note nell'editor.
 
 ## Lingua

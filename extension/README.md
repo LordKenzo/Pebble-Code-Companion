@@ -1,8 +1,18 @@
+<p align="center"><img src="https://raw.githubusercontent.com/LordKenzo/pebble-code-companion/main/assets/banner.jpg" alt="Pebble, the Code Path Companion: a developer at the keyboard and a trail of glowing pebbles through a night forest" width="900"></p>
+
 # Pebble · Code Path Companion
 
 **Walk the path. You write the code.** A pair engineer in VS Code: it turns your project into a path of small steps, prepares each file with signatures and pseudocode, checks your progress with your own tests, and helps you think when you get stuck. It never writes your project's logic for you.
 
 *Leggilo in italiano: [README.it.md](README.it.md).*
+
+## Beta: what to expect
+Pebble is a **pre-release**: it works, and it is being built in the open. Before you try it:
+- **You need a model.** An Anthropic or OpenAI API key (**Pebble: Set the API key**), or a local server such as Ollama, which is free and keeps your code on your machine. Local models follow Pebble's rules less reliably than cloud models.
+- **It starts from a new project.** Pebble guides you from `bootstrap.md`; adopting a project already under way is designed but not built yet.
+- **It's honest about checkmarks.** A ticked task means your tests pass, not that your code is correct.
+- **No telemetry.** Pebble collects nothing. Your code goes only to the provider you choose.
+- Feedback and bugs: [GitHub issues](https://github.com/LordKenzo/pebble-code-companion/issues).
 
 ## Getting started
 1. Open the **Pebble** view in the activity bar (the pebbles icon), or run **Pebble: Start**.
@@ -16,6 +26,8 @@
 - **Prepare the file**: imports, types, the signature and the pseudocode as comments, with an empty body. For a test file, one complete example test and the other cases as `test.todo`. Shown as a diff: **Accept**, **Review and edit**, or **Discard**.
 - **Prepare step N**: when a step is done, Pebble plans the next one from your code as it is now.
 - **The balloon** (**Alt+P**, Option+P on a Mac, or right click → *Pebble, help me here*): if the file doesn't compile it fixes that first, concretely; otherwise it starts with a question built from your failing test and climbs the help ladder only when you ask (*More concrete*, *Why it matters*, *Deep dive*). You can answer its questions.
+- **Test names on demand**: each step lists the test names its tasks expect, with their status (green, red, not found), ready to copy.
+- **The path map** (map icon at the top of the Path panel): the whole roadmap as a trail of pebbles, and next to it each step's **diary**, which Pebble writes in `.pebble/diario.md` as you work, without a model. **Review the step** asks the Mentor what you built and what is still fragile.
 - **The Mentor conversation**: free questions, `/review`, `/tests`, `/next`, `/init`. Reviews also appear as editor diagnostics.
 
 ## Language
@@ -44,6 +56,6 @@ In an untrusted folder Pebble works but doesn't run test commands. Trust the fol
 npm install
 npm test
 npm run package
-code --install-extension pebble-0.7.18.vsix --force
+code --install-extension pebble-0.7.19.vsix --force
 ```
 The prompt is copied from `../prompts/mentor.md` on every build.
