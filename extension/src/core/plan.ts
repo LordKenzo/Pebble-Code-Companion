@@ -67,7 +67,7 @@ export function plannedStepNumbers(pathMarkdown: string): Map<number, { done: bo
   const out = new Map<number, { done: boolean }>();
   for (const t of parsePath(pathMarkdown).tasks) {
     const n = Number(/(?:passo|step)\s+(\d+)/i.exec(t.step ?? "")?.[1]);
-    if (!Number.isFinite(n) || n <= 0) continue;
+    if (!Number.isFinite(n) || n < 0) continue;
     const prev = out.get(n);
     out.set(n, { done: (prev?.done ?? true) && t.checked });
   }
