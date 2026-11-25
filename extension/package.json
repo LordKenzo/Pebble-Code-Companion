@@ -226,7 +226,7 @@
         {
           "command": "pebble.path.verify",
           "when": "view == pebble.path && pebble.hasPath",
-          "group": "navigation@0"
+          "group": "navigation@1"
         },
         {
           "command": "pebble.clearChat",
@@ -234,19 +234,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "pebble.openSettings",
-          "when": "view == pebble.chat",
-          "group": "navigation@2"
-        },
-        {
           "command": "pebble.path.open",
           "when": "view == pebble.path && pebble.hasPath",
-          "group": "navigation@1"
+          "group": "navigation@2"
         },
         {
           "command": "pebble.path.refresh",
           "when": "view == pebble.path",
-          "group": "navigation@2"
+          "group": "navigation@3"
         },
         {
           "command": "pebble.newFeature",
@@ -257,6 +252,11 @@
           "command": "pebble.newBug",
           "when": "view == pebble.path",
           "group": "1_paths@2"
+        },
+        {
+          "command": "pebble.openSettings",
+          "when": "view == pebble.path",
+          "group": "navigation@9"
         }
       ],
       "commandPalette": [
