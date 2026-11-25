@@ -1,15 +1,14 @@
 import * as vscode from "vscode";
-import { appendToDiary, stepNumber, type DiaryEvent, type DiaryStep } from "../../core/diary";
+import { appendToDiary, type DiaryEvent, type DiaryStep } from "../../core/diary";
+import { parseSection } from "../../core/sections";
 import type { Lang } from "../../core/i18n";
 
 export const DIARY_FILE = [".pebble", "diario.md"];
 
 /** Il passo da un'intestazione del percorso ("Passo 3 · Scrivi le operazioni"). */
 export function stepFromHeading(heading: string | null | undefined): DiaryStep | null {
-  const n = stepNumber(heading);
-  if (n === null) return null;
-  const title = (heading ?? "").split("·").slice(1).join("·").trim();
-  return { n, title };
+  const sec = parseSection(heading);
+  return sec && { n: sec.n, title: sec.title, kind: sec.kind };
 }
 
 /**

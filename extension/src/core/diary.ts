@@ -1,4 +1,5 @@
-import { DIARY_TEXT, PATH_TEXT, type Lang } from "./i18n";
+import { DIARY_TEXT, type Lang } from "./i18n";
+import { parseSection, sectionHeading, type SectionKind } from "./sections";
 import { testNameMatches, type Task, type TaskState } from "./path";
 import type { ParsedTest } from "./tap";
 
@@ -20,6 +21,8 @@ export type DiaryEvent =
 export interface DiaryStep {
   n: number;
   title: string;
+  /** Passo della roadmap (predefinito), funzionalità o bug (ADR-014). */
+  kind?: SectionKind;
 }
 
 export function formatEvent(e: DiaryEvent, lang: Lang = "it"): string {
@@ -46,13 +49,13 @@ export function stamp(at: Date): string {
   return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}`;
 }
 
-const SECTION = /^##\s+(?:passo|step)\s+(\d+)\b/i;
+const sectionOf = (line: string) => (/^##\s/.test(line) ? parseSection(line) : null);
 const ENTRY = /^- (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}) · (.*)$/;
 
-/** Il numero di passo da un'intestazione "Passo 3 · …" / "Step 3 · …", o null. */
+/** Il numero di passo da un'intestazione "Passo 3 · …" / "Step 3 · …", o null (solo i passi della roadmap). */
 export function stepNumber(heading: string | null | undefined): number | null {
-  const m = /^(?:passo|step)\s+(\d+)\b/i.exec((heading ?? "").replace(/^##\s+/, ""));
-  return m ? Number(m[1]) : null;
+  const sec = parseSection(heading);
+  return sec && sec.kind === "step" ? sec.n : null;
 }
 
 /** Aggiunge una riga al diario, nella sezione del passo: la crea in alto se non c'è. */
@@ -63,9 +66,13 @@ export function appendToDiary(md: string | null, step: DiaryStep, at: Date, even
   const lines = text.split("\n");
   if (lines[lines.length - 1] === "") lines.pop();
 
-  const start = lines.findIndex((l) => Number(SECTION.exec(l)?.[1]) === step.n);
+  const kind = step.kind ?? "step";
+  const start = lines.findIndex((l) => {
+    const sec = sectionOf(l);
+    return !!sec && sec.kind === kind && sec.n === step.n;
+  });
   if (start === -1) {
-    const heading = `## ${PATH_TEXT[lang].stepWord} ${step.n} · ${step.title}`;
+    const heading = sectionHeading({ kind, n: step.n, title: step.title }, lang);
     const firstSection = lines.findIndex((l) => /^##\s/.test(l));
     const block = [heading, "", line, ""];
     if (firstSection === -1) return [...lines, "", ...block].join("\n").replace(/\n{3,}/g, "\n\n").replace(/\n*$/, "\n");
@@ -89,6 +96,7 @@ export interface DiaryEntry {
   text: string;
 }
 export interface DiarySection {
+  kind: SectionKind;
   n: number;
   heading: string;
   entries: DiaryEntry[];
@@ -101,9 +109,9 @@ export function parseDiary(md: string | null): DiarySection[] {
   const out: DiarySection[] = [];
   let cur: DiarySection | null = null;
   for (const raw of (md ?? "").split(/\r?\n/)) {
-    const s = SECTION.exec(raw);
-    if (s) {
-      cur = { n: Number(s[1]), heading: raw.replace(/^##\s+/, "").trim(), entries: [], notes: [] };
+    const sec = sectionOf(raw);
+    if (sec) {
+      cur = { kind: sec.kind, n: sec.n, heading: raw.replace(/^##\s+/, "").trim(), entries: [], notes: [] };
       out.push(cur);
       continue;
     }

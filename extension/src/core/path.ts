@@ -13,6 +13,7 @@
  * Il parsing è tollerante: le righe che non riconosce restano nel file e vengono ignorate.
  */
 
+import { localSectionName } from "./sections";
 import { PATH_TEXT, type Lang } from "./i18n";
 
 export type Condition =
@@ -418,7 +419,7 @@ export interface TaskView {
  * così un percorso scritto in parte in una lingua e in parte nell'altra si legge in una sola (ADR-012).
  */
 export function localStepName(name: string, lang: Lang = "it"): string {
-  return name.replace(/^(?:passo|step)\s+(\d+)/i, `${PATH_TEXT[lang].stepWord} $1`);
+  return localSectionName(name, lang);
 }
 
 const QUOTED_NAME = /"([^"\n]+)"|“([^”\n]+)”|«([^»\n]+)»/g;
