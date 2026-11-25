@@ -51,7 +51,7 @@ You write the tests, and Pebble is at your side for every one of them:
 - **A first test, complete**: one finished test per task, so you see the style and the setup. The rest you write following it.
 - **Where to start**: the test that will drive the design, not the easiest one.
 - **What is missing**: when you review a test file, Pebble points out the case nobody thought of.
-- **Why it failed**: when a test is red, the `⌥P` balloon starts from the failing output.
+- **Why it failed**: when a test is red, `⌥P` offers the help ladder, starting from the failing output.
 
 ### Your tests tick the boxes
 A task closes itself when your tests and your compiler say so: no manual bookkeeping, and no pretending. If a test breaks later, the task opens again.
@@ -65,7 +65,7 @@ Code changes the plan: you find a case nobody thought of, rename a file, change 
 Open the **path map** to see the whole roadmap as a trail: the steps you finished, the one you are on, the ones that are still just a title. Click a step to read its **diary**: the plan you accepted, each test that went red and then green, where you asked for help and which concept came up, the reviews. Pebble writes the diary by itself in `.pebble/diario.md` as you work, without calling a model, and leaves your own notes alone. When a step is done, **Review the step** asks the Mentor what you built and what is still fragile.
 
 ### Quiet until called
-No pop-ups while you type, and no Clippy. Press `⌥P` on a line and a balloon opens right there, under your code. Close it and Pebble goes back to silence.
+No pop-ups while you type, and no Clippy. Press `⌥P` and a short menu asks what you need; the help opens in a panel beside your code. **What you select decides the help**: with nothing selected, suggestions on the file, what to study and pseudocode for what is missing; with code selected, an explanation of those lines, what to study and similar examples. When a test is red, the help ladder is one more entry. Close the panel and Pebble goes back to silence.
 
 ### Questions before answers
 Help comes as a ladder. You climb one rung at a time, only as far as you need:
@@ -109,7 +109,7 @@ Pebble is not built for speed. If you already know what to write and want it wri
    ```
 
 5. **Write it, run your tests.** Tasks tick themselves as tests turn green.
-6. **Stuck? `⌥P`.** Climb the ladder as far as you need.
+6. **Stuck? `⌥P`.** Select the lines you don't understand, or nothing for help on the whole file; with a red test, climb the ladder as far as you need.
 7. **Review.** When a file is done, ask Pebble to review it against your decisions and best practices.
 8. **Look back, then go on.** When the step is closed, open the map: review the step with the Mentor, read its diary, and prepare the next one from the code as it is now.
 
@@ -121,7 +121,7 @@ Sketches of the experience, not screenshots: the extension is a moving prototype
 
 <p align="center"><img src="assets/sketches/path.png" alt="Sketch of the Path panel: a checklist of tasks for step 2, one task open with its signature, what Pebble expects and a Prepare the file button; annotations explain that tasks tick themselves when tests pass" width="820"></p>
 
-**Ask with Alt+P.** A balloon right under your line. It starts with a question built from your failing test, and climbs one rung at a time only when you ask.
+**Ask with Alt+P.** The help ladder: it starts with a question built from your failing test, and climbs one rung at a time only when you ask. Since 0.7.24 it lives in the ⌥P help panel, next to explanations, things to study, pseudocode and similar examples.
 
 <p align="center"><img src="assets/sketches/balloon.png" alt="Sketch of the help balloon under line 20 of plates.ts: rung 1 of 4, a question about the failing 60 kg test, buttons for More concrete, Why it matters, Deep dive and Got it, and a box to type an answer" width="820"></p>
 

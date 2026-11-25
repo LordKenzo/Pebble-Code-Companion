@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.24
+- **⌥P, the help panel** (ADR-015): a short menu, then a panel beside the code, and what you select decides the help. Nothing selected: suggestions on the file, what to study, pseudocode for what is missing (insertable as comments). Code selected: an explanation line by line, what to study, similar examples on a different case. The help ladder stays as one more entry when tests are red. The depth follows your level. The balloon under the line is retired.
+- The settings gear sits with the other icons of the Path panel.
+
 ## 0.7.23
 - **Feature and bug paths**: *New feature* and *New bug* (in the Path panel, its menu and the map) ask for one sentence and prepare a short path of 2–6 tasks from the code as it is now, shown as a diff. A bug path always starts with the test that reproduces it.
 - **The map branches out**: paths for features and bugs leave the base camp as branches, each with its card and its diary; the ghost waits by the open one.
