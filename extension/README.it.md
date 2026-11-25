@@ -9,7 +9,7 @@
 ## Beta: cosa aspettarsi
 Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Prima di provarlo:
 - **Serve un modello.** Una chiave API di Anthropic o OpenAI (**Pebble: Imposta la chiave API**), oppure un server locale come Ollama, gratuito e con il codice che resta sul tuo computer. I modelli locali seguono le regole di Pebble meno bene di quelli cloud.
-- **Parte da un progetto nuovo.** Pebble ti guida da `bootstrap.md`; l'adozione di un progetto già avviato è progettata ma non ancora pronta.
+- **Progetti nuovi o già avviati.** Pebble ti guida da `bootstrap.md`, oppure adotta un progetto già avviato; i sentieri per singole funzionalità e bug arrivano dopo.
 - **È onesto sulle spunte.** Un compito spuntato vuol dire che i tuoi test passano, non che il codice è corretto.
 - **Nessuna telemetria.** Pebble non raccoglie niente. Il tuo codice va solo al provider che scegli.
 - Segnalazioni e bug: [issue su GitHub](https://github.com/LordKenzo/pebble-code-companion/issues).
@@ -27,6 +27,7 @@ Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Pr
 - **Prepara il passo N**: chiuso un passo, Pebble prepara il successivo partendo dal codice com'è adesso.
 - **Il fumetto** (**Alt+P**, Option+P su Mac, o tasto destro → *Pebble, aiutami qui*): se il file non compila sistema prima quello, in modo concreto; altrimenti parte da una domanda costruita sul test rosso e sale la scala di aiuto solo quando lo chiedi (*Più concreto*, *Perché conta?*, *Approfondisci*). Puoi rispondere alle sue domande.
 - **Nomi dei test a richiesta**: ogni passo elenca i nomi dei test che i compiti si aspettano, con lo stato (verde, rosso, non trovato), pronti da copiare.
+- **Adotta un progetto già avviato**: con codice e senza `.pebble/`, Pebble legge il progetto, propone le decisioni che ci trova, da confermare, e chiude un campo base con lo stato dei tuoi test.
 - **La mappa del sentiero** (icona mappa in testa al pannello Percorso): la roadmap intera come un sentiero di sassolini, e accanto il **diario** di ogni passo, che Pebble scrive in `.pebble/diario.md` mentre lavori, senza modello. **Rivedi il passo** chiede al Mentor cosa hai costruito e cosa resta fragile.
 - **La conversazione con il Mentor**: domande libere, `/review`, `/tests`, `/next`, `/init`. Le review compaiono anche come note nell'editor.
 

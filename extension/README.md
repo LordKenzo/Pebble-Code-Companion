@@ -9,7 +9,7 @@
 ## Beta: what to expect
 Pebble is a **pre-release**: it works, and it is being built in the open. Before you try it:
 - **You need a model.** An Anthropic or OpenAI API key (**Pebble: Set the API key**), or a local server such as Ollama, which is free and keeps your code on your machine. Local models follow Pebble's rules less reliably than cloud models.
-- **It starts from a new project.** Pebble guides you from `bootstrap.md`; adopting a project already under way is designed but not built yet.
+- **New or existing projects.** Pebble guides you from `bootstrap.md`, or adopts a project already under way; paths for single features and bugs are coming next.
 - **It's honest about checkmarks.** A ticked task means your tests pass, not that your code is correct.
 - **No telemetry.** Pebble collects nothing. Your code goes only to the provider you choose.
 - Feedback and bugs: [GitHub issues](https://github.com/LordKenzo/pebble-code-companion/issues).
@@ -27,6 +27,7 @@ Pebble is a **pre-release**: it works, and it is being built in the open. Before
 - **Prepare step N**: when a step is done, Pebble plans the next one from your code as it is now.
 - **The balloon** (**Alt+P**, Option+P on a Mac, or right click → *Pebble, help me here*): if the file doesn't compile it fixes that first, concretely; otherwise it starts with a question built from your failing test and climbs the help ladder only when you ask (*More concrete*, *Why it matters*, *Deep dive*). You can answer its questions.
 - **Test names on demand**: each step lists the test names its tasks expect, with their status (green, red, not found), ready to copy.
+- **Adopt a project already under way**: with code but no `.pebble/`, Pebble reads the project and proposes the decisions it finds there, to confirm, and closes a base camp with the state of your tests.
 - **The path map** (map icon at the top of the Path panel): the whole roadmap as a trail of pebbles, and next to it each step's **diary**, which Pebble writes in `.pebble/diario.md` as you work, without a model. **Review the step** asks the Mentor what you built and what is still fragile.
 - **The Mentor conversation**: free questions, `/review`, `/tests`, `/next`, `/init`. Reviews also appear as editor diagnostics.
 
@@ -56,6 +57,6 @@ In an untrusted folder Pebble works but doesn't run test commands. Trust the fol
 npm install
 npm test
 npm run package
-code --install-extension pebble-code-companion-0.7.21.vsix --force
+code --install-extension pebble-code-companion-0.7.22.vsix --force
 ```
 The prompt is copied from `../prompts/mentor.md` on every build.

@@ -2,6 +2,9 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.22
+- **Adopt a project already under way**: when a folder has code but no `.pebble/`, Pebble offers to adopt it. It reads the files, the README, the git history and runs the tests once, then proposes the decisions it finds in the code (*detected, to confirm*), the questions where the code contradicts itself, and a **base camp**: a step 0 already closed, with the tests that were red on arrival. Possible next steps come from the code: a red test, a TODO, a missing test.
+
 ## 0.7.21
 - **The mentor ghost**: Pebble now has a face. In the balloon and the chat it is neutral when it talks, thoughtful while it waits for the model, worried when the file doesn't compile, happy when you get the answer right; on the map it waits next to the active pebble.
 
