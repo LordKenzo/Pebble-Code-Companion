@@ -1,0 +1,17 @@
+ 1 | import pytest
+ 2 | from app.services.orders import create_order, apply_discount, OrderError
+ 3 | 
+ 4 | 
+ 5 | def test_create_order_sums_items(app):
+ 6 |     order = create_order(1, [{"price": "2.50", "qty": 2}])
+ 7 |     assert str(order.total) == "5.00"
+ 8 | 
+ 9 | 
+10 | def test_create_order_needs_items(app):
+11 |     with pytest.raises(OrderError):
+12 |         create_order(1, [])
+13 | 
+14 | 
+15 | def test_apply_discount_is_capped(app):
+16 |     order = create_order(1, [{"price": "10", "qty": 1}])
+17 |     assert apply_discount(order, 80).total == 5

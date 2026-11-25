@@ -1,0 +1,23 @@
+ 1 | from decimal import Decimal
+ 2 | from app.models import Order, db
+ 3 | 
+ 4 | 
+ 5 | class OrderError(Exception):
+ 6 |     pass
+ 7 | 
+ 8 | 
+ 9 | def create_order(customer_id: int, items: list[dict]) -> Order:
+10 |     if not items:
+11 |         raise OrderError("an order needs at least one item")
+12 |     total = sum(Decimal(i["price"]) * i["qty"] for i in items)
+13 |     order = Order(customer_id=customer_id, total=total)
+14 |     db.session.add(order)
+15 |     db.session.commit()
+16 |     return order
+17 | 
+18 | 
+19 | def apply_discount(order: Order, percent: int) -> Order:
+20 |     # TODO: cap the discount at 50%
+21 |     order.total = order.total * (100 - percent) / 100
+22 |     db.session.commit()
+23 |     return order

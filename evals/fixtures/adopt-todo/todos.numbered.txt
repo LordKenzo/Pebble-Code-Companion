@@ -1,0 +1,14 @@
+ 1 | export interface Todo { id: string; title: string; done: boolean }
+ 2 | 
+ 3 | export function addTodo(list: Todo[], title: string): Todo[] {
+ 4 |   if (!title.trim()) throw new Error("empty title");
+ 5 |   return [...list, { id: crypto.randomUUID(), title: title.trim(), done: false }];
+ 6 | }
+ 7 | 
+ 8 | export function toggleTodo(list: Todo[], id: string): Todo[] {
+ 9 |   return list.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+10 | }
+11 | 
+12 | export function saveTodos(list: Todo[]): void {
+13 |   localStorage.setItem("todos", JSON.stringify(list));
+14 | }

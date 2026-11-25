@@ -190,3 +190,14 @@ The prompt now says where to send the developer to read more: at entry level onl
 | 32 chat, senior | ✅ with reservations | No basics, the two options with their cost, a better third way (`user-event`) with a 2-line fragment and a declaration-only module. No community source (allowed, not required). Long for senior, about 300 words |
 | 33 deep dive, entry | ✅ | Floating point in plain words, a habit tied to ADR-003 and an exercise in the Node console; no reading pointer (allowed) |
 | 14, 15, 19, 23 (regression) | ✅ | Unchanged |
+
+## 2026-11-25 · MODE: ADOPT, prompt v1.2 (cases 34, 35, `runs/2026-11-25_0913`)
+Adopting a project already under way (ADR-014). Two projects not written for Pebble, built as fixtures with something planted in each.
+
+| Case | Result | Notes |
+|---|---|---|
+| 34 React + Jest, Italian | ✅ | Jest stays Jest (Vitest never appears). Five decisions with evidence down to the line. Finds the planted conflict (`addTodo` throws, `fetchTodos` returns `{ ok: false }`) as one question. First path: the red test, explained (key "todos" vs "todo-list") and marked as red before Pebble arrived; also the retry TODO |
+| 35 Flask + pytest, English | ✅ | Six decisions (blueprints, services layer, `OrderError` → 400, Decimal, commits in services, pytest-flask). No invented conflict; it raises a real one (a malformed payload returns 500). Links the red test to the 50% cap TODO; asks whether `db` is Flask-SQLAlchemy, missing from the dependencies |
+| 01, 20 (regression) | ✅ | Unchanged |
+
+Reservation: `unknowns` lists up to 6 points instead of the 1–4 asked.

@@ -1,0 +1,18 @@
+ 1 | import { addTodo, toggleTodo, saveTodos } from "./todos";
+ 2 | 
+ 3 | describe("todos", () => {
+ 4 |   it("addTodo: adds a trimmed title", () => {
+ 5 |     expect(addTodo([], "  milk ")[0].title).toBe("milk");
+ 6 |   });
+ 7 |   it("addTodo: rejects an empty title", () => {
+ 8 |     expect(() => addTodo([], " ")).toThrow("empty title");
+ 9 |   });
+10 |   it("toggleTodo: flips done", () => {
+11 |     const [t] = addTodo([], "milk");
+12 |     expect(toggleTodo([t], t.id)[0].done).toBe(true);
+13 |   });
+14 |   it("saveTodos: persists to localStorage", () => {
+15 |     saveTodos([]);
+16 |     expect(localStorage.getItem("todo-list")).toBe("[]");
+17 |   });
+18 | });

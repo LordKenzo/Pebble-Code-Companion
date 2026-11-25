@@ -1,0 +1,5 @@
+42 commit · ultimo il 2026-11-18
+- feat: toggle a todo
+- fix: reject empty titles
+- feat: fetch todos from the API
+- chore: add jest

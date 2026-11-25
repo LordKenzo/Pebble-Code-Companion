@@ -1,0 +1,14 @@
+ 1 | from flask import Blueprint, jsonify, request
+ 2 | from app.services.orders import create_order, OrderError
+ 3 | 
+ 4 | bp = Blueprint("orders", __name__)
+ 5 | 
+ 6 | 
+ 7 | @bp.post("/orders")
+ 8 | def post_order():
+ 9 |     data = request.get_json()
+10 |     try:
+11 |         order = create_order(data["customer_id"], data["items"])
+12 |     except OrderError as e:
+13 |         return jsonify(error=str(e)), 400
+14 |     return jsonify(id=order.id, total=str(order.total)), 201
