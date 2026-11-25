@@ -62,6 +62,7 @@
       <ul class="tasks">${tasks}</ul>
       ${step.done === step.total && idx === model.currentStep ? nextCard() : ""}
       ${others ? `<div class="sec"><span>${esc(T.otherSteps)}</span></div><ul class="others">${others}</ul>` : ""}
+      <div class="newpaths"><button class="btn" type="button" data-new-path="feature">${esc(T.newFeature)}</button><button class="btn" type="button" data-new-path="bug">${esc(T.newBug)}</button></div>
       ${foot()}`;
     // Il CSP vieta gli attributi style nell'HTML: la larghezza si imposta da script.
     for (const bar of root.querySelectorAll("[data-pct]")) bar.style.width = `${bar.dataset.pct}%`;
@@ -320,6 +321,8 @@
     const copy = e.target.closest("[data-copy]");
     if (copy) return vscode.postMessage({ type: "copy", text: copy.dataset.copy });
     if (e.target.closest("[data-adopt]")) return vscode.postMessage({ type: "adopt" });
+    const np = e.target.closest("[data-new-path]");
+    if (np) return vscode.postMessage({ type: "newPath", kind: np.dataset.newPath });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
     const review = e.target.closest("[data-review-step]");
     if (review) return vscode.postMessage({ type: "reviewStep", n: Number(review.dataset.reviewStep) });

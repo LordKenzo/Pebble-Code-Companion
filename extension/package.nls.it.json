@@ -56,5 +56,7 @@
   "description": "Cammina sul sentiero, il codice lo scrivi tu. Un pair engineer nel tuo editor: prepara il percorso e la struttura, verifica con i tuoi test e ti aiuta a ragionare.",
   "command.map.open": "Apri la mappa del sentiero",
   "command.map.reviewStep": "Rivedi un passo con il Mentor",
-  "command.adopt": "Adotta il progetto già avviato"
+  "command.adopt": "Adotta il progetto già avviato",
+  "command.newFeature": "Nuova funzionalità: un sentiero breve",
+  "command.newBug": "Nuovo bug: un sentiero che parte da un test rosso"
 }

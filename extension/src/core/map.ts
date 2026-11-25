@@ -1,5 +1,5 @@
 import type { DiaryEntry, DiarySection } from "./diary";
-import { parseSection, sectionKey, type SectionKind } from "./sections";
+import { parseSection, sectionKey, sectionWord, type SectionKind } from "./sections";
 import type { Task } from "./path";
 import type { RoadmapStep } from "./plan";
 import { MAP_TEXT, type Lang } from "./i18n";
@@ -124,8 +124,8 @@ export function stepReviewQuestion(step: MapStep, tasks: readonly Task[], lang: 
     .map((t) => `- [${t.checked ? "x" : " "}] ${t.title}`);
   const diary = [...step.entries.map((e) => `- ${e.date} ${e.time} · ${e.text}`), ...step.notes];
   return {
-    label: fill(T.reviewLabel, { n: step.n, title: step.title }),
-    question: [fill(T.reviewQuestion, { n: step.n, title: step.title }), own.length ? `\n${T.reviewTasks}\n${own.join("\n")}` : "", diary.length ? `\n${T.reviewDiary}\n${diary.join("\n")}` : ""]
+    label: fill(T.reviewLabel, { name: `${sectionWord(step.kind, lang)} ${step.n}`, title: step.title }),
+    question: [fill(T.reviewQuestion, { name: `${sectionWord(step.kind, lang)} ${step.n}`, title: step.title }), own.length ? `\n${T.reviewTasks}\n${own.join("\n")}` : "", diary.length ? `\n${T.reviewDiary}\n${diary.join("\n")}` : ""]
       .filter(Boolean)
       .join("\n"),
   };

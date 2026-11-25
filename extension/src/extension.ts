@@ -247,6 +247,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
     vscode.commands.registerCommand("pebble.map.open", () => mapPanel.show()),
     vscode.commands.registerCommand("pebble.adopt", () => session.adopt()),
+    vscode.commands.registerCommand("pebble.newFeature", () => pathView.newPath("feature")),
+    vscode.commands.registerCommand("pebble.newBug", () => pathView.newPath("bug")),
     vscode.commands.registerCommand("pebble.map.reviewStep", (n: number) => mapPanel.reviewStep(n)),
     mapPanel,
     vscode.commands.registerCommand("pebble.path.planNext", () => pathView.planNext()),

@@ -1,10 +1,11 @@
+import { localSectionName, nextSectionNumber, sectionWord } from "../../core/sections";
 import type { TestSnapshot } from "../../core/adopt";
 import { hasProjectCode } from "./projectSnapshot";
 import * as vscode from "vscode";
 import { estimateCost, type Price } from "../../core/cost";
 import type { HelpTask } from "../../core/help";
 import type { ExperienceLevel, Usage } from "../../core/model";
-import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, PlanStep, type PlanFile } from "../../core/plan";
+import { appendSection, buildPathMessage, buildPlanMessage, insertStep, nextStep, parseRoadmap, pathTitle, planToSection, PlanStep, type PlanFile } from "../../core/plan";
 import type { MentorModel } from "../../core/ports";
 import { WorkspaceStore } from "../store/workspaceStore";
 import type { ProposalDocs } from "./proposals";
@@ -75,6 +76,7 @@ type FromWebview =
   | { type: "openBootstrap" }
   | { type: "init" }
   | { type: "adopt" }
+  | { type: "newPath"; kind: "feature" | "bug" }
   | { type: "openMap" }
   | { type: "reviewStep"; n: number }
   | { type: "copy"; text: string };
@@ -178,6 +180,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
       else if (m.type === "adopt") void vscode.commands.executeCommand("pebble.adopt");
+      else if (m.type === "newPath") void this.newPath(m.kind);
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
       else if (m.type === "copy") {
         void vscode.env.clipboard.writeText(m.text);
@@ -294,8 +297,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   currentStepHeading(): string | null {
     const step = this.model?.steps[this.model.currentStep];
     if (!step || this.text === null) return null;
-    const n = /(\d+)/.exec(step.name)?.[1];
-    return parsePath(this.text).tasks.find((t) => t.step && /(\d+)/.exec(t.step)?.[1] === n)?.step ?? null;
+    return parsePath(this.text).tasks.find((t) => t.step && localSectionName(t.step, this.settings().lang) === step.name)?.step ?? null;
   }
 
   async verify(runTests: boolean): Promise<void> {
@@ -429,6 +431,63 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       }
     } catch (err) {
       void vscode.window.showErrorMessage(N.stepFailed(err instanceof Error ? err.message : String(err)));
+    } finally {
+      this.planning = false;
+      await this.refresh();
+    }
+  }
+
+  // ---------- sentieri brevi per una funzionalità o un bug (ADR-014) ----------
+
+  /** Chiede una frase, prepara un sentiero di 2-6 compiti dal codice com'è adesso e lo propone come diff. */
+  async newPath(kind: "feature" | "bug"): Promise<void> {
+    const uri = this.uri ?? (this.root && vscode.Uri.joinPath(this.root, ...PATH_FILE));
+    if (!this.root || !uri || !this.planner || this.planning) return;
+    const planner = this.planner;
+    const lang = this.settings().lang;
+    const N = NOTICE_TEXT[lang];
+    const description = await vscode.window.showInputBox({
+      prompt: kind === "bug" ? N.newBugPrompt : N.newFeaturePrompt,
+      placeHolder: kind === "bug" ? N.newBugPlaceholder : N.newFeaturePlaceholder,
+      ignoreFocusOut: true,
+    });
+    if (!description?.trim()) return;
+    const n = nextSectionNumber(this.text, kind);
+    const title = pathTitle(description);
+    const label = `${sectionWord(kind, lang)} ${n} · ${title}`;
+    this.planning = true;
+    this.load(this.text);
+    try {
+      const ctx = await new WorkspaceStore(this.root).load();
+      const message = buildPathMessage(ctx, kind, description, this.text, await planFiles(this.root), planner.level(), lang);
+      const mentor = await planner.mentor();
+      const { data, usage } = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: N.preparingPath(label) },
+        async () => mentor.generate(await planner.systemPrompt(), message, PlanStep, "plan_path"),
+      );
+      await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
+      const { markdown, dropped } = planToSection(data, { n, title, text: description }, lang, kind);
+      const proposed = appendSection(this.text, markdown, lang);
+      const key = `percorso-${Date.now()}`;
+      const left = this.text === null ? planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
+      const right = planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
+      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffPathTitle(label));
+      const extra = [data.reading, data.question ? N.question(data.question) : "", dropped.length ? N.droppedConditions(dropped.length) : ""].filter(Boolean).join(" ");
+      const choice = await vscode.window.showInformationMessage(N.pathProposal(data.tasks.length, label, extra), N.accept, N.reviewEdit, N.discard);
+      if (choice === N.accept) {
+        if (this.text === null) {
+          await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
+          await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(proposed));
+          await this.refresh();
+        } else await this.writePath(proposed);
+        this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n, title, kind });
+        void vscode.window.showInformationMessage(N.pathAdded(label));
+        this.schedule(true, 300);
+      } else if (choice === N.reviewEdit) {
+        await reviewInEditor(uri, proposed, N.reviewInEditor(N.stepInEditor));
+      }
+    } catch (err) {
+      void vscode.window.showErrorMessage(N.pathFailed(err instanceof Error ? err.message : String(err)));
     } finally {
       this.planning = false;
       await this.refresh();

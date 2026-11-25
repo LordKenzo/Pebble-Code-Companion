@@ -192,6 +192,18 @@
         "command": "pebble.adopt",
         "title": "%command.adopt%",
         "category": "Pebble"
+      },
+      {
+        "command": "pebble.newFeature",
+        "title": "%command.newFeature%",
+        "category": "Pebble",
+        "icon": "$(add)"
+      },
+      {
+        "command": "pebble.newBug",
+        "title": "%command.newBug%",
+        "category": "Pebble",
+        "icon": "$(bug)"
       }
     ],
     "menus": {
@@ -235,6 +247,16 @@
           "command": "pebble.path.refresh",
           "when": "view == pebble.path",
           "group": "navigation@2"
+        },
+        {
+          "command": "pebble.newFeature",
+          "when": "view == pebble.path",
+          "group": "1_paths@1"
+        },
+        {
+          "command": "pebble.newBug",
+          "when": "view == pebble.path",
+          "group": "1_paths@2"
         }
       ],
       "commandPalette": [

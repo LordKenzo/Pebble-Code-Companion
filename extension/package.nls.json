@@ -56,5 +56,7 @@
   "description": "Walk the path. You write the code. A pair engineer in your editor: it plans the path, prepares the structure, checks your work with your tests and helps you think.",
   "command.map.open": "Open the path map",
   "command.map.reviewStep": "Review a step with the Mentor",
-  "command.adopt": "Adopt the project already under way"
+  "command.adopt": "Adopt the project already under way",
+  "command.newFeature": "New feature: a short path",
+  "command.newBug": "New bug: a path that starts from a failing test"
 }

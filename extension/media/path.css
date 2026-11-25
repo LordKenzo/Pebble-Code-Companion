@@ -174,3 +174,6 @@ button { font: inherit; color: inherit; }
 .ghost.big { width: 56px; height: 60px; margin: 0; flex: 0 0 auto; }
 .intro.with-ghost { display: flex; gap: 12px; align-items: center; }
 .next .lvl { display: inline-flex; align-items: center; }
+
+/* Sentieri brevi per una funzionalità o un bug (ADR-014). */
+.newpaths { display: flex; gap: 8px; margin: 10px 12px 0; flex-wrap: wrap; }
