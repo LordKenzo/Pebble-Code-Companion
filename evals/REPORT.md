@@ -201,3 +201,12 @@ Adopting a project already under way (ADR-014). Two projects not written for Peb
 | 01, 20 (regression) | ✅ | Unchanged |
 
 Reservation: `unknowns` lists up to 6 points instead of the 1–4 asked.
+
+## 2026-11-25 · feature and bug paths (cases 36, 37, `runs/2026-11-25_1008`)
+`PATH_TO_PREPARE: feature|bug · …` instead of `STEP_TO_PREPARE`: a short path from one sentence by the developer (ADR-014).
+
+| Case | Result | Notes |
+|---|---|---|
+| 36 bug, Italian | ✅ | `reading` locates the cause (floating point in `a + b`, line 6) without the fix. Tasks: test that reproduces the bug, fix, nearby edge cases, review. Nothing outside the bug. The first task closes on "no errors in the test file": conditions measure green, and seeing the test red first is tracked by the diary (ADR-010) |
+| 37 feature, English | ✅ | Six tasks in English: user-event, tests of the button, a separate component (ADR-002), disabled on an error message, a clipboard failure shown as a message (ADR-003 spirit), placement, review |
+| 20, 29, 30 (regression) | ✅ | Unchanged |
