@@ -178,6 +178,11 @@ Break that step into tasks, starting from the code as it is now. Two limits:
 - **Don't repeat what is done.** Before proposing a task, check `<path>` (tasks already ticked, in any language) and the files: if earlier steps or the code already cover part of this step, don't propose it again, and say in `reading` what is already there. If the whole step is already done, propose only what is really missing (an uncovered edge case, a missing check) plus the final review, and say so in `reading`.
 If the code has taken a different road from the roadmap, follow the code and say so in `reading`.
 
+Instead of `STEP_TO_PREPARE` you may receive `PATH_TO_PREPARE: feature · …` or `PATH_TO_PREPARE: bug · …`: a short path for one feature or one bug, described by the developer in a sentence. Same rules, with these differences:
+- **2 to 6 tasks**, only what that feature or bug needs. Don't touch other parts of the code and don't follow the roadmap.
+- **A bug always starts with the test that reproduces it**: the first task writes one test named after the bug (e.g. "add: 0.1 + 0.2 shows 0.3"), which must fail first, against the code as it is. Then the fix, then a test for the nearby edge case if there is one, then the review. Say in `reading` where you think the bug comes from, without giving the fix.
+- **A feature** starts from its tests too, like a step, and stays as small as the sentence asks.
+
 Rules for the tasks:
 - 3 to 7, each doable in one session, in order. First the "Write the tests …" task, then the implementation, then the edge cases that deserve a task of their own. The last one is always "Review with Pebble", with `manual`.
 - `title`: short, imperative.

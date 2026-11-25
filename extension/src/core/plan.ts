@@ -1,3 +1,4 @@
+import { sectionHeading, type SectionKind } from "./sections";
 import { languageLine, PATH_TEXT, type Lang } from "./i18n";
 import { z } from "zod";
 import { numberLines } from "./context";
@@ -121,10 +122,10 @@ export function buildPlanMessage(
 const oneLine = (s: string) => s.replace(/\s*\n\s*/g, " ").trim();
 
 /** Trasforma il piano in una sezione di percorso.md. Le condizioni scritte male vengono scartate. */
-export function planToSection(plan: PlanStep, step: RoadmapStep, lang: Lang = "it"): { markdown: string; dropped: string[] } {
+export function planToSection(plan: PlanStep, step: RoadmapStep, lang: Lang = "it", kind: SectionKind = "step"): { markdown: string; dropped: string[] } {
   const T = PATH_TEXT[lang];
   const dropped: string[] = [];
-  const lines = [`## ${T.stepWord} ${step.n} · ${step.title}`];
+  const lines = [sectionHeading({ kind, n: step.n, title: step.title }, lang)];
   for (const t of plan.tasks.slice(0, 8)) {
     lines.push(`- [ ] ${oneLine(t.title)}`);
     if (t.todo.trim()) lines.push(`  ${T.keyTodo}: ${oneLine(t.todo)}`);
@@ -137,6 +138,37 @@ export function planToSection(plan: PlanStep, step: RoadmapStep, lang: Lang = "i
     for (const c of valid.length ? valid : [T.condManual]) lines.push(`  ${T.keyDone}: ${c}`);
   }
   return { markdown: lines.join("\n") + "\n", dropped };
+}
+
+/**
+ * Un sentiero breve per una funzionalità o un bug (ADR-014): la descrizione dello sviluppatore, in una frase,
+ * diventa da 2 a 6 compiti partendo dal codice com'è adesso. Un bug parte sempre dal test che lo riproduce.
+ */
+export function buildPathMessage(
+  ctx: ProjectContext,
+  kind: Exclude<SectionKind, "step">,
+  description: string,
+  pathMarkdown: string | null,
+  files: readonly PlanFile[],
+  level: ExperienceLevel,
+  lang: Lang = "it",
+): string {
+  return buildPlanMessage(ctx, { n: 0, title: "", text: "" }, pathMarkdown, files, level, lang).replace(
+    /^STEP_TO_PREPARE: .*\n.*$/m,
+    `PATH_TO_PREPARE: ${kind} · ${description.replace(/\s+/g, " ").trim()}`,
+  );
+}
+
+/** Un titolo breve per il sentiero, dalla frase dello sviluppatore. */
+export function pathTitle(description: string): string {
+  return stepTitle(description.replace(/\s+/g, " ").trim().replace(/[.!?]+$/, ""));
+}
+
+/** Aggiunge in fondo al percorso la sezione di un sentiero nuovo. */
+export function appendSection(pathMarkdown: string | null, section: string, lang: Lang = "it"): string {
+  const md = pathMarkdown ?? "";
+  if (!md.trim()) return `# ${PATH_TEXT[lang].pathTitle}\n\n${section}`;
+  return `${md.replace(/\s*$/, "")}\n\n${section}`;
 }
 
 /**

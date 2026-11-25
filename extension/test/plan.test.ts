@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, plannedStepNumbers, stepTitle, type PlanStep } from "../src/core/plan";
+import { buildPlanMessage, insertStep, nextStep, parseRoadmap, planToSection, plannedStepNumbers, stepTitle, type PlanStep, buildPathMessage, pathTitle, appendSection } from "../src/core/plan";
 import { parsePath } from "../src/core/path";
 
 const ROADMAP_LIST = `# Roadmap
@@ -121,4 +121,18 @@ test("in inglese: chiavi del percorso, titolo del passo e intestazione", () => {
   assert.deepEqual(parsePath(markdown).tasks.map((t) => t.conditions.map((c) => c.kind)), [["file"], ["tests", "noErrors"], ["manual"]]);
   assert.equal(insertStep(null, markdown, 2, "en")!.split("\n")[0], "# Path");
   assert.equal(nextStep(parseRoadmap(ROADMAP_LIST), "# Path\n\n## Step 1 · Setup\n- [x] a\n")?.n, 2);
+});
+
+test("sentieri brevi: messaggio con PATH_TO_PREPARE, titolo, sezione in fondo", () => {
+  const ctx = { bootstrap: null, architecture: null, decisions: [], roadmap: "0. Campo base ✅" };
+  const m = buildPathMessage(ctx, "bug", "0,1 + 0,2 mostra\n 0.30000000000000004", "## Passo 0 · Campo base\n- [x] a\n", [], "junior", "it");
+  assert.match(m, /^MODE: PLAN_STEP/);
+  assert.match(m, /^PATH_TO_PREPARE: bug · 0,1 \+ 0,2 mostra 0\.30000000000000004$/m);
+  assert.doesNotMatch(m, /STEP_TO_PREPARE/);
+  assert.equal(pathTitle("Voglio un pulsante per copiare il risultato."), "Voglio un pulsante per copiare il risultato");
+  const plan = { reading: "r", question: null, tasks: [{ title: "Scrivi il test che riproduce il bug", todo: "x", signature: null, doneWhen: ['test "add: 0,1 + 0,2"'] }] };
+  const { markdown } = planToSection(plan, { n: 2, title: "Decimali", text: "" }, "it", "bug");
+  assert.match(markdown, /^## Bug 2 · Decimali\n- \[ \] Scrivi il test/);
+  assert.equal(appendSection("# Percorso\n\n## Passo 0 · Campo base\n- [x] a\n\n", markdown), "# Percorso\n\n## Passo 0 · Campo base\n- [x] a\n\n" + markdown);
+  assert.match(appendSection(null, markdown, "en"), /^# Path\n\n## Bug 2/);
 });
