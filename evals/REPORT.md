@@ -210,3 +210,15 @@ Reservation: `unknowns` lists up to 6 points instead of the 1–4 asked.
 | 36 bug, Italian | ✅ | `reading` locates the cause (floating point in `a + b`, line 6) without the fix. Tasks: test that reproduces the bug, fix, nearby edge cases, review. Nothing outside the bug. The first task closes on "no errors in the test file": conditions measure green, and seeing the test red first is tracked by the diary (ADR-010) |
 | 37 feature, English | ✅ | Six tasks in English: user-event, tests of the button, a separate component (ADR-002), disabled on an error message, a clipboard failure shown as a message (ADR-003 spirit), placement, review |
 | 20, 29, 30 (regression) | ✅ | Unchanged |
+
+## 2026-11-25 · MODE: ASSIST, prompt v1.3 (cases 38–42, `runs/2026-11-25_1114`)
+The ⌥P help panel (ADR-015): one structured answer per tab.
+
+| Case | Result | Notes |
+|---|---|---|
+| 38 tips, mid | ✅ | Three points with lines and values: the missing below-the-bar case (15 kg, ADR-004), the silent remainder (61 kg), the empty `loadsFor` without a return type |
+| 39 explain, entry | ✅ | Explains loop, `while`, `>=` and `-=` the first time; traces 142.5 kg disc by disc; summary with the coin analogy |
+| 40 explain, senior | ✅ | Terse; names greedy, the silent remainder and when dynamic programming would be needed. It says greedy is always minimal with these plates: verified exhaustively up to 400 kg per side (the mockup had it wrong) |
+| 41 pseudo, junior | ✅ after a fix | First run: correct but long steps, too heavy as code comments. Now each step is one short line, the reasons go in `intro` |
+| 42 similar, English | ✅ | Coins and seconds with numeric traces; a variation shows the same silent remainder |
+| 15 (regression) | ✅ | Unchanged |

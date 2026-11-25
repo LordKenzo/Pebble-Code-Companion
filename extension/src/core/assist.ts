@@ -40,7 +40,7 @@ export const Study = z.object({
 export const Pseudo = z.object({
   intro: z.string().describe("One sentence: what is missing and where"),
   target: z.string().nullable().describe("The name of the empty or unfinished function the steps are for, or null"),
-  steps: z.array(z.string()).describe("3 to 7 pseudocode steps in words, with the project's names; never code"),
+  steps: z.array(z.string()).describe("3 to 7 pseudocode steps in words, with the project's names; each one short line (about 12 words), since they become comments in the code; never code"),
   question: z.string().nullable().describe("One thing to work out by hand before writing, or null"),
 });
 
