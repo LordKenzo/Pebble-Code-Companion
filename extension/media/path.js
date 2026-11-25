@@ -178,7 +178,9 @@
         ${stage(1, ob.bootstrap, !ob.bootstrap, T.stage1Title, ob.bootstrap ? T.stage1Done : T.stage1Todo,
           ob.bootstrap
             ? `<button class="link" type="button" data-open-bootstrap>${esc(T.openBootstrap)}</button>`
-            : `<button class="btn primary" type="button" data-wizard>${esc(T.answerQuestions)}</button><button class="btn" type="button" data-template>${esc(T.writeItMyself)}</button>`)}
+            : ob.hasCode
+              ? `<p class="hint">${esc(T.adoptHint)}</p><button class="btn primary" type="button" data-adopt>${esc(T.adoptProject)}</button><button class="btn" type="button" data-wizard>${esc(T.answerQuestions)}</button>`
+              : `<button class="btn primary" type="button" data-wizard>${esc(T.answerQuestions)}</button><button class="btn" type="button" data-template>${esc(T.writeItMyself)}</button>`)}
         ${stage(2, ob.roadmap, ob.bootstrap && !ob.roadmap, T.stage2Title, T.stage2Text,
           ob.roadmap ? "" : `<button class="btn primary" type="button" data-init>${esc(T.proposePlan)}</button>`)}
         ${stage(3, false, ob.roadmap, T.stage3Title, T.stage3Text, planBtn)}
@@ -317,6 +319,7 @@
     if (e.target.closest("[data-verify]")) return vscode.postMessage({ type: "verify" });
     const copy = e.target.closest("[data-copy]");
     if (copy) return vscode.postMessage({ type: "copy", text: copy.dataset.copy });
+    if (e.target.closest("[data-adopt]")) return vscode.postMessage({ type: "adopt" });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });
     const review = e.target.closest("[data-review-step]");
     if (review) return vscode.postMessage({ type: "reviewStep", n: Number(review.dataset.reviewStep) });

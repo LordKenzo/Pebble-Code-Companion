@@ -55,5 +55,6 @@
   "config.path.requireRedFirst": "A task closes only if Pebble has seen its tests fail at least once (ADR-010). Off: the task closes with a warning.",
   "description": "Walk the path. You write the code. A pair engineer in your editor: it plans the path, prepares the structure, checks your work with your tests and helps you think.",
   "command.map.open": "Open the path map",
-  "command.map.reviewStep": "Review a step with the Mentor"
+  "command.map.reviewStep": "Review a step with the Mentor",
+  "command.adopt": "Adopt the project already under way"
 }

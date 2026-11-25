@@ -1,3 +1,5 @@
+import type { TestSnapshot } from "../../core/adopt";
+import { hasProjectCode } from "./projectSnapshot";
 import * as vscode from "vscode";
 import { estimateCost, type Price } from "../../core/cost";
 import type { HelpTask } from "../../core/help";
@@ -41,6 +43,8 @@ export interface PathSettings {
 /** Il sentiero d'avvio: bootstrap, piano in .pebble/, primo passo. */
 interface Onboarding {
   bootstrap: boolean;
+  /** C'è codice ma non bootstrap: si propone l'adozione (ADR-014). */
+  hasCode: boolean;
   roadmap: boolean;
   commonUnknowns: string[];
   level: string;
@@ -70,6 +74,7 @@ type FromWebview =
   | { type: "bootstrapTemplate" }
   | { type: "openBootstrap" }
   | { type: "init" }
+  | { type: "adopt" }
   | { type: "openMap" }
   | { type: "reviewStep"; n: number }
   | { type: "copy"; text: string };
@@ -87,6 +92,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   private model: (PathViewModel & {
     t: (typeof VIEW_TEXT)[Lang]; hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding }) | null = null;
   private hasBootstrap = false;
+  /** C'è già codice nel progetto: l'avvio guidato propone di adottarlo (ADR-014). */
+  private hasCode = false;
   private roadmap: string | null = null;
   private planning = false;
   private text: string | null = null;
@@ -170,6 +177,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       } else if (m.type === "bootstrapTemplate") void this.writeBootstrap(bootstrapGuide(this.settings().lang), null, true);
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
+      else if (m.type === "adopt") void vscode.commands.executeCommand("pebble.adopt");
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
       else if (m.type === "copy") {
         void vscode.env.clipboard.writeText(m.text);
@@ -192,6 +200,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     for (const name of ["bootstrap.md", "init.md"]) {
       if (this.root && (await readText(vscode.Uri.joinPath(this.root, name)))?.trim()) this.hasBootstrap = true;
     }
+    this.hasCode = !this.hasBootstrap && !!this.root && (await hasProjectCode(this.root));
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (open) return this.load(open.getText());
     try {
@@ -216,6 +225,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       roadmapSteps: this.roadmap ? parseRoadmap(this.roadmap).length || null : null,
       onboarding: {
         bootstrap: this.hasBootstrap,
+        hasCode: this.hasCode,
         roadmap: !!this.roadmap?.trim(),
         commonUnknowns: commonUnknowns(this.settings().lang),
         level: vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
@@ -269,6 +279,14 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   }
 
   /** Raccoglie i segnali, valuta i compiti e aggiorna le caselle. Mai due verifiche in parallelo. */
+  /** I test all'adozione (ADR-014): quanti verdi e quali rossi all'arrivo. Null se non si possono lanciare. */
+  async testSnapshot(): Promise<TestSnapshot | null> {
+    if (!this.collector) return null;
+    const run = await this.collector.runOnce();
+    if (run.error || !run.tests.length) return null;
+    return { total: run.tests.length, passed: run.tests.filter((t) => t.ok).length, red: run.tests.filter((t) => !t.ok).map((t) => t.name) };
+  }
+
   /** Gli ultimi risultati dei test, per capire cosa è cambiato tra una verifica e l'altra (diario). */
   private lastTests: ParsedTest[] | undefined;
 

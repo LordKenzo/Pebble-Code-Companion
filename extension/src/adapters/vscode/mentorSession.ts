@@ -1,3 +1,4 @@
+import { AdoptPlan, adoptPlanToFiles, adoptPlanToMarkdown, buildAdoptMessage, type AdoptSnapshot } from "../../core/adopt";
 import type { DiaryEvent } from "../../core/diary";
 import { bootstrapGuide } from "../../core/bootstrap";
 import { CHAT_TEXT, type Lang } from "../../core/i18n";
@@ -47,6 +48,10 @@ export interface SessionDeps {
   workspaceState: vscode.Memento;
   /** Lingua della conversazione e delle risposte (ADR-012). */
   lang(): Lang;
+  /** La fotografia del progetto per l'adozione (ADR-014): file, README, storia, test. */
+  snapshot?(): Promise<AdoptSnapshot | null>;
+  /** C'è già codice nel progetto? */
+  hasCode?(): Promise<boolean>;
 }
 
 /** Domande di approfondimento proposte sotto ogni risposta. */
@@ -72,6 +77,7 @@ export class MentorSession {
   }
 
   private history: Turn[] = [];
+  private lastAdoption: { plan: AdoptPlan; snapshot: AdoptSnapshot } | undefined;
   private lastPlan: InitPlan | undefined;
   private busy = false;
   private started = new Set<string>();
@@ -119,6 +125,19 @@ export class MentorSession {
     const hasPebble = await store.hasPebble();
 
     if (!ctx.bootstrap) {
+      // Codice già presente e niente .pebble/: si propone di adottare il progetto (ADR-014).
+      if (!hasPebble && (await this.deps.hasCode?.())) {
+        this.view.push({
+          kind: "pebble",
+          label: this.C.labelWelcome,
+          html: renderMarkdown(this.C.foundCode),
+          actions: [
+            { id: "adopt", label: this.C.adoptProject, primary: true },
+            { id: "create-bootstrap", label: this.C.createBootstrap },
+          ],
+        });
+        return;
+      }
       this.view.push({
         kind: "pebble",
         label: this.C.labelWelcome,
@@ -191,7 +210,9 @@ export class MentorSession {
       return this.lastRequest?.();
     }
     // I pulsanti "una tantum" spariscono dopo l'uso; quelli ripetibili (next, review) restano.
-    if (["init", "save-plan", "create-bootstrap"].includes(id)) this.view.clearActions(id);
+    if (["init", "save-plan", "create-bootstrap", "adopt", "save-adoption"].includes(id)) this.view.clearActions(id);
+    if (id === "adopt") return this.adopt();
+    if (id === "save-adoption") return this.saveAdoption();
     if (id === "init") return this.init();
     if (id === "save-plan") return this.savePlan();
     if (id === "next") return this.text("NEXT");
@@ -224,6 +245,51 @@ export class MentorSession {
           ];
       this.view.push({ kind: "pebble", label: this.C.labelPlan, file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan, this.deps.lang())), meta: meta(mentor, cost, this.deps.lang()), actions });
       this.history.push({ role: "pebble", text: initPlanToMarkdown(plan, this.deps.lang()) });
+    });
+  }
+
+  /** Adotta un progetto già avviato (ADR-014): legge il codice e propone quello che c'è, da confermare. */
+  async adopt(): Promise<void> {
+    const store = this.store();
+    if (!store || !this.deps.snapshot) return this.info(this.C.openFolder);
+    await this.view.reveal();
+    await this.run(this.C.readingCode, async (mentor, system) => {
+      const snapshot = await this.deps.snapshot!();
+      if (!snapshot) return;
+      const { data, usage } = await mentor.generate(system, buildAdoptMessage(snapshot, this.deps.level(), this.deps.lang()), AdoptPlan, "adopt_plan");
+      const cost = await this.account(mentor, usage);
+      this.lastAdoption = { plan: data, snapshot };
+      const md = adoptPlanToMarkdown(data, snapshot, this.deps.lang());
+      this.view.push({
+        kind: "pebble",
+        label: this.C.labelAdopt,
+        html: renderMarkdown(md),
+        meta: meta(mentor, cost, this.deps.lang()),
+        actions: [
+          { id: "save-adoption", label: this.C.saveAdoption, primary: true },
+          { id: "adopt", label: this.C.regenerate },
+        ],
+      });
+      this.history.push({ role: "pebble", text: md });
+    });
+  }
+
+  private async saveAdoption(): Promise<void> {
+    const store = this.store();
+    if (!store || !this.lastAdoption) return;
+    if (await store.hasPebble()) {
+      const ok = await vscode.window.showWarningMessage(this.C.overwritePebble, { modal: true }, this.C.overwrite);
+      if (ok !== this.C.overwrite) return;
+    }
+    const { plan, snapshot } = this.lastAdoption;
+    const files = adoptPlanToFiles(plan, snapshot, new Date().toISOString().slice(0, 10), this.deps.lang());
+    await store.writeFiles(files);
+    this.lastAdoption = undefined;
+    this.view.push({
+      kind: "pebble",
+      label: this.C.labelSaved,
+      html: renderMarkdown(this.C.wroteFiles(files.length, files.map((f) => `- \`${f.path}\``).join("\n"))),
+      actions: [{ id: "open-architecture", label: this.C.openArchitecture }],
     });
   }
 

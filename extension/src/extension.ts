@@ -1,3 +1,4 @@
+import { hasProjectCode, takeSnapshot } from "./adapters/vscode/projectSnapshot";
 import { MapPanel } from "./adapters/vscode/mapPanel";
 import { DiaryWriter } from "./adapters/store/diaryStore";
 import * as vscode from "vscode";
@@ -145,6 +146,14 @@ export function activate(context: vscode.ExtensionContext): void {
   }, lang, context.extensionUri);
   session = new MentorSession(chatView, diagnostics, {
     note: (event) => diary.append(event),
+    snapshot: async () => {
+      const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+      return root ? takeSnapshot(root, () => pathView.testSnapshot()) : null;
+    },
+    hasCode: async () => {
+      const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+      return root ? hasProjectCode(root) : false;
+    },
     mentor: async () => {
       const s = settings();
       return createMentor(s, await context.secrets.get(secretKey(s.provider)));
@@ -237,6 +246,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
     vscode.commands.registerCommand("pebble.map.open", () => mapPanel.show()),
+    vscode.commands.registerCommand("pebble.adopt", () => session.adopt()),
     vscode.commands.registerCommand("pebble.map.reviewStep", (n: number) => mapPanel.reviewStep(n)),
     mapPanel,
     vscode.commands.registerCommand("pebble.path.planNext", () => pathView.planNext()),
