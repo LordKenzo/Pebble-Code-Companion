@@ -9,7 +9,7 @@
 ## Beta: cosa aspettarsi
 Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Prima di provarlo:
 - **Serve un modello.** Una chiave API di Anthropic o OpenAI (**Pebble: Imposta la chiave API**), oppure un server locale come Ollama, gratuito e con il codice che resta sul tuo computer. I modelli locali seguono le regole di Pebble meno bene di quelli cloud.
-- **Progetti nuovi o già avviati.** Pebble ti guida da `bootstrap.md`, oppure adotta un progetto già avviato; i sentieri per singole funzionalità e bug arrivano dopo.
+- **Progetti nuovi o già avviati.** Pebble ti guida da `bootstrap.md`, oppure adotta un progetto già avviato; poi lavora su sentieri brevi per singole funzionalità e bug.
 - **È onesto sulle spunte.** Un compito spuntato vuol dire che i tuoi test passano, non che il codice è corretto.
 - **Nessuna telemetria.** Pebble non raccoglie niente. Il tuo codice va solo al provider che scegli.
 - Segnalazioni e bug: [issue su GitHub](https://github.com/LordKenzo/pebble-code-companion/issues).

@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.23
+- **Feature and bug paths**: *New feature* and *New bug* (in the Path panel, its menu and the map) ask for one sentence and prepare a short path of 2–6 tasks from the code as it is now, shown as a diff. A bug path always starts with the test that reproduces it.
+- **The map branches out**: paths for features and bugs leave the base camp as branches, each with its card and its diary; the ghost waits by the open one.
+
 ## 0.7.22
 - **Adopt a project already under way**: when a folder has code but no `.pebble/`, Pebble offers to adopt it. It reads the files, the README, the git history and runs the tests once, then proposes the decisions it finds in the code (*detected, to confirm*), the questions where the code contradicts itself, and a **base camp**: a step 0 already closed, with the tests that were red on arrival. Possible next steps come from the code: a red test, a TODO, a missing test.
 

@@ -9,7 +9,7 @@
 ## Beta: what to expect
 Pebble is a **pre-release**: it works, and it is being built in the open. Before you try it:
 - **You need a model.** An Anthropic or OpenAI API key (**Pebble: Set the API key**), or a local server such as Ollama, which is free and keeps your code on your machine. Local models follow Pebble's rules less reliably than cloud models.
-- **New or existing projects.** Pebble guides you from `bootstrap.md`, or adopts a project already under way; paths for single features and bugs are coming next.
+- **New or existing projects.** Pebble guides you from `bootstrap.md`, or adopts a project already under way; then works on short paths for single features and bugs.
 - **It's honest about checkmarks.** A ticked task means your tests pass, not that your code is correct.
 - **No telemetry.** Pebble collects nothing. Your code goes only to the provider you choose.
 - Feedback and bugs: [GitHub issues](https://github.com/LordKenzo/pebble-code-companion/issues).
@@ -57,6 +57,6 @@ In an untrusted folder Pebble works but doesn't run test commands. Trust the fol
 npm install
 npm test
 npm run package
-code --install-extension pebble-code-companion-0.7.22.vsix --force
+code --install-extension pebble-code-companion-0.7.23.vsix --force
 ```
 The prompt is copied from `../prompts/mentor.md` on every build.
