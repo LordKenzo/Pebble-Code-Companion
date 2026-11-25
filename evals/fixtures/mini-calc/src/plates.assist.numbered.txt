@@ -1,0 +1,23 @@
+ 1 | import type { Grams } from "./units.ts";
+ 2 | import { ok, type Result } from "./result.ts";
+ 3 | 
+ 4 | export const BAR: Grams = 20_000;
+ 5 | export const PLATES: readonly Grams[] = [25_000, 20_000, 15_000, 10_000, 5_000, 2_500, 1_250];
+ 6 | 
+ 7 | export interface PlateLoad { readonly total: Grams; readonly perSide: readonly Grams[] }
+ 8 | 
+ 9 | export function platesFor(total: Grams): Result<PlateLoad> {
+10 |   let remaining = (total - BAR) / 2;
+11 |   const perSide: Grams[] = [];
+12 |   for (const plate of PLATES) {
+13 |     while (remaining >= plate) {
+14 |       perSide.push(plate);
+15 |       remaining -= plate;
+16 |     }
+17 |   }
+18 |   return ok({ total, perSide });
+19 | }
+20 | 
+21 | export function loadsFor(max: Grams, percents: number[]) {
+22 |   // TODO
+23 | }
