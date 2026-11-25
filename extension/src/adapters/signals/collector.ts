@@ -74,6 +74,12 @@ export class SignalCollector {
     };
   }
 
+  /** Lancia i test una volta, senza compiti: la fotografia del campo base all'adozione (ADR-014). */
+  async runOnce(): Promise<TestRun> {
+    this.lastRun = await this.runTests(await this.read(vscode.Uri.joinPath(this.root, "package.json")));
+    return this.lastRun;
+  }
+
   private async read(uri: vscode.Uri): Promise<string | null> {
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (open) return open.getText();
