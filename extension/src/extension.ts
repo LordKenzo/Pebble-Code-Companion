@@ -7,7 +7,7 @@ import type { Effort } from "./adapters/llm/claude";
 import { ChatView } from "./adapters/vscode/chatView";
 import { MentorSession } from "./adapters/vscode/mentorSession";
 import { PathView } from "./adapters/vscode/pathView";
-import { HelpBalloon } from "./adapters/vscode/helpBalloon";
+import { AssistPanel } from "./adapters/vscode/assistPanel";
 import { ReviewPanel } from "./adapters/vscode/panel";
 import { ProposalDocs } from "./adapters/vscode/proposals";
 import { SpendLedger } from "./adapters/vscode/spendLedger";
@@ -212,8 +212,8 @@ export function activate(context: vscode.ExtensionContext): void {
     openPath: () => void vscode.commands.executeCommand("pebble.path.focus"),
   });
 
-  // Il fumetto sulla riga (ADR-009): stesso modello e stesso registro della spesa della conversazione.
-  const help = new HelpBalloon(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
+  // ⌥P: il pannello di aiuto accanto al codice (ADR-015), stesso modello e stesso registro della spesa.
+  const assist = new AssistPanel(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
     mentor: async () => {
       const s = settings();
       return createMentor(s, await context.secrets.get(secretKey(s.provider)));
@@ -234,13 +234,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     diagnostics,
     pathView,
-    help,
-    vscode.commands.registerCommand("pebble.helpHere", () => help.helpHere()),
-    vscode.commands.registerCommand("pebble.help.reply", (r: vscode.CommentReply) => help.reply(r)),
-    vscode.commands.registerCommand("pebble.help.up", (a) => help.up(a)),
-    vscode.commands.registerCommand("pebble.help.why", (a) => help.why(a)),
-    vscode.commands.registerCommand("pebble.help.deep", (a) => help.deep(a)),
-    vscode.commands.registerCommand("pebble.help.close", (a) => help.close(a)),
+    vscode.commands.registerCommand("pebble.helpHere", () => assist.open()),
+    assist,
     vscode.window.registerWebviewViewProvider(PathView.id, pathView),
     vscode.commands.registerCommand("pebble.path.reveal", (line: number) => pathView.reveal(line)),
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),

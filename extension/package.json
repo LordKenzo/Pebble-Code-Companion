@@ -147,27 +147,6 @@
         "category": "Pebble"
       },
       {
-        "command": "pebble.help.reply",
-        "title": "%command.help.reply%"
-      },
-      {
-        "command": "pebble.help.up",
-        "title": "%command.help.up%"
-      },
-      {
-        "command": "pebble.help.why",
-        "title": "%command.help.why%"
-      },
-      {
-        "command": "pebble.help.deep",
-        "title": "%command.help.deep%"
-      },
-      {
-        "command": "pebble.help.close",
-        "title": "%command.help.close%",
-        "icon": "$(check)"
-      },
-      {
         "command": "pebble.path.planNext",
         "title": "%command.path.planNext%",
         "category": "Pebble"
@@ -265,57 +244,8 @@
           "when": "false"
         },
         {
-          "command": "pebble.help.reply",
-          "when": "false"
-        },
-        {
-          "command": "pebble.help.up",
-          "when": "false"
-        },
-        {
-          "command": "pebble.help.why",
-          "when": "false"
-        },
-        {
-          "command": "pebble.help.deep",
-          "when": "false"
-        },
-        {
-          "command": "pebble.help.close",
-          "when": "false"
-        },
-        {
           "command": "pebble.map.reviewStep",
           "when": "false"
-        }
-      ],
-      "comments/commentThread/context": [
-        {
-          "command": "pebble.help.reply",
-          "group": "inline@1",
-          "when": "commentController == pebble.help"
-        },
-        {
-          "command": "pebble.help.up",
-          "group": "inline@2",
-          "when": "commentController == pebble.help"
-        },
-        {
-          "command": "pebble.help.why",
-          "group": "inline@3",
-          "when": "commentController == pebble.help"
-        },
-        {
-          "command": "pebble.help.deep",
-          "group": "inline@4",
-          "when": "commentController == pebble.help"
-        }
-      ],
-      "comments/commentThread/title": [
-        {
-          "command": "pebble.help.close",
-          "group": "inline",
-          "when": "commentController == pebble.help"
         }
       ]
     },
