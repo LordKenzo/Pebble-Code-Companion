@@ -100,3 +100,17 @@ button { font: inherit; color: inherit; }
 .companion { position: absolute; width: 64px; height: 69px; pointer-events: none; animation: bob 2.4s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .companion { animation: none; } }
+
+/* Sentieri brevi: rami dal campo base verso una card per funzionalità o bug (ADR-014). */
+.head .newpaths { display: flex; gap: 8px; }
+.btn.bug { border-color: color-mix(in srgb, var(--err) 55%, transparent); color: var(--err); }
+.branch { fill: none; stroke: var(--mentor); stroke-width: 2; stroke-dasharray: 5 7; stroke-linecap: round; }
+.branch.done { stroke: var(--ok); stroke-opacity: .6; stroke-dasharray: none; }
+.pathcard { position: absolute; width: 28%; max-width: 230px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 8px 10px;
+  border-radius: 6px; border: 1px solid var(--line); background: var(--side); cursor: pointer; text-align: left; }
+.pathcard .tag { font-size: 11px; padding: 0 6px; border-radius: 3px; background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+.pathcard.bug .tag { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+.pathcard .t { font-size: 12.5px; line-height: 1.3; }
+.pathcard .d { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.pathcard.current { border-color: color-mix(in srgb, var(--mentor) 55%, transparent); }
+.pathcard.selected { box-shadow: 0 0 0 2px var(--fg); }

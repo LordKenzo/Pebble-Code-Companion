@@ -1,3 +1,4 @@
+import type { SectionKind } from "../../core/sections";
 import * as vscode from "vscode";
 import { parseDiary } from "../../core/diary";
 import { MAP_TEXT, type Lang } from "../../core/i18n";
@@ -11,7 +12,13 @@ export interface MapActions {
   openPath(): void;
 }
 
-type FromView = { type: "ready" } | { type: "review"; n: number } | { type: "open"; file: "diary" | "roadmap" } | { type: "path" } | { type: "plan" };
+type FromView =
+  | { type: "ready" }
+  | { type: "review"; n: number; kind?: SectionKind }
+  | { type: "open"; file: "diary" | "roadmap" }
+  | { type: "path" }
+  | { type: "plan" }
+  | { type: "newPath"; kind: "feature" | "bug" };
 
 const PEBBLE = ".pebble";
 
@@ -76,6 +83,7 @@ export class MapPanel {
     if (m.type === "ready") return this.refresh();
     if (m.type === "path") return this.actions.openPath();
     if (m.type === "plan") return void vscode.commands.executeCommand("pebble.path.planNext");
+    if (m.type === "newPath") return void vscode.commands.executeCommand(m.kind === "bug" ? "pebble.newBug" : "pebble.newFeature");
     if (m.type === "open" && this.root) {
       const name = m.file === "diary" ? DIARY_FILE[1]! : "roadmap.md";
       const uri = vscode.Uri.joinPath(this.root, PEBBLE, name);
@@ -87,13 +95,13 @@ export class MapPanel {
       }
       return;
     }
-    if (m.type === "review") return this.reviewStep(m.n);
+    if (m.type === "review") return this.reviewStep(m.n, m.kind);
   }
 
   /** "Rivedi il passo" (roadmap #12): dalla mappa o dalla card del passo chiuso nel pannello Percorso. */
-  async reviewStep(n: number): Promise<void> {
+  async reviewStep(n: number, kind: SectionKind = "step"): Promise<void> {
     const { tasks, model } = await this.load();
-    const step = model.steps.find((s) => s.n === n);
+    const step = [...model.steps, ...model.paths].find((s) => s.n === n && s.kind === kind);
     if (!step) return;
     const { label, question } = stepReviewQuestion(step, tasks, this.lang());
     this.actions.reviewStep(label, question);
