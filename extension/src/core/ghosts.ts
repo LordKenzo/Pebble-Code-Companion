@@ -10,7 +10,7 @@ export interface GhostModel {
   effort: string;
 }
 
-export const GHOSTS: readonly Ghost[] = ["roadmap", "mentor", "assist"];
+export const GHOSTS: readonly Ghost[] = ["roadmap", "mentor", "assist", "git"];
 
 const PROVIDERS = ["anthropic", "openai", "local"] as const;
 const EFFORTS = ["low", "medium", "high", "xhigh"] as const;
@@ -55,4 +55,6 @@ export const GHOST_ADVICE: Record<Ghost, GhostAdvice> = {
   roadmap: { tier: "strong", effort: "high", claude: "claude-sonnet-5-5", typical: { input: 8_000, output: 2_600 } },
   mentor: { tier: "mid", effort: "medium", claude: "claude-sonnet-5-5", typical: { input: 7_000, output: 1_300 } },
   assist: { tier: "cheap", effort: "low", claude: "claude-haiku-5-5", typical: { input: 8_500, output: 1_300 } },
+  // Git (ADR-017): stato e schede costano zero; il modello serve solo per spiegare un blocco di conflitto.
+  git: { tier: "mid", effort: "medium", claude: "claude-sonnet-5-5", typical: { input: 4_000, output: 600 } },
 };

@@ -1,0 +1,43 @@
+# 48 · GIT_CONFLICT: a rebase conflict where both sides are needed (ADR-017)
+
+## Input
+MODE: GIT_CONFLICT
+LEVEL: mid
+OPERATION: rebase
+OURS: main
+THEIRS: your commit «Arrotonda il carico per difetto»
+NOTE: this is a rebase, so the HEAD side (ours) is the branch being rebased onto, and theirs is the developer's own commit.
+<conflict path="src/core/plates.ts" lines="13-22">
+   7 | export const STEP: Grams = 2_500;
+   8 | 
+   9 | export interface PlateLoad {
+  10 |   readonly total: Grams;
+  11 |   readonly perSide: readonly Grams[];
+  12 | }
+  13 | <<<<<<< HEAD
+  14 | export function platesFor(total: Grams, plates: readonly Grams[] = PLATES): Result<PlateLoad> {
+  15 |   if (total < BAR) return ok({ total: BAR, perSide: [] }, ["solo bilanciere"]);
+  16 |   let remaining = (total - BAR) / 2;
+  17 | =======
+  18 | export function platesFor(total: Grams): Result<PlateLoad> {
+  19 |   const load = roundDown(total, STEP);
+  20 |   if (load < BAR) return ok({ total: BAR, perSide: [] }, ["solo bilanciere"]);
+  21 |   let remaining = (load - BAR) / 2;
+  22 | >>>>>>> 4e1c9a2 (Arrotonda il carico per difetto)
+  23 |   const perSide: Grams[] = [];
+  24 |   for (const plate of plates) {
+  25 |     while (remaining >= plate) {
+  26 |       perSide.push(plate);
+  27 |       remaining -= plate;
+  28 |     }
+</conflict>
+
+## Expected
+Must:
+- call the sides "main" and "your commit" (or the commit message), never ours/theirs alone
+- see that main added the `plates` parameter (line 24 already uses it) and the commit added rounding down with `load`
+- recommend `union`; the union keeps the `plates` parameter AND `roundDown`, uses `load` in the bar check and the remaining computation, no markers, nothing outside the block
+- a concrete check (e.g. 84 kg → 82.5 kg, or the tests passing a different plate set)
+Must not:
+- invent code outside the block
+- say "ours" meaning the developer's commit

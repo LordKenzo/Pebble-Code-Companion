@@ -64,7 +64,7 @@ export function promptForMode(full: string, mode: string | null): string {
 }
 
 /** Chi risponde in ciascuna modalità: i fantasmini di Pebble. */
-export type Ghost = "roadmap" | "mentor" | "assist";
+export type Ghost = "roadmap" | "mentor" | "assist" | "git";
 
 const GHOST_OF_MODE: Record<string, Ghost> = {
   INIT: "roadmap",
@@ -76,6 +76,7 @@ const GHOST_OF_MODE: Record<string, Ghost> = {
   TESTS: "mentor",
   NEW_FILE: "mentor",
   ASSIST: "assist",
+  GIT_CONFLICT: "git",
   // La scala di aiuto è del Mentor (#20): nelle valutazioni un modello economico regge le schede del ⌥P, non le regole della scala.
   HELP: "mentor",
 };

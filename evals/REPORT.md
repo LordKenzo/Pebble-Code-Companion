@@ -284,3 +284,13 @@ Decisions:
 - **The ⌥P "Suggestions" tab is now the real review** (MODE: REVIEW): notes with severity, line and anchor, also shown as editor underlines and noted in the diary. The ASSIST `tips` request is gone, and case 38 with it; the review cases (05–07, 12) cover the tab.
 - **MODE: NEXT is gone.** The Path panel and the map already know the next step without the model; `/next`, the welcome button and **Pebble: What's the next step?** open the Path panel. Case 11 removed.
 - Reran 05, 39–42 after the prompt change: same behaviour (05 finds pg, the exception and the race; 41's steps stay short).
+
+## 2026-11-26 · MODE: GIT_CONFLICT, prompt v1.7, ADR-017 (cases 48–50, `runs/2026-11-26_1424`)
+
+| Case | Result | Notes |
+|---|---|---|
+| 48 rebase conflict, mid | ✅ | Calls the sides "main" and "your commit «Arrotonda…»"; sees that line 24 already uses `plates`, so keeping only the commit breaks compilation; the union keeps the parameter and `roundDown`, uses `load` in both places, nothing outside the block; check: 61.5 kg → 60 kg and a custom plate set |
+| 49 merge of two tests, entry, in English | ✅ | One plain sentence on what a conflict is; the two tests are independent, recommendation `both`; check: run the tests |
+| 50 the same rebase, training | ✅ | `union` null; the explanation says in words how to combine them (main's signature, the commit's body with `load`, remove the markers) |
+
+About 6,300 input tokens per call in the evals, most of it the cut system prompt; the block itself is a few hundred.
