@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { GIT_CARDS } from "../src/core/gitCards";
+import { checkUnion } from "../src/core/gitConflict";
 import { buildState, GIT_CARD_IDS, needsAttention, nextSteps, parseConflicts, parseStatusV2, pickCards, resolveBlock, sideNames } from "../src/core/git";
 
 // Output vero di git 2.4x, da un repository di prova con un rebase in conflitto.
@@ -99,4 +100,13 @@ test("le schede: tutte in due lingue, e nessun comando distruttivo da copiare", 
       }
     }
   }
+});
+
+test("un'unione uguale a un lato non passa per unione", () => {
+  const [b] = parseConflicts('test("a")\n<<<<<<< HEAD\ntest("main")\n=======\ntest("mine")\n>>>>>>> f592fca\n');
+  const base = { ours: "o", theirs: "t", explanation: "e", check: "c" };
+  const bad = checkUnion({ ...base, recommendation: "union", union: 'test("main")\n' }, b!);
+  assert.deepEqual([bad.recommendation, bad.union, bad.droppedSide], ["ours", null, "theirs"]);
+  const good = checkUnion({ ...base, recommendation: "union", union: 'test("main")\ntest("mine")' }, b!);
+  assert.deepEqual([good.recommendation, good.droppedSide], ["union", null]);
 });

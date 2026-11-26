@@ -22,6 +22,22 @@ export type GitConflictAnswer = z.infer<typeof GitConflictAnswer>;
 
 const CONTEXT_LINES = 6;
 
+const norm = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
+
+/**
+ * Un'"unione" uguale a uno dei due lati butta via l'altro senza dirlo (succede con i modelli piccoli).
+ * Diventa la scelta di quel lato, senza unione, e il pannello avvisa che va controllata.
+ */
+export function checkUnion(a: GitConflictAnswer, block: ConflictBlock): GitConflictAnswer & { droppedSide: "ours" | "theirs" | null } {
+  if (a.recommendation !== "union" || !a.union) return { ...a, droppedSide: null };
+  const u = norm(a.union);
+  const ours = norm(block.ours.join("\n"));
+  const theirs = norm(block.theirs.join("\n"));
+  if (u === ours && ours !== theirs) return { ...a, recommendation: "ours", union: null, droppedSide: "theirs" };
+  if (u === theirs && ours !== theirs) return { ...a, recommendation: "theirs", union: null, droppedSide: "ours" };
+  return { ...a, droppedSide: null };
+}
+
 export interface GitConflictRequest {
   level: ExperienceLevel;
   lang: Lang;

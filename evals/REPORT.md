@@ -294,3 +294,16 @@ Decisions:
 | 50 the same rebase, training | ✅ | `union` null; the explanation says in words how to combine them (main's signature, the commit's body with `load`, remove the markers) |
 
 About 6,300 input tokens per call in the evals, most of it the cut system prompt; the block itself is a few hundred.
+
+## 2026-11-26 · first real trial of the Git ghost, prompt v1.8 (case 51, `runs/2026-11-26_1434` default, `runs/2026-11-26_1435` Haiku)
+
+In VS Code, with the local model `qwen3-coder:30b`, *Explain the conflict* on two one-line tests (`test("main")` / `test("mine")`) proposed a "union" equal to main's line: the developer's test would have been lost. Fixes:
+- **The prompt forbids dropping what a side added.** Two tests, imports or entries added on both sides are kept both, and a union equal to one side is not a union.
+- **The extension checks it too** (`checkUnion`): such a union becomes "keep that side", without the Apply button, and the panel warns that the other side would be lost.
+
+| Case | Default | Haiku |
+|---|---|---|
+| 51 two one-line tests | ✅ `both`, both lines kept | ✅ `both` |
+| 49 two tests in a merge, entry, English (rerun) | ✅ | ✅ |
+
+The same trial showed two more things, fixed in the panel. Resolved files were unsaved, so the disk still had the markers and `git add` would have recorded them: the panel now says so and offers *Save*. In an untrusted folder the status bar item now appears from the files in `.git`, without running git.
