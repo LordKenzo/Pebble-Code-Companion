@@ -222,3 +222,19 @@ The ⌥P help panel (ADR-015): one structured answer per tab.
 | 41 pseudo, junior | ✅ after a fix | First run: correct but long steps, too heavy as code comments. Now each step is one short line, the reasons go in `intro` |
 | 42 similar, English | ✅ | Coins and seconds with numeric traces; a variation shows the same silent remainder |
 | 15 (regression) | ✅ | Unchanged |
+
+## 2026-11-26 · prompt cut per mode, ADR-016 (all cases, `runs/2026-11-26_1321`; whole-prompt comparison `runs/2026-11-26_1323`)
+
+Each call now gets the core of the prompt plus only its mode's section. All 42 cases ran with the cut prompt: no code block over the limit, the structured modes still answer with their schemas, and the answers checked by hand still meet their cases (e.g. 02 stops on one question, 06 a single info note, 16 only the line-20 fix, 19 under the limit with a different exercise, 23 "Prima sistemiamo il file", 28 in English, 30 only what is missing, 36 the failing test first, 41 short steps for `loadsFor`).
+
+Same four cases, cut prompt against whole prompt:
+
+| Case | System chars | Tokens in | Cost |
+|---|---|---|---|
+| 06 REVIEW clean file | 13,154 vs 27,541 | 5,842 vs 10,822 | $0.027 vs $0.101 |
+| 15 HELP rung 1 | 15,283 vs 27,541 | 8,188 vs 12,455 | $0.071 vs $0.107 |
+| 20 PLAN_STEP | 15,194 vs 27,541 | 8,898 vs 13,141 | $0.132 vs $0.163 |
+| 38 ASSIST tips | 13,565 vs 27,541 | 7,888 vs 12,763 | $0.090 vs $0.129 |
+| **total** | | **30,816 vs 49,181 (−37%)** | **$0.320 vs $0.499 (−36%)** |
+
+Costs depend on what the cache already held when each case ran, so the token column is the steadier measure: about 4,300–5,000 fewer input tokens per call. The whole run of 42 cases cost $2.59.

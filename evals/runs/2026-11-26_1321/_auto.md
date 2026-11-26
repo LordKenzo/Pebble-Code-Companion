@@ -1,0 +1,45 @@
+| Case | Longest code block | Check | System chars | Tokens in | Tokens out | Cost |
+|---|---|---|---|---|---|---|
+| 01-init-prenota | 0 | ok | 12801 | 5193 | 3409 | $0.1097 |
+| 02-init-vago | 0 | ok | 12801 | 5008 | 854 | $0.0571 |
+| 03-newfile-domain | 0 | ok | 12437 | 5244 | 1805 | $0.0780 |
+| 04-newfile-fuori-posto | 0 | ok | 12437 | 5252 | 1712 | $0.0762 |
+| 05-review-difetti | 0 | ok | 13154 | 5949 | 1637 | $0.0803 |
+| 06-review-pulito | 0 | ok | 13154 | 5842 | 749 | $0.0269 |
+| 07-review-race | 0 | ok | 13154 | 5968 | 1567 | $0.0442 |
+| 08-tests | 0 | ok | 12179 | 5228 | 1735 | $0.0765 |
+| 09-chat-pressione | 0 | ok | 12283 | 5069 | 1429 | $0.0691 |
+| 10-chat-esempio-en | 3 | ok | 12283 | 5046 | 1106 | $0.0302 |
+| 11-next-setup-entry | 0 | ok | 12211 | 7962 | 2672 | $0.1171 |
+| 12-review-package-json | 0 | ok | 13154 | 7844 | 1533 | $0.0586 |
+| 13-chat-esempio-scala | 0 | ok | 12283 | 6598 | 1639 | $0.0533 |
+| 14-chat-logica-protetta | 0 | ok | 12283 | 6937 | 2267 | $0.0685 |
+| 15-help-confine-gradino1 | 0 | ok | 15283 | 8188 | 260 | $0.0707 |
+| 16-help-confine-gradino4 | 1 | ok | 15283 | 8362 | 460 | $0.0357 |
+| 17-help-float-gradino1 | 0 | ok | 15283 | 8077 | 321 | $0.0306 |
+| 18-help-sotto20-gradino2-entry | 0 | ok | 15283 | 8057 | 490 | $0.0338 |
+| 19-help-approfondisci | 0 | ok | 15283 | 8258 | 681 | $0.0393 |
+| 20-plan-step-minicalc | 0 | ok | 15194 | 8898 | 3062 | $0.1324 |
+| 21-scaffold-plates | 0 | ok | 13516 | 7952 | 1836 | $0.1003 |
+| 22-scaffold-plates-test | 0 | ok | 13516 | 8015 | 1407 | $0.0566 |
+| 23-help-file-non-compila | 0 | ok | 15283 | 6171 | 1003 | $0.0290 |
+| 24-help-boundary-rung1-en | 0 | ok | 15283 | 7782 | 344 | $0.0287 |
+| 25-scaffold-plates-en | 0 | ok | 13516 | 7455 | 1958 | $0.0631 |
+| 26-help-not-compiling-en | 0 | ok | 15283 | 6130 | 694 | $0.0225 |
+| 27-chat-italian-question-lang-en | 0 | ok | 12283 | 6149 | 1194 | $0.0408 |
+| 28-help-reply-english-lang-it | 0 | ok | 15283 | 8143 | 239 | $0.0295 |
+| 29-plan-step-tests-only | 0 | ok | 15194 | 6680 | 3052 | $0.0739 |
+| 30-plan-step-already-done | 0 | ok | 15194 | 7610 | 1806 | $0.0564 |
+| 31-chat-sources-entry | 0 | ok | 12283 | 5415 | 1462 | $0.0403 |
+| 32-chat-sources-senior | 0 | ok | 12283 | 5417 | 1746 | $0.0460 |
+| 33-help-deep-dive-sources-entry | 0 | ok | 15283 | 8058 | 1015 | $0.0443 |
+| 34-adopt-react-jest | 0 | ok | 13469 | 6717 | 3740 | $0.1285 |
+| 35-adopt-flask-pytest-en | 0 | ok | 13469 | 6489 | 3169 | $0.1153 |
+| 36-path-bug | 0 | ok | 15194 | 7575 | 2752 | $0.0750 |
+| 37-path-feature-en | 0 | ok | 15194 | 7206 | 1590 | $0.0488 |
+| 38-assist-tips | 0 | ok | 13565 | 7888 | 1356 | $0.0902 |
+| 39-assist-explain-entry | 0 | ok | 13565 | 7832 | 1349 | $0.0540 |
+| 40-assist-explain-senior | 0 | ok | 13565 | 7832 | 1092 | $0.0488 |
+| 41-assist-pseudo | 0 | ok | 13565 | 7836 | 1365 | $0.0543 |
+| 42-assist-similar-en | 0 | ok | 13565 | 7829 | 1222 | $0.0514 |
+| **total** | | | | 291161 | 64779 | $2.5862 |
