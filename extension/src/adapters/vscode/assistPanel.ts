@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { Ghost } from "../../core/prompt";
 import { ASSIST_SCHEMAS, buildAssistMessage, insertPseudocode, type AssistAsk, type Pseudo } from "../../core/assist";
+import { reviewFile } from "../../core/reviewFile";
 import { estimateCost, type Price } from "../../core/cost";
 import type { DiaryEvent } from "../../core/diary";
 import { buildHelpMessage, historyLine, parseHelpAnswer, type HelpAsk, type HelpTask, type Rung } from "../../core/help";
@@ -12,6 +13,7 @@ import type { MentorModel } from "../../core/ports";
 import { WorkspaceStore } from "../store/workspaceStore";
 import { renderMarkdown } from "./markdown";
 import { editorProblems } from "./problems";
+import { toDiagnostics } from "./diagnostics";
 
 /** ⌥P (ADR-015): un menu, poi un pannello accanto al codice con una scheda per tipo di aiuto. */
 export interface AssistDeps {
@@ -24,6 +26,8 @@ export interface AssistDeps {
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   helpContext(filePath: string): { task?: HelpTask; tests?: (TestResult & { detail?: string })[] };
   lang(): Lang;
+  /** Le note della review anche come sottolineature nell'editor, come la review in chat. */
+  diagnostics?: vscode.DiagnosticCollection;
   /** Allenamento (ADR-016): niente *Mostrami il codice*. */
   training(): boolean;
   note?(event: DiaryEvent): void;
@@ -97,7 +101,7 @@ export class AssistPanel implements vscode.Disposable {
           { id: "ladder", label: T.ladderSelection, detail: T.ladderHint },
         ]
       : [
-          { id: "tips", label: T.tips, detail: T.tipsHint },
+          { id: "review", label: T.tips, detail: T.tipsHint },
           { id: "study", label: T.study, detail: T.studyHint },
           { id: "pseudo", label: T.pseudo, detail: T.pseudoHint },
           ...(red ? [{ id: "ladder" as const, label: T.ladderFile, description: T.redBadge(red), detail: T.ladderHint }] : []),
@@ -195,6 +199,24 @@ export class AssistPanel implements vscode.Disposable {
     try {
       const doc = await this.document();
       if (!doc) throw new Error(s.path);
+      if (tab === "review") {
+        // La review vera (MODE: REVIEW, del Mentor): note con gravità e riga, filtrate e segnate nel diario.
+        const mentor = await this.deps.mentor("mentor");
+        const empty = { load: async () => ({ bootstrap: null, architecture: null, decisions: [] }) };
+        const result = await reviewFile(
+          mentor,
+          this.root ? new WorkspaceStore(this.root) : empty,
+          await this.deps.systemPrompt(),
+          { path: s.path, content: doc.getText(), languageId: doc.languageId, problems: editorProblems(s.uri) },
+          this.deps.level(s.path),
+          this.deps.priceFor(mentor),
+          this.deps.lang(),
+        );
+        await this.deps.record({ provider: result.provider, model: result.model, usage: result.usage, costUsd: result.costUsd });
+        this.deps.note?.({ kind: "review", file: s.path, notes: result.review.notes.length });
+        this.deps.diagnostics?.set(doc.uri, toDiagnostics(doc, result.review.notes));
+        s.results.set(tab, { status: "done", data: result.review });
+      } else {
       const ctx = this.root ? await new WorkspaceStore(this.root).load() : { bootstrap: null, architecture: null, decisions: [] };
       const { tests } = this.deps.helpContext(s.path);
       const message = buildAssistMessage({
@@ -211,6 +233,7 @@ export class AssistPanel implements vscode.Disposable {
       const { data, usage } = await mentor.generate(await this.deps.systemPrompt(), message, ASSIST_SCHEMAS[tab] as never, `assist_${tab}`);
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, this.deps.priceFor(mentor)) });
       s.results.set(tab, { status: "done", data: clean(data, this.deps.lang()) });
+      }
     } catch (err) {
       s.results.set(tab, { status: "error", message: this.T.failed(err instanceof Error ? err.message : String(err)) });
     }
@@ -296,7 +319,7 @@ export class AssistPanel implements vscode.Disposable {
     const T = this.T;
     const file = s.path.split("/").pop() ?? s.path;
     const label: Record<Tab, string> = {
-      tips: T.tabTips,
+      review: T.tabTips,
       study: T.tabStudy,
       pseudo: T.tabPseudo,
       explain: T.tabExplain,

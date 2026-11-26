@@ -8,22 +8,12 @@ import { projectBlocks } from "./modes";
  * ⌥P ripensato (ADR-015): cosa selezioni decide che aiuto ricevi, in un pannello accanto al codice.
  * Ogni scheda è una richiesta MODE: ASSIST con la sua risposta strutturata; la scala di aiuto resta MODE: HELP.
  */
-export type FileAsk = "tips" | "study" | "pseudo";
+/** "review" è la review vera (MODE: REVIEW), mostrata nel pannello: una sola strada per "com'è questo file?". */
+export type FileAsk = "review" | "study" | "pseudo";
 export type SelectionAsk = "explain" | "study" | "similar";
 export type AssistAsk = FileAsk | SelectionAsk;
-
-export const Tips = z.object({
-  tips: z
-    .array(
-      z.object({
-        where: z.string().describe("The line or lines, e.g. 'line 9' or 'lines 21-23'"),
-        title: z.string().describe("The point in a few words"),
-        body: z.string().describe("One or two sentences, with concrete values from this file or its tests"),
-        anchor: z.string().describe("Where the point comes from: an ADR, the roadmap, a test, or 'best practice'"),
-      }),
-    )
-    .describe("At most 3, ordered by impact"),
-});
+/** Le schede che chiedono MODE: ASSIST al modello. */
+export type ModelAsk = Exclude<AssistAsk, "review">;
 
 export const Study = z.object({
   items: z
@@ -63,19 +53,18 @@ export const Similar = z.object({
     .describe("2 examples, different from the developer's case"),
 });
 
-export type Tips = z.infer<typeof Tips>;
 export type Study = z.infer<typeof Study>;
 export type Pseudo = z.infer<typeof Pseudo>;
 export type Explain = z.infer<typeof Explain>;
 export type Similar = z.infer<typeof Similar>;
 
-export const ASSIST_SCHEMAS = { tips: Tips, study: Study, pseudo: Pseudo, explain: Explain, similar: Similar } as const;
+export const ASSIST_SCHEMAS = { study: Study, pseudo: Pseudo, explain: Explain, similar: Similar } as const;
 
 export interface AssistRequest {
   ctx: ProjectContext;
   level: ExperienceLevel;
   file: { path: string; content: string };
-  ask: AssistAsk;
+  ask: ModelAsk;
   /** Righe selezionate, contate da 1; assente = il file intero. */
   selection?: { from: number; to: number } | null;
   /** Test rossi del compito, se ci sono: danno concretezza ai suggerimenti. */

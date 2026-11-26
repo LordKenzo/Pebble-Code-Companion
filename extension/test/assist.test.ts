@@ -11,7 +11,7 @@ test("il messaggio di ASSIST porta la richiesta, la selezione e il livello", () 
   assert.match(m, /<selection lines="2-3">/);
   assert.match(m, /<tests>\n✖ 15 kg\n<\/tests>/);
   assert.match(m, /Entry level: take almost nothing for granted/);
-  const whole = buildAssistMessage({ ctx: CTX, level: "mid", file: { path: "a.ts", content: "x" }, ask: "tips", lang: "en" });
+  const whole = buildAssistMessage({ ctx: CTX, level: "mid", file: { path: "a.ts", content: "x" }, ask: "study", lang: "en" });
   assert.match(whole, /<selection>none: the whole file<\/selection>/);
   assert.match(whole, /LANGUAGE: en/);
 });

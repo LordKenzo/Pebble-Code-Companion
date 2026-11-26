@@ -51,8 +51,10 @@
     if (r.status === "error") return `<div class="error">${img("worried")}<p>${esc(r.message)}</p><button type="button" class="btn" data-retry>${esc(T.retry)}</button></div>`;
     const d = r.data;
     switch (st.active) {
-      case "tips":
-        return d.tips.map((x) => `<article class="card"><div class="row"><span class="where">${esc(x.where)}</span><b>${inline(x.title)}</b><span class="anchor">${esc(x.anchor)}</span></div><p>${inline(x.body)}</p></article>`).join("");
+      case "review":
+        return `<p class="summary">${inline(d.summary)}</p>` +
+          d.notes.map((n) => `<article class="card sev-${esc(n.severity)}"><div class="row"><span class="sev">${esc(T.severity[n.severity] || n.severity)}</span><span class="where">${esc(f(T.lineN, { n: n.line }))}</span><span class="anchor">${esc(n.anchor)}</span></div><p><b>${esc(T.rProblem)}</b> ${inline(n.problem)}</p><p><b>${esc(T.rWhy)}</b> ${inline(n.why)}</p><p><b>${esc(T.rTry)}</b> ${inline(n.try)}</p></article>`).join("") +
+          (d.question ? `<p class="note">${inline(d.question)}</p>` : "");
       case "study":
         return d.items.map((x) => `<article class="study"><b>${inline(x.title)}</b><p>${inline(x.body)}</p><span class="src">${inline(x.source)}</span></article>`).join("");
       case "pseudo":

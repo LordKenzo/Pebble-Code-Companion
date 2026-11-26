@@ -68,3 +68,10 @@ pre { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; 
 .replylabel { font-size: 11px; color: var(--muted); }
 .reply { display: flex; gap: 8px; align-items: flex-end; }
 .reply textarea { flex: 1; font: inherit; resize: vertical; min-height: 40px; color: var(--vscode-input-foreground, var(--fg)); background: var(--vscode-input-background, var(--card)); border: 1px solid var(--vscode-input-border, var(--line)); border-radius: 4px; padding: 6px 8px; }
+
+/* Review del file (MODE: REVIEW nel pannello) */
+.card .sev { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card.sev-errore { border-color: rgba(240,113,120,.55); }
+.card.sev-errore .sev { color: #f4a3a8; }
+.card.sev-avviso .sev { color: #e3b25c; }
+.card p b { color: var(--fg, inherit); font-weight: 600; }
