@@ -48,6 +48,14 @@ Your code is sent to the provider you choose; with `local` it never leaves your 
 
 **Per project and per language.** The level is kept per project, on your computer, and each language can have its own: senior in TypeScript, entry in C#. Pebble uses the level of the file you're working on; plans take all of them into account. Set it from the settings page or **Pebble: Set the level (project or language)**.
 
+## The Git ghost
+When a rebase, a merge or a cherry-pick stops halfway, a status bar item appears (e.g. **REBASE 2/3 · 2 conflicts**); it opens a panel beside the code, also from **Pebble: Git**. Without any model call it shows:
+- where you are and the files in conflict;
+- the next commands to copy, with the way out;
+- the classic trap: in a rebase "ours" and "theirs" are swapped, so Pebble calls the sides by name.
+
+**Explain the conflict** sends one block to the model, not the file, and answers with what each side wanted, what breaks if you keep only one, and a proposed union that enters the file only when you apply it. Local cards cover the usual troubles (push rejected, a lost commit, a commit on the wrong branch, a detached HEAD…), always with the safe form first (`--force-with-lease`, a backup branch). Pebble runs only read-only git commands, and only in trusted folders.
+
 ## A model per ghost
 Pebble's work is split among three ghosts: **Roadmap** (plans, adoption, next step, prepared files), **Mentor** (chat, reviews, tests, new files, the help ladder) and the **⌥P helper** (the tabs of the help panel). In the settings page each one can use its own provider, model and effort; empty means the default. Next to each one Pebble shows the estimated cost of a typical call and the recommendation from the evals: a strong model for Roadmap, a mid, low-cost one for the Mentor, a cheap or local one for the ⌥P helper.
 

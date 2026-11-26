@@ -48,6 +48,14 @@ Il codice va al provider che scegli; con `local` non esce dal computer. I modell
 
 **Per progetto e per linguaggio.** Il livello si tiene per progetto, sul tuo computer, e ogni linguaggio può avere il suo: senior in TypeScript, entry in C#. Pebble usa il livello del file su cui lavori; nei piani tiene conto di tutti. Si imposta dalla pagina impostazioni o con **Pebble: Imposta il livello (progetto o linguaggio)**.
 
+## Il fantasmino Git
+Quando un rebase, un merge o un cherry-pick si ferma a metà, compare un indicatore nella barra di stato (per esempio **REBASE 2/3 · 2 conflitti**); apre un pannello accanto al codice, anche da **Pebble: Git**. Senza chiamare il modello mostra:
+- dove sei e i file in conflitto;
+- i prossimi comandi da copiare, con la via d'uscita;
+- la trappola classica: in un rebase "ours" e "theirs" sono al contrario, quindi Pebble chiama i due lati per nome.
+
+**Spiegami il conflitto** manda al modello un solo blocco, non il file, e risponde con cosa voleva ciascun lato, cosa si rompe tenendone uno solo e un'unione proposta che entra nel file solo se la applichi. Le schede locali coprono i guai di sempre (push rifiutato, commit perso, commit sul ramo sbagliato, HEAD staccato…), sempre con prima la forma sicura (`--force-with-lease`, un ramo di backup). Pebble lancia solo comandi git che leggono, e solo nelle cartelle attendibili.
+
 ## Un modello per fantasmino
 Il lavoro di Pebble è diviso tra tre fantasmini: **Roadmap** (piani, adozione, prossimo passo, file preparati), **Mentor** (chat, review, test, file nuovi, scala di aiuto) e il **Suggeritore ⌥P** (le schede del pannello di aiuto). Nella pagina impostazioni ognuno può usare provider, modello e sforzo suoi; vuoto vuol dire il default. Accanto a ciascuno Pebble mostra il costo stimato di una chiamata tipica e il consiglio delle valutazioni: un modello forte per la Roadmap, uno medio a basso costo per il Mentor, uno economico o locale per il Suggeritore.
 
