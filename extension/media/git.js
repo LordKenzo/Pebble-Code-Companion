@@ -26,6 +26,7 @@
     else if (b.dataset.explain) vscode.postMessage({ type: "explain", path: b.dataset.explain });
     else if (b.dataset.resolve) vscode.postMessage({ type: "resolve", path: b.dataset.path, how: b.dataset.resolve });
     else if (b.dataset.dismiss !== undefined) vscode.postMessage({ type: "dismiss" });
+    else if (b.dataset.save) vscode.postMessage({ type: "save", path: b.dataset.save });
   });
 
   function render() {
@@ -77,10 +78,11 @@
 
   function file(T, x) {
     const e = st.explained && st.explained.path === x.path ? st.explained : null;
-    const blocks = x.blocks === 0 ? T.resolvedInFile : x.blocks === 1 ? T.block : f(T.blocks, { n: x.blocks });
+    const dirty = (st.dirty || []).includes(x.path);
+    const blocks = x.blocks === 0 ? (dirty ? T.unsaved : T.resolvedInFile) : x.blocks === 1 ? T.block : f(T.blocks, { n: x.blocks });
     return `<div class="file">
-      <div class="row"><code>${esc(x.path)}</code><span class="${x.blocks ? "red" : "muted"}">${esc(blocks)}</span>
-        <span class="actions"><button type="button" class="btn" data-open="${esc(x.path)}">${esc(T.open)}</button>
+      <div class="row"><code>${esc(x.path)}</code><span class="${x.blocks || dirty ? "red" : "muted"}">${esc(blocks)}</span>
+        <span class="actions">${dirty ? `<button type="button" class="btn primary" data-save="${esc(x.path)}">${esc(T.save)}</button>` : ""}<button type="button" class="btn" data-open="${esc(x.path)}">${esc(T.open)}</button>
         ${x.blocks && !e ? `<button type="button" class="btn primary" data-explain="${esc(x.path)}">${esc(T.explain)}</button>` : ""}</span></div>
       ${e ? explanation(T, x.path, e) : ""}</div>`;
   }
@@ -95,6 +97,7 @@
       <div class="sides"><div class="side ours"><span class="label">${esc(names.ours)}</span><p>${inline(d.ours)}</p></div>
         <div class="side theirs"><span class="label">${esc(names.theirs)}</span><p>${inline(d.theirs)}</p></div></div>
       <p>${inline(d.explanation)}</p>
+      ${d.droppedSide ? `<p class="warn">${esc(f(T.droppedSide, { kept: d.droppedSide === "theirs" ? names.ours : names.theirs, dropped: d.droppedSide === "theirs" ? names.theirs : names.ours }))}</p>` : ""}
       ${d.union ? `<h3>${esc(T.union)}</h3><pre class="union">${esc(d.union)}</pre>` : ""}
       <div class="actions wrap">
         ${d.union ? `<button type="button" class="btn primary" data-resolve="union" data-path="${esc(path)}">${esc(T.applyUnion)}</button>` : ""}

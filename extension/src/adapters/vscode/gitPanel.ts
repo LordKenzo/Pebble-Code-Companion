@@ -3,7 +3,7 @@ import { estimateCost, type Price } from "../../core/cost";
 import type { DiaryEvent } from "../../core/diary";
 import { GIT_CARD_IDS, needsAttention, nextSteps, parseConflicts, pickCards, resolveBlock, sideNames, type GitState, type Resolution } from "../../core/git";
 import { GIT_CARDS } from "../../core/gitCards";
-import { buildGitConflictMessage, GitConflictAnswer } from "../../core/gitConflict";
+import { buildGitConflictMessage, checkUnion, GitConflictAnswer } from "../../core/gitConflict";
 import { EXT_TEXT, GIT_TEXT, type Lang } from "../../core/i18n";
 import type { ExperienceLevel, Usage } from "../../core/model";
 import type { MentorModel } from "../../core/ports";
@@ -27,7 +27,7 @@ interface Explained {
   index: number;
   fingerprint: string;
   status: "loading" | "done" | "error";
-  data?: GitConflictAnswer;
+  data?: GitConflictAnswer & { droppedSide: "ours" | "theirs" | null };
   error?: string;
 }
 
@@ -37,6 +37,7 @@ type FromView =
   | { type: "explain"; path: string }
   | { type: "resolve"; path: string; how: "union" | "ours" | "theirs" | "both" }
   | { type: "dismiss" }
+  | { type: "save"; path: string }
   | { type: "copy"; text: string };
 
 /**
@@ -69,6 +70,9 @@ export class GitPanel implements vscode.Disposable {
     watch(".git/rebase-merge/*");
     this.disposables.push(
       vscode.workspace.onDidSaveTextDocument(() => this.schedule()),
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        if (this.read?.ok && this.read.state.conflicts.some((p) => e.document.uri.path.endsWith("/" + p))) this.schedule(600);
+      }),
       vscode.window.onDidChangeWindowState((s) => s.focused && this.schedule()),
       vscode.workspace.onDidGrantWorkspaceTrust(() => this.schedule()),
     );
@@ -97,13 +101,20 @@ export class GitPanel implements vscode.Disposable {
 
   private updateItem(): void {
     const r = this.read;
+    const T = this.T;
+    const f = (t: string, v: Record<string, string | number>) => t.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));
+    if (r && !r.ok && r.reason === "untrusted" && r.op) {
+      this.item.text = `$(git-merge) ${f(T.status[r.op] ?? r.op, { n: "?", total: "?" }).replace(" ?/?", "")} · ${T.untrustedBadge}`;
+      this.item.tooltip = T.notTrusted;
+      this.item.backgroundColor = undefined;
+      this.item.show();
+      return;
+    }
     if (!r?.ok || !needsAttention(r.state)) {
       this.item.hide();
       return;
     }
     const s = r.state;
-    const T = this.T;
-    const f = (t: string, v: Record<string, string | number>) => t.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));
     const op = s.op ? f(T.status[s.op] ?? s.op, { n: s.step?.n ?? 0, total: s.step?.total ?? 0 }) : "";
     const n = s.conflicts.length;
     const conflicts = n ? (n === 1 ? T.conflictBadge : f(T.conflictsBadge, { n })) : "";
@@ -140,6 +151,12 @@ export class GitPanel implements vscode.Disposable {
     if (m.type === "open") return void (await this.openFile(m.path));
     if (m.type === "explain") return this.explain(m.path);
     if (m.type === "resolve") return this.resolve(m.path, m.how);
+    if (m.type === "save") {
+      const uri = this.uri(m.path);
+      const doc = uri && vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+      await doc?.save();
+      return this.refresh();
+    }
     if (m.type === "dismiss") {
       this.explained = undefined;
       this.post();
@@ -193,7 +210,8 @@ export class GitPanel implements vscode.Disposable {
       const { data, usage } = await mentor.generate(await this.deps.systemPrompt(), message, GitConflictAnswer, "git_conflict");
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, this.deps.priceFor(mentor)) });
       // In allenamento l'unione non si mostra, anche se il modello l'avesse scritta (ADR-016).
-      this.explained = { ...this.explained, status: "done", data: this.deps.training() ? { ...data, union: null } : data };
+      const checked = checkUnion(data, block);
+      this.explained = { ...this.explained, status: "done", data: this.deps.training() ? { ...checked, union: null } : checked };
     } catch (err) {
       this.explained = { ...this.explained, status: "error", error: this.T.failed.replace("{error}", err instanceof Error ? err.message : String(err)) };
     }
@@ -247,6 +265,7 @@ export class GitPanel implements vscode.Disposable {
       picked: picked.map((id) => ({ id, ...cards[id] })),
       others: GIT_CARD_IDS.filter((id) => !picked.includes(id)).map((id) => ({ id, ...cards[id] })),
       explained: e ? { path: e.path, status: e.status, data: e.data ?? null, error: e.error ?? null } : null,
+      dirty: r.dirty,
       training: this.deps.training(),
       ghostName: EXT_TEXT[lang].ghostNames.git ?? "Git",
     });

@@ -1,12 +1,14 @@
 import { execFile } from "node:child_process";
 import * as vscode from "vscode";
-import { buildState, parseConflicts, parseStatusV2, type GitMarkers, type GitState } from "../../core/git";
+import { buildState, parseConflicts, parseStatusV2, type GitMarkers, type GitOp, type GitState } from "../../core/git";
 
 /**
  * Legge lo stato del repository per il fantasmino Git (ADR-017). Solo comandi che leggono, e solo nelle
  * cartelle attendibili: `core.fsmonitor` e gli hook configurati nel repo non partono.
  */
-export type GitRead = { ok: true; state: GitState; gitDir: vscode.Uri } | { ok: false; reason: "untrusted" | "noRepo" | "noGit" };
+export type GitRead =
+  | { ok: true; state: GitState; gitDir: vscode.Uri; dirty: string[] }
+  | { ok: false; reason: "untrusted" | "noRepo" | "noGit"; op?: GitOp | null };
 
 const SAFE = ["-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "--no-optional-locks"];
 
@@ -46,8 +48,18 @@ async function subject(cwd: string, ref: string): Promise<string | null> {
   }
 }
 
+/** Senza fiducia niente git: solo un'occhiata ai file dentro .git, che non esegue nulla, per accendere l'indicatore. */
+async function opFromFiles(root: vscode.Uri): Promise<GitOp | null> {
+  const g = vscode.Uri.joinPath(root, ".git");
+  if ((await readText(vscode.Uri.joinPath(g, "rebase-merge", "msgnum"))) !== null || (await readText(vscode.Uri.joinPath(g, "rebase-apply", "next"))) !== null) return "rebase";
+  if ((await readText(vscode.Uri.joinPath(g, "MERGE_HEAD"))) !== null) return "merge";
+  if ((await readText(vscode.Uri.joinPath(g, "CHERRY_PICK_HEAD"))) !== null) return "cherry-pick";
+  if ((await readText(vscode.Uri.joinPath(g, "REVERT_HEAD"))) !== null) return "revert";
+  return null;
+}
+
 export async function readGitState(root: vscode.Uri): Promise<GitRead> {
-  if (!vscode.workspace.isTrusted) return { ok: false, reason: "untrusted" };
+  if (!vscode.workspace.isTrusted) return { ok: false, reason: "untrusted", op: await opFromFiles(root) };
   const cwd = root.fsPath;
   let gitDirPath: string;
   try {
@@ -83,12 +95,15 @@ export async function readGitState(root: vscode.Uri): Promise<GitRead> {
   }
 
   // I blocchi si contano sul testo che l'utente vede: il documento aperto se c'è, altrimenti il file.
+  // Un file risolto nell'editor ma non salvato ha ancora i marcatori sul disco: git add li registrerebbe.
   const blocks: Record<string, number> = {};
+  const dirty: string[] = [];
   for (const path of status.conflicts) {
     const uri = vscode.Uri.joinPath(root, ...path.split("/"));
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     const text = open?.getText() ?? (await readText(uri)) ?? "";
     blocks[path] = parseConflicts(text).length;
+    if (open?.isDirty) dirty.push(path);
   }
-  return { ok: true, state: buildState(status, markers, blocks), gitDir };
+  return { ok: true, state: buildState(status, markers, blocks), gitDir, dirty };
 }
