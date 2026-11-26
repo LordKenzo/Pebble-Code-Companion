@@ -92,6 +92,12 @@
         "category": "Pebble"
       },
       {
+        "command": "pebble.git",
+        "title": "%command.git%",
+        "category": "Pebble",
+        "icon": "$(git-merge)"
+      },
+      {
         "command": "pebble.next",
         "title": "%command.next%",
         "category": "Pebble"
@@ -344,6 +350,23 @@
           "description": "%config.ghost.model%"
         },
         "pebble.ghost.assist.effort": {
+          "type": "string",
+          "enum": ["", "low", "medium", "high", "xhigh"],
+          "default": "",
+          "description": "%config.ghost.effort%"
+        },
+        "pebble.ghost.git.provider": {
+          "type": "string",
+          "enum": ["", "anthropic", "openai", "local"],
+          "default": "",
+          "description": "%config.ghost.git.provider%"
+        },
+        "pebble.ghost.git.model": {
+          "type": "string",
+          "default": "",
+          "description": "%config.ghost.model%"
+        },
+        "pebble.ghost.git.effort": {
           "type": "string",
           "enum": ["", "low", "medium", "high", "xhigh"],
           "default": "",

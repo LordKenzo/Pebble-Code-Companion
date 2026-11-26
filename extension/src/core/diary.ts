@@ -18,6 +18,8 @@ export type DiaryEvent =
   | { kind: "review"; file: string; notes: number }
   /** Codice scritto da Pebble su richiesta (ADR-016): la rilettura del passo mostra cosa è tuo e cosa no. */
   | { kind: "code"; where: string; level?: string }
+  /** Un conflitto risolto dal pannello Git (ADR-017): con quale scelta. */
+  | { kind: "conflict"; file: string; how: "union" | "ours" | "theirs" | "both" }
   | { kind: "stepClosed"; done: number; total: number };
 
 export interface DiaryStep {
@@ -42,6 +44,7 @@ export function formatEvent(e: DiaryEvent, lang: Lang = "it"): string {
     }
     case "review": return T.review(e.file, e.notes);
     case "code": return T.code(e.where, e.level);
+    case "conflict": return T.conflict(e.file, T.conflictHow[e.how]);
     case "stepClosed": return T.stepClosed(e.done, e.total);
   }
 }

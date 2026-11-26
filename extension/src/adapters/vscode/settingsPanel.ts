@@ -190,6 +190,7 @@ function html(csp: string, lang: Lang): string {
   .ghost.g-roadmap{border-left-color:#f7b48a}
   .ghost.g-mentor{border-left-color:#a9d3f5}
   .ghost.g-assist{border-left-color:#9fe0b4}
+  .ghost.g-git{border-left-color:#c7b3f5}
   .ghosthead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
   .ghost .row{flex-wrap:wrap}
   .ghost .row{display:flex;gap:8px}

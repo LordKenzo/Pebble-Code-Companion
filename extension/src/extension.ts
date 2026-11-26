@@ -11,6 +11,7 @@ import { AssistPanel } from "./adapters/vscode/assistPanel";
 import { ReviewPanel } from "./adapters/vscode/panel";
 import { ProposalDocs } from "./adapters/vscode/proposals";
 import { LevelStore } from "./adapters/vscode/levelStore";
+import { GitPanel } from "./adapters/vscode/gitPanel";
 import type { Ghost } from "./core/prompt";
 import { GHOST_ADVICE, GHOSTS, withGhostModel, type GhostModel } from "./core/ghosts";
 import { isLevel, LANGUAGES } from "./core/level";
@@ -272,8 +273,26 @@ export function activate(context: vscode.ExtensionContext): void {
     note: (event) => diary.append(event),
   });
 
+  // Il fantasmino Git (ADR-017): stato del repo senza modello, il modello solo per spiegare un conflitto.
+  const gitPanel = new GitPanel(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
+    mentor: mentorFor,
+    systemPrompt: loadSystemPrompt,
+    level,
+    priceFor: (m) => resolvePrice(m.model, settings().provider === "local", prices()),
+    record: async (entry) => {
+      await ledger.record(entry);
+      refreshStatus();
+      void settingsPanel.refresh();
+    },
+    lang,
+    training: () => config().get("training", false),
+    note: (event) => diary.append(event),
+  });
+
   context.subscriptions.push(
     diagnostics,
+    gitPanel,
+    vscode.commands.registerCommand("pebble.git", () => gitPanel.open()),
     pathView,
     vscode.commands.registerCommand("pebble.helpHere", () => assist.open()),
     assist,

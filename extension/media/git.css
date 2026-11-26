@@ -1,0 +1,71 @@
+/* Pannello del fantasmino Git (ADR-017): la grafica del mockup sopra i colori del tema, accento lilla. */
+:root {
+  --bg: var(--vscode-sideBar-background, #1b1e24);
+  --card: var(--vscode-editor-background, #1e2128);
+  --fg: var(--vscode-foreground, #d6dae1);
+  --muted: var(--vscode-descriptionForeground, #8b929e);
+  --line: color-mix(in srgb, var(--fg) 14%, var(--bg));
+  --git: #c4b5fd;
+  --git-strong: #a78bfa;
+  --git-ink: #1b1530;
+  --red: #f4a3a8;
+  --blue: #82aaff;
+  --green: #c3e88d;
+  --ui: var(--vscode-font-family, system-ui, sans-serif);
+  --mono: var(--vscode-editor-font-family, ui-monospace, Menlo, monospace);
+}
+body.vscode-light { --git: #6d4fc7; --git-strong: #6d4fc7; --git-ink: #ffffff; --red: #c4383f; --blue: #2f5fbf; --green: #2f7a3b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--ui); font-size: 13.5px; line-height: 1.55; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--git)); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--vscode-textCodeBlock-background, rgba(255,255,255,.06)); padding: 0 4px; border-radius: 3px; }
+#root { padding: 16px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; align-items: center; gap: 10px; }
+header .title { font-weight: 600; color: var(--git); }
+header .sub { font-size: 12px; color: var(--muted); }
+.badge { margin-left: auto; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 2px 9px; white-space: nowrap; }
+.ghost { width: 22px; height: 24px; }
+.ghost.head { width: 36px; height: 39px; }
+.ghost.bob { animation: bob 1.6s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .ghost.bob { animation: none; } }
+.progress { display: flex; gap: 5px; }
+.seg { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.seg.done { background: var(--git-strong); }
+.seg.here { background: var(--red); }
+p { margin: 0; }
+.where { font-size: 14px; }
+.callout { border: 1px solid color-mix(in srgb, var(--git-strong) 45%, transparent); background: color-mix(in srgb, var(--git-strong) 9%, transparent); border-radius: 6px; padding: 10px 12px; font-size: 13px; }
+.callout b { color: var(--git); }
+section { display: flex; flex-direction: column; gap: 8px; }
+h2 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h3 { margin: 4px 0 0; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.file { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: var(--card); display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.actions { margin-left: auto; display: flex; gap: 6px; }
+.actions.wrap { margin-left: 0; flex-wrap: wrap; }
+.btn { min-height: 30px; padding: 0 11px; border-radius: 4px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 12.5px; }
+.btn:hover { border-color: var(--git); }
+.btn.primary { background: var(--git-strong); border-color: var(--git-strong); color: var(--git-ink); font-weight: 600; }
+.red { color: var(--red); font-size: 12px; }
+.muted { color: var(--muted); font-size: 12.5px; }
+.explain { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.side { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.side .label { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+.side.ours .label { color: var(--blue); }
+.side.theirs .label { color: var(--green); }
+.union { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; overflow-x: auto; white-space: pre; }
+.cost { font-size: 11.5px; color: var(--muted); }
+.wait { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.steps { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; }
+.steps .n { color: var(--muted); }
+.cmd { display: inline-block; margin-top: 3px; padding: 3px 7px; }
+.card { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: var(--card); }
+.card summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.card[open] { display: flex; flex-direction: column; gap: 8px; }
+.card p { color: var(--muted); }
+.warn { color: var(--fg) !important; font-size: 12.5px; border-left: 2px solid var(--red); padding-left: 8px; }
+.cmdrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.cmdrow .cmd { margin: 0; }
