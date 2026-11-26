@@ -29,3 +29,5 @@ Alternatives ruled out:
 - **Running `git` commands for the developer.** Fast, but one mistaken `reset` loses work, and nobody learns.
 - **Shipping a book as knowledge base.** Its licence doesn't allow it, and it's too long to send.
 Consequences: a `core/git` module that turns `git` output into a state and picks the cards, with tests on real outputs (rebase, merge, detached HEAD, nothing to do). A new mode, MODE: GIT_CONFLICT, with evals on a rebase conflict (both sides kept), a merge conflict at entry level, and training. The playbook cards are written in Italian and English. The diary records the conflicts resolved, with the help used.
+
+Update 2026-11-26, after the first real trial: the Git panel is a section of Pebble's sidebar, like the ⌥P help (ADR-015), not an editor column. It becomes visible when there's something to do and opens from the status bar item or **Pebble: Git**. The same trial added two safeguards: a "union" equal to one side is shown as keeping that side, with a warning; and files resolved but not saved are flagged, with a *Save* button.

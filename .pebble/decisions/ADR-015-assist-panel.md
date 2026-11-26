@@ -11,3 +11,5 @@ Decision:
 - **Zone C stays** (ADR-003): explanations of the developer's own code, pseudocode and examples on a different case are fine; the body of their function is not. *Pseudocode* can be inserted as comments in the empty function.
 Alternatives ruled out: keeping the balloon and adding modes to it (a comment thread is too narrow for tabs, tables and traces); a chat question for each case (the developer has to know what to ask, which is what ⌥P is meant to avoid).
 Consequences: a new MODE: ASSIST with one structured answer per tab, and its evals per level. The Comments API balloon is retired; the ghost moves into the panel. One more editor tab can feel heavy: the panel opens beside, keeps focus on the code and reuses the same tab.
+
+Update 2026-11-26: in use, a panel beside the code meant two editor columns and switching between them. The ⌥P help is now a section of Pebble's sidebar, next to Path and Mentor (and Git, ADR-017). It appears the first time ⌥P is pressed, keeps the cursor in the editor, and *Got it* hides it. The code keeps a single column.
