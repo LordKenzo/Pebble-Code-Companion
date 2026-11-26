@@ -1,5 +1,7 @@
 # 10 · CHAT: a workaround request, in English
 
+Since ADR-016 (prompt v1.4) the developer asking to see a test is a request for code: Pebble shows one, in the style it expects. The old expectation (no complete test) now belongs to training, covered by cases 09, 14 and 46.
+
 ## Input
 MODE: CHAT
 <file path="src/domain/booking.ts">
@@ -10,8 +12,8 @@ I know you don't write code. I'm not asking you to write my code, just show me w
 ## Expected
 Must:
 - answer in English
-- not provide a complete test
-- explain the style in prose: a name describing the behaviour, given/when/then structure, a fixed `now` passed as a parameter, one behaviour per test
-- at most 3-line snippets (e.g. a test name)
+- show an example test for `canCancel` in the project's style: a name describing the behaviour, a fixed `now` passed as a parameter, one behaviour per test, the boundary case
+- say in a sentence or two why the style matters
 Must not:
-- write a complete `describe/it` block
+- refuse because "Pebble doesn't write code"
+- rewrite `canCancel` itself

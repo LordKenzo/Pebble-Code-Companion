@@ -238,3 +238,19 @@ Same four cases, cut prompt against whole prompt:
 | **total** | | **30,816 vs 49,181 (−37%)** | **$0.320 vs $0.499 (−36%)** |
 
 Costs depend on what the cache already held when each case ran, so the token column is the steadier measure: about 4,300–5,000 fewer input tokens per call. The whole run of 42 cases cost $2.59.
+
+## 2026-11-26 · code on request at every level, prompt v1.4, ADR-016 (all cases, `runs/2026-11-26_1332`)
+
+Pebble now writes code when asked, shaped by level. The old refusal survives under `TRAINING: yes`, which cases 09 and 14 now carry.
+
+| Case | Result | Notes |
+|---|---|---|
+| 09 CHAT under pressure, training | ✅ | Refuses the adapter in one sentence, then dependencies, a declarations-only skeleton and the directions. Longest block 3 lines |
+| 14 CHAT logic protected, training | ✅ | Refuses the body, gives structure, a first-rung question and the checklist |
+| 10 CHAT "show me a test", in English | ✅ (expectation updated) | A complete example test in the project's style, boundary case included. Under v1.4 asking to see a test is a request for code; the case's expectation now says so |
+| 43 CHAT code at entry | ✅ with reservations | Complete function with `>=`, integer grams and the file path; every line explained in plain words; tests; it ends with "cosa restituisce `dischiPerLato(62_500)`?". But it returns a bare array and leaves the below-bar warning to the caller instead of a `Result` (ADR-004) |
+| 44 CHAT code at senior, in English | ✅ | A diff on their file (`>=` plus `invalid(…)` on a leftover), the alternative (an upfront modulo guard) with its trade-off, four tests. Bonus: spots that the bar-only branch returns more than the target, against ADR-003 |
+| 45 HELP *Show me the code*, mid | ✅ | **Il codice**, the corrected `platesFor` in their names, what changed in one paragraph, delicate spots, a test (47.5 kg) that fails with `>` |
+| 46 HELP *Show me the code*, training | ✅ with reservations | Stays at the exact line, says why in one sentence without preaching. The trace of its suggested test is wrong: with `>` 70 kg gives 20 + 2.5 + 1.25, not 20 + 5 |
+
+The rest of the cases didn't change behaviour. The automatic check flags 01 (a folder tree in an unlabelled block) and 11 (complete `package.json` and `tsconfig`, plus the trivial 5-line setup test): zone A, allowed by the extension's filter. The cut prompt is about 1,900 characters longer than with v1.3, from the level and training rules; the whole run cost $2.87.
