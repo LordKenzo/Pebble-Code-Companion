@@ -2,6 +2,12 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.31
+- **The Git ghost never proposes losing a side.** If the proposed union is the same as one side, Pebble shows it as "keep that side" and warns you. The instructions also say that lines both sides added, such as two tests, are kept both.
+- **Unsaved resolutions are flagged.** A file resolved in the editor but not saved still has the markers on disk: the panel says so and offers *Save* before you run `git add`.
+- In an untrusted folder the status bar item still shows a rebase or merge in progress, read from the files in `.git` without running git.
+- The panel's header wraps better in a narrow column.
+
 ## 0.7.30
 - **The Git ghost** (ADR-017). When a rebase, a merge or a cherry-pick stops halfway, a status bar item opens a panel beside the code, also from **Pebble: Git**. Without any model call it shows where you are, the files in conflict and the next commands to copy, and it calls the two sides by name, because in a rebase "ours" and "theirs" are swapped.
 - **Explain the conflict** sends a single block to the model and proposes a union, which enters the file only when you apply it; in training you get only the explanation. Local cards cover push rejected, lost commits, wrong branch, detached HEAD, stash conflicts and undoing a commit. Pebble runs only read-only git commands, and only in trusted folders.
