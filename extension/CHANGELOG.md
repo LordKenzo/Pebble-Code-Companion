@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.38
+- **Closing the notification no longer loses a proposal.** A planned step, a short path or a file skeleton stays at the top of the Path panel, with *Accept*, *See the changes*, *Review and edit* and *Discard*, until you choose. Before, closing the notification threw the proposal away and getting it back meant paying for the call again. While a proposal waits, *Prepare step N* doesn't call the model: Pebble shows the waiting proposal instead.
+- Accepting starts from the path as it is at that moment, so edits made while the proposal waited are kept. A skeleton is not written if the file got code in the meantime.
+
 ## 0.7.37
 - **Path tests beyond JavaScript.** In a project without package.json, Pebble picks the command from the manifest and reads its results: `swift test` (XCTest and Swift Testing) with Package.swift, pytest with pyproject.toml or requirements.txt, `go test` with go.mod, `cargo test` with Cargo.toml. Before, it ran `node --test` everywhere and a `test "…"` condition could never tick. A hand-set test command works too, if it prints one of these formats. Swift, Go and Rust get at least five minutes, because the first run compiles.
 - **Steps that don't wait for impossible things** (prompt v2.0). No task to create files an init command already writes (`swift package init` makes `.gitignore` too); the name of a generated example test only when it is certain (since Swift 6 it is `example`, not `testExample`), otherwise "manual"; `test "…"` only for the stacks Pebble can run.
