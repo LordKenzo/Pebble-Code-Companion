@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildState, needsAttention, nextSteps, parseConflicts, parseStatusV2, pickCards, resolveBlock, sideNames } from "../src/core/git";
+import { GIT_CARDS } from "../src/core/gitCards";
+import { buildState, GIT_CARD_IDS, needsAttention, nextSteps, parseConflicts, parseStatusV2, pickCards, resolveBlock, sideNames } from "../src/core/git";
 
 // Output vero di git 2.4x, da un repository di prova con un rebase in conflitto.
 const REBASE_STATUS = `# branch.oid 13fae39143d32341214a931025a5009468ad7658
@@ -86,4 +87,16 @@ test("risolvere un blocco: un lato, entrambi, o l'unione approvata", () => {
   const union = "export function platesFor(total, plates = PLATES) {\n  const load = roundDown(total);\n  if (load < BAR) return ok([]);\n  return go(load, plates);\n";
   assert.equal(resolveBlock(PLATES, 0, { union }), union + "}");
   assert.equal(resolveBlock(PLATES, 1, "ours"), null);
+});
+
+test("le schede: tutte in due lingue, e nessun comando distruttivo da copiare", () => {
+  for (const lang of ["it", "en"] as const) {
+    for (const id of GIT_CARD_IDS) {
+      const c = GIT_CARDS[lang][id];
+      assert.ok(c.title && c.body && c.commands.length, `${lang}/${id}`);
+      for (const { cmd } of c.commands) {
+        assert.doesNotMatch(cmd, /--force(?!-with-lease)|reset --hard|clean -f/, `${lang}/${id}: ${cmd}`);
+      }
+    }
+  }
 });
