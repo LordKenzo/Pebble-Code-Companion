@@ -298,6 +298,57 @@
           "default": "mid",
           "description": "%config.experienceLevel%"
         },
+        "pebble.ghost.roadmap.provider": {
+          "type": "string",
+          "enum": ["", "anthropic", "openai", "local"],
+          "default": "",
+          "description": "%config.ghost.roadmap.provider%"
+        },
+        "pebble.ghost.roadmap.model": {
+          "type": "string",
+          "default": "",
+          "description": "%config.ghost.model%"
+        },
+        "pebble.ghost.roadmap.effort": {
+          "type": "string",
+          "enum": ["", "low", "medium", "high", "xhigh"],
+          "default": "",
+          "description": "%config.ghost.effort%"
+        },
+        "pebble.ghost.mentor.provider": {
+          "type": "string",
+          "enum": ["", "anthropic", "openai", "local"],
+          "default": "",
+          "description": "%config.ghost.mentor.provider%"
+        },
+        "pebble.ghost.mentor.model": {
+          "type": "string",
+          "default": "",
+          "description": "%config.ghost.model%"
+        },
+        "pebble.ghost.mentor.effort": {
+          "type": "string",
+          "enum": ["", "low", "medium", "high", "xhigh"],
+          "default": "",
+          "description": "%config.ghost.effort%"
+        },
+        "pebble.ghost.assist.provider": {
+          "type": "string",
+          "enum": ["", "anthropic", "openai", "local"],
+          "default": "",
+          "description": "%config.ghost.assist.provider%"
+        },
+        "pebble.ghost.assist.model": {
+          "type": "string",
+          "default": "",
+          "description": "%config.ghost.model%"
+        },
+        "pebble.ghost.assist.effort": {
+          "type": "string",
+          "enum": ["", "low", "medium", "high", "xhigh"],
+          "default": "",
+          "description": "%config.ghost.effort%"
+        },
         "pebble.training": {
           "type": "boolean",
           "default": false,

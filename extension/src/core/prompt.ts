@@ -77,7 +77,8 @@ const GHOST_OF_MODE: Record<string, Ghost> = {
   TESTS: "mentor",
   NEW_FILE: "mentor",
   ASSIST: "assist",
-  HELP: "assist",
+  // La scala di aiuto è del Mentor (#20): nelle valutazioni un modello economico regge le schede del ⌥P, non le regole della scala.
+  HELP: "mentor",
 };
 
 export function ghostOfMode(mode: string | null | undefined): Ghost | null {

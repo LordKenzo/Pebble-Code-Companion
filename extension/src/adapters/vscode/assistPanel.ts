@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import type { Ghost } from "../../core/prompt";
 import { ASSIST_SCHEMAS, buildAssistMessage, insertPseudocode, type AssistAsk, type Pseudo } from "../../core/assist";
 import { estimateCost, type Price } from "../../core/cost";
 import type { DiaryEvent } from "../../core/diary";
@@ -14,7 +15,8 @@ import { editorProblems } from "./problems";
 
 /** ⌥P (ADR-015): un menu, poi un pannello accanto al codice con una scheda per tipo di aiuto. */
 export interface AssistDeps {
-  mentor(): Promise<MentorModel>;
+  /** Il modello del fantasmino (#20): Suggeritore per le schede, Mentor per la scala di aiuto. */
+  mentor(ghost?: Ghost): Promise<MentorModel>;
   systemPrompt(): Promise<string>;
   /** Il livello per quel file: quello del suo linguaggio, o del progetto (roadmap #23). */
   level(path?: string | null): ExperienceLevel;
@@ -205,7 +207,7 @@ export class AssistPanel implements vscode.Disposable {
         problems: editorProblems(s.uri),
         lang: this.deps.lang(),
       });
-      const mentor = await this.deps.mentor();
+      const mentor = await this.deps.mentor("assist");
       const { data, usage } = await mentor.generate(await this.deps.systemPrompt(), message, ASSIST_SCHEMAS[tab] as never, `assist_${tab}`);
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, this.deps.priceFor(mentor)) });
       s.results.set(tab, { status: "done", data: clean(data, this.deps.lang()) });
@@ -240,7 +242,7 @@ export class AssistPanel implements vscode.Disposable {
         problems,
         lang: this.deps.lang(),
       });
-      const mentor = await this.deps.mentor();
+      const mentor = await this.deps.mentor("mentor");
       const { text, usage } = await mentor.chat(await this.deps.systemPrompt(), message);
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, this.deps.priceFor(mentor)) });
       // Il codice chiesto con *Mostrami il codice* passa; il resto della scala resta filtrato (ADR-016).

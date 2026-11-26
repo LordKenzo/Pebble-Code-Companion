@@ -1,4 +1,5 @@
 import { localSectionName, nextSectionNumber, sectionWord } from "../../core/sections";
+import type { Ghost } from "../../core/prompt";
 import type { TestSnapshot } from "../../core/adopt";
 import { hasProjectCode } from "./projectSnapshot";
 import * as vscode from "vscode";
@@ -24,7 +25,8 @@ const SEEN_RED_KEY = "pebble.path.seenRed";
 
 /** Quello che serve per preparare un passo con il modello (ADR-011). */
 export interface PlannerDeps {
-  mentor(): Promise<MentorModel>;
+  /** Il modello del fantasmino roadmap (#20). */
+  mentor(ghost?: Ghost): Promise<MentorModel>;
   systemPrompt(): Promise<string>;
   /** Il livello per quel file, o del progetto senza percorso (roadmap #23). */
   level(path?: string | null): ExperienceLevel;
@@ -403,7 +405,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       }
       const files = await planFiles(this.root);
       const message = buildPlanMessage(ctx, step, this.text, files, planner.level(), lang);
-      const mentor = await planner.mentor();
+      const mentor = await planner.mentor("roadmap");
       const { data, usage } = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: N.preparingStep(step.n, step.title) },
         async () => mentor.generate(await planner.systemPrompt(), message, PlanStep, "plan_step"),
@@ -463,7 +465,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     try {
       const ctx = await new WorkspaceStore(this.root).load();
       const message = buildPathMessage(ctx, kind, description, this.text, await planFiles(this.root), planner.level(), lang);
-      const mentor = await planner.mentor();
+      const mentor = await planner.mentor("roadmap");
       const { data, usage } = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: N.preparingPath(label) },
         async () => mentor.generate(await planner.systemPrompt(), message, PlanStep, "plan_path"),
@@ -547,7 +549,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       const task = fromTask && { title: fromTask.title, todo: fromTask.todo, signature: fromTask.signature, when: fromTask.when.map((w) => w.text) };
       const signatures = (step?.tasks ?? []).map((t) => t.signature).filter((x): x is string => !!x);
       const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(rel), signatures, lang);
-      const mentor = await planner.mentor();
+      const mentor = await planner.mentor("roadmap");
       const { data, usage } = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: N.preparingFile(rel) },
         async () => mentor.generate(await planner.systemPrompt(), message, Scaffold, "scaffold"),

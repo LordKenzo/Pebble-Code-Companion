@@ -2,7 +2,7 @@ import { hasProjectCode, takeSnapshot } from "./adapters/vscode/projectSnapshot"
 import { MapPanel } from "./adapters/vscode/mapPanel";
 import { DiaryWriter } from "./adapters/store/diaryStore";
 import * as vscode from "vscode";
-import { createMentor, type ProviderId, type ProviderSettings } from "./adapters/llm/factory";
+import { createMentor, PROVIDER_LABEL, type ProviderId, type ProviderSettings } from "./adapters/llm/factory";
 import type { Effort } from "./adapters/llm/claude";
 import { ChatView } from "./adapters/vscode/chatView";
 import { MentorSession } from "./adapters/vscode/mentorSession";
@@ -11,12 +11,14 @@ import { AssistPanel } from "./adapters/vscode/assistPanel";
 import { ReviewPanel } from "./adapters/vscode/panel";
 import { ProposalDocs } from "./adapters/vscode/proposals";
 import { LevelStore } from "./adapters/vscode/levelStore";
+import type { Ghost } from "./core/prompt";
+import { GHOST_ADVICE, GHOSTS, withGhostModel, type GhostModel } from "./core/ghosts";
 import { isLevel, LANGUAGES } from "./core/level";
 import { SpendLedger } from "./adapters/vscode/spendLedger";
 import { SettingsPanel } from "./adapters/vscode/settingsPanel";
-import { formatUsd, resolvePrice, type Price } from "./core/cost";
+import { estimateCost, formatUsd, resolvePrice, type Price } from "./core/cost";
 import { LEVELS, type ExperienceLevel } from "./core/model";
-import { EXT_TEXT, resolveLang, type Lang } from "./core/i18n";
+import { EXT_TEXT, resolveLang, SETTINGS_TEXT, type Lang } from "./core/i18n";
 
 const secretKey = (p: ProviderId) => `pebble.apiKey.${p}`;
 
@@ -51,9 +53,9 @@ export function activate(context: vscode.ExtensionContext): void {
   };
   refreshStatus();
 
-  const settings = (): ProviderSettings => {
+  const settings = (ghost?: Ghost): ProviderSettings => {
     const c = config();
-    return {
+    const base: ProviderSettings = {
       provider: c.get<ProviderId>("provider", "anthropic"),
       anthropicModel: c.get("anthropic.model", "claude-opus-5-5"),
       anthropicEffort: c.get<Effort>("anthropic.effort", "medium"),
@@ -64,6 +66,17 @@ export function activate(context: vscode.ExtensionContext): void {
       training: c.get("training", false),
       levels: levels.line(),
     };
+    return ghost ? withGhostModel(base, ghostSetting(ghost)) : base;
+  };
+  /** Il modello scelto per un fantasmino (#20); i campi vuoti seguono il modello di default. */
+  const ghostSetting = (ghost: Ghost): GhostModel => ({
+    provider: config().get<string>(`ghost.${ghost}.provider`, ""),
+    model: config().get<string>(`ghost.${ghost}.model`, ""),
+    effort: config().get<string>(`ghost.${ghost}.effort`, ""),
+  });
+  const mentorFor = async (ghost?: Ghost) => {
+    const s = settings(ghost);
+    return createMentor(s, await context.secrets.get(secretKey(s.provider)));
   };
 
   const providerNames = (): Record<ProviderId, string> => ({
@@ -112,6 +125,25 @@ export function activate(context: vscode.ExtensionContext): void {
       const m = ledger.monthTotal();
       return {
         ...s,
+        ghosts: GHOSTS.map((g) => {
+          const T = SETTINGS_TEXT[lang()];
+          const gs = settings(g);
+          const model = gs.provider === "anthropic" ? gs.anthropicModel : gs.provider === "openai" ? gs.openaiModel : gs.localModel;
+          const a = GHOST_ADVICE[g];
+          const typical = { inputTokens: a.typical.input, outputTokens: a.typical.output, cacheReadTokens: 0, cacheWriteTokens: 0 };
+          const cost = (m: string, local: boolean) => formatUsd(estimateCost(typical, resolvePrice(m, local, prices())), lang());
+          const set = ghostSetting(g);
+          return {
+            id: g,
+            name: EXT_TEXT[lang()].ghostNames[g] ?? g,
+            role: T.ghostRoles[g] ?? "",
+            provider: set.provider,
+            model: set.model,
+            effort: set.effort,
+            uses: T.ghostUses(`${PROVIDER_LABEL[gs.provider]} · ${model || "?"}${gs.provider === "anthropic" ? ` · ${gs.anthropicEffort}` : ""}`, cost(model, gs.provider === "local")),
+            advice: T.ghostAdvice(T.ghostTier[a.tier] ?? a.tier, a.effort, a.claude, cost(a.claude, false)),
+          };
+        }),
         experienceLevel: levels.profile().project,
         byLanguage: levels.profile().byLanguage as Record<string, string>,
         languages: (await levels.detect()).map((id) => ({ id, name: LANGUAGES[id]?.name ?? id })),
@@ -169,10 +201,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const root = vscode.workspace.workspaceFolders?.[0]?.uri;
       return root ? hasProjectCode(root) : false;
     },
-    mentor: async () => {
-      const s = settings();
-      return createMentor(s, await context.secrets.get(secretKey(s.provider)));
-    },
+    mentor: mentorFor,
     level,
     systemPrompt: loadSystemPrompt,
     priceFor: (m) => resolvePrice(m.model, settings().provider === "local", prices()),
@@ -205,10 +234,7 @@ export function activate(context: vscode.ExtensionContext): void {
     requireRedFirst: config().get("path.requireRedFirst", false),
     lang: lang(),
   }), {
-    mentor: async () => {
-      const s = settings();
-      return createMentor(s, await context.secrets.get(secretKey(s.provider)));
-    },
+    mentor: mentorFor,
     systemPrompt: loadSystemPrompt,
     level,
     priceFor: (m) => resolvePrice(m.model, settings().provider === "local", prices()),
@@ -230,10 +256,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // ⌥P: il pannello di aiuto accanto al codice (ADR-015), stesso modello e stesso registro della spesa.
   const assist = new AssistPanel(context.extensionUri, vscode.workspace.workspaceFolders?.[0]?.uri, {
-    mentor: async () => {
-      const s = settings();
-      return createMentor(s, await context.secrets.get(secretKey(s.provider)));
-    },
+    mentor: mentorFor,
     systemPrompt: loadSystemPrompt,
     level,
     priceFor: (m) => resolvePrice(m.model, settings().provider === "local", prices()),

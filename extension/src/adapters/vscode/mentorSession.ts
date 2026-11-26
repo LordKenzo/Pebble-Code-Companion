@@ -1,4 +1,5 @@
 import { AdoptPlan, adoptPlanToFiles, adoptPlanToMarkdown, buildAdoptMessage, type AdoptSnapshot } from "../../core/adopt";
+import type { Ghost } from "../../core/prompt";
 import type { DiaryEvent } from "../../core/diary";
 import { bootstrapGuide } from "../../core/bootstrap";
 import { CHAT_TEXT, type Lang } from "../../core/i18n";
@@ -39,7 +40,8 @@ interface PendingChange {
 export interface SessionDeps {
   /** Annota nel diario del passo (ADR-013). */
   note?(event: DiaryEvent): void;
-  mentor(): Promise<MentorModel>;
+  /** Il modello del fantasmino che risponde (#20): Roadmap per piani e prossimo passo, Mentor per il resto. */
+  mentor(ghost?: Ghost): Promise<MentorModel>;
   /** Il livello per quel file, o del progetto senza percorso (roadmap #23). */
   level(path?: string | null): ExperienceLevel;
   systemPrompt(): Promise<string>;
@@ -246,7 +248,7 @@ export class MentorSession {
           ];
       this.view.push({ kind: "pebble", label: this.C.labelPlan, file: "bootstrap.md", html: renderMarkdown(initPlanToMarkdown(plan, this.deps.lang())), meta: meta(mentor, cost, this.deps.lang()), actions });
       this.history.push({ role: "pebble", text: initPlanToMarkdown(plan, this.deps.lang()) });
-    });
+    }, "roadmap");
   }
 
   /** Adotta un progetto già avviato (ADR-014): legge il codice e propone quello che c'è, da confermare. */
@@ -272,7 +274,7 @@ export class MentorSession {
         ],
       });
       this.history.push({ role: "pebble", text: md });
-    });
+    }, "roadmap");
   }
 
   private async saveAdoption(): Promise<void> {
@@ -340,7 +342,7 @@ export class MentorSession {
       });
       if (question) this.history.push({ role: "user", text: question });
       await this.answer(mentor, system, msg, ctx, store.rootUri, labels(this.deps.lang())[mode], mode === "NEXT" ? undefined : file?.path);
-    });
+    }, mode === "NEXT" ? "roadmap" : "mentor");
   }
 
   /** Indicazioni su un file appena creato (come nel mockup). */
@@ -475,13 +477,13 @@ export class MentorSession {
     return costUsd;
   }
 
-  private async run(thinking: string, fn: (mentor: MentorModel, system: string) => Promise<void>): Promise<void> {
+  private async run(thinking: string, fn: (mentor: MentorModel, system: string) => Promise<void>, ghost: Ghost = "mentor"): Promise<void> {
     if (this.busy) return;
-    this.lastRequest = () => this.run(thinking, fn);
+    this.lastRequest = () => this.run(thinking, fn, ghost);
     this.busy = true;
     this.view.thinking(thinking);
     try {
-      const mentor = await this.deps.mentor();
+      const mentor = await this.deps.mentor(ghost);
       await fn(mentor, await this.deps.systemPrompt());
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

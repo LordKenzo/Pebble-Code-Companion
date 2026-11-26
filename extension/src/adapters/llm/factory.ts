@@ -48,3 +48,4 @@ function createProviderMentor(s: ProviderSettings, apiKey: string | undefined): 
       return new OpenAICompatibleMentor("locale", s.localModel, { baseURL: s.localBaseUrl, apiKey, ...(s.lang && { lang: s.lang }) });
   }
 }
+

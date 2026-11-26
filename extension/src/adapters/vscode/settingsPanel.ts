@@ -13,6 +13,8 @@ export interface SettingsState {
   localBaseUrl: string;
   localModel: string;
   experienceLevel: string;
+  /** Un modello per fantasmino (#20), con il consiglio e il costo stimato già pronti da mostrare. */
+  ghosts: { id: string; name: string; role: string; provider: string; model: string; effort: string; uses: string; advice: string }[];
   /** Livelli per linguaggio in questo progetto (roadmap #23). */
   byLanguage: Record<string, string>;
   /** Linguaggi trovati nella cartella, con il nome da mostrare. */
@@ -182,6 +184,16 @@ function html(csp: string, lang: Lang): string {
   .prices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .prices label{font-size:12px;color:var(--vscode-descriptionForeground);display:flex;flex-direction:column;gap:2px}
   .check{display:flex;gap:8px;align-items:center;margin:6px 0}
+  .ghosts{display:grid;gap:10px}
+  .ghost{border:1px solid var(--vscode-panel-border);border-left-width:3px;border-radius:6px;padding:10px 12px;display:grid;gap:6px}
+  .ghost.g-roadmap{border-left-color:#b9d7f2}
+  .ghost.g-mentor{border-left-color:#f5d39a}
+  .ghost.g-assist{border-left-color:#bfe3c7}
+  .ghosthead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .ghost .row{flex-wrap:wrap}
+  .ghost .row{display:flex;gap:8px}
+  .ghost .row > *{flex:1 1 150px;width:auto;min-width:0}
+  .advice{color:var(--vscode-descriptionForeground)}
   .bylang{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:6px 0}
   .langrow{display:flex;gap:8px;align-items:center;justify-content:space-between}
   h3{font-size:13px;margin:16px 0 4px}
@@ -244,6 +256,12 @@ function html(csp: string, lang: Lang): string {
 
   <div class="row"><button id="check">${T.checkConnection}</button></div>
   <div id="checkResult" class="status" hidden></div>
+</section>
+
+<section>
+  <h2>${T.ghostsTitle}</h2>
+  <p class="muted">${T.ghostsHelp}</p>
+  <div id="ghosts" class="ghosts"></div>
 </section>
 
 <section>
@@ -314,6 +332,46 @@ function html(csp: string, lang: Lang): string {
   }
   const $ = (id) => document.getElementById(id);
   const LEVEL_IDS = ["entry", "junior", "mid", "senior"];
+  const PROVIDER_LABELS = { "": J.ghostDefault, anthropic: "Claude", openai: "OpenAI", local: "Local" };
+  const EFFORT_IDS = ["", "low", "medium", "high", "xhigh"];
+  /** Una scheda per fantasmino: provider, modello, sforzo, il consiglio e il costo stimato (#20). */
+  function renderGhosts() {
+    const box = $("ghosts");
+    if (document.activeElement && box.contains(document.activeElement)) return;
+    box.innerHTML = "";
+    S.ghosts.forEach((g) => {
+      const card = document.createElement("div");
+      card.className = "ghost g-" + g.id;
+      const head = document.createElement("div");
+      head.className = "ghosthead";
+      const b = document.createElement("b"); b.textContent = g.name;
+      const role = document.createElement("span"); role.className = "muted"; role.textContent = g.role;
+      head.append(b, role);
+      const row = document.createElement("div");
+      row.className = "row";
+      const prov = document.createElement("select");
+      prov.dataset.key = "ghost." + g.id + ".provider";
+      prov.setAttribute("aria-label", g.name + " · provider");
+      Object.entries(PROVIDER_LABELS).forEach(([id, label]) => prov.add(new Option(label, id)));
+      prov.value = g.provider;
+      const model = document.createElement("input");
+      model.type = "text";
+      model.dataset.key = "ghost." + g.id + ".model";
+      model.placeholder = J.ghostModelPlaceholder;
+      model.value = g.model;
+      model.setAttribute("aria-label", g.name + " · model");
+      const eff = document.createElement("select");
+      eff.dataset.key = "ghost." + g.id + ".effort";
+      eff.setAttribute("aria-label", g.name + " · effort");
+      EFFORT_IDS.forEach((id) => eff.add(new Option(id || J.ghostEffortDefault, id)));
+      eff.value = g.effort;
+      row.append(prov, model, eff);
+      const uses = document.createElement("span"); uses.className = "help"; uses.textContent = g.uses;
+      const advice = document.createElement("span"); advice.className = "help advice"; advice.textContent = g.advice;
+      card.append(head, row, uses, advice);
+      box.append(card);
+    });
+  }
   /** Un menu per linguaggio: "come il progetto" oppure un livello suo (roadmap #23). */
   function renderLanguages() {
     const box = $("byLanguage");
@@ -341,6 +399,7 @@ function html(csp: string, lang: Lang): string {
     document.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === S.experienceLevel));
     $("training").checked = !!S.training;
     renderLanguages();
+    renderGhosts();
     document.querySelectorAll('input[name=language]').forEach((r) => (r.checked = r.value === S.language));
     document.querySelectorAll('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== S.provider));
     fillSelect($("anthropicModelSelect"), ANTHROPIC_MODELS, S.anthropicModel, "");
