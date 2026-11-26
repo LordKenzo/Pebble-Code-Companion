@@ -506,6 +506,18 @@
         },
         {
           "type": "webview",
+          "id": "pebble.assist",
+          "name": "%view.assist%",
+          "when": "pebble.assistOpen"
+        },
+        {
+          "type": "webview",
+          "id": "pebble.git",
+          "name": "%view.git%",
+          "when": "pebble.gitOpen"
+        },
+        {
+          "type": "webview",
           "id": "pebble.chat",
           "name": "%view.chat%"
         }

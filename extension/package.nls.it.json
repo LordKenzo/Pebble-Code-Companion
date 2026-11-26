@@ -23,6 +23,8 @@
   "command.scaffoldFile": "Prepara il file: firme e pseudocodice",
   "view.path": "Percorso",
   "view.chat": "Mentor",
+  "view.assist": "Aiuto ⌥P",
+  "view.git": "Git",
   "config.language": "Lingua di Pebble: l'interfaccia, i testi che scrive (percorso, scheletri, bootstrap) e le risposte del modello.",
   "config.language.enum0": "Segue la lingua di VS Code (italiano se VS Code è in italiano, altrimenti inglese)",
   "config.language.enum1": "Italiano",

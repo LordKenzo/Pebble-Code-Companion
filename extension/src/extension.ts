@@ -293,6 +293,9 @@ export function activate(context: vscode.ExtensionContext): void {
     diagnostics,
     gitPanel,
     vscode.commands.registerCommand("pebble.git", () => gitPanel.open()),
+    // ⌥P e Git come sezioni della barra laterale di Pebble, accanto a Percorso e Mentor.
+    vscode.window.registerWebviewViewProvider(assist.view.id, assist.view, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.window.registerWebviewViewProvider(gitPanel.view.id, gitPanel.view, { webviewOptions: { retainContextWhenHidden: true } }),
     pathView,
     vscode.commands.registerCommand("pebble.helpHere", () => assist.open()),
     assist,

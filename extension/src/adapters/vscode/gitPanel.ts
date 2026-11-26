@@ -9,6 +9,7 @@ import type { ExperienceLevel, Usage } from "../../core/model";
 import type { MentorModel } from "../../core/ports";
 import type { Ghost } from "../../core/prompt";
 import { readGitState, type GitRead } from "./gitRepo";
+import { SideView } from "./sideView";
 
 export interface GitDeps {
   mentor(ghost?: Ghost): Promise<MentorModel>;
@@ -45,7 +46,8 @@ type FromView =
  * e un pannello accanto al codice con lo stato, i comandi da lanciare, le schede e la spiegazione di un conflitto.
  */
 export class GitPanel implements vscode.Disposable {
-  private panel: vscode.WebviewPanel | undefined;
+  /** La sezione Git nella barra laterale di Pebble: compare quando c'è qualcosa da fare o la apri tu. */
+  readonly view: SideView;
   private read: GitRead | undefined;
   private explained: Explained | undefined;
   private readonly item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
@@ -58,6 +60,11 @@ export class GitPanel implements vscode.Disposable {
     private readonly deps: GitDeps,
   ) {
     this.item.command = "pebble.git";
+    this.view = new SideView("pebble.git", "pebble.gitOpen", extensionUri, (webview) => {
+      const media = vscode.Uri.joinPath(extensionUri, "media");
+      webview.html = html(webview.cspSource, webview.asWebviewUri(vscode.Uri.joinPath(media, "git.css")), webview.asWebviewUri(vscode.Uri.joinPath(media, "git.js")), this.deps.lang());
+      webview.onDidReceiveMessage((m: FromView) => void this.onMessage(m));
+    });
     if (!root) return;
     const watch = (glob: string) => {
       const w = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(root, glob));
@@ -115,6 +122,7 @@ export class GitPanel implements vscode.Disposable {
       return;
     }
     const s = r.state;
+    void this.view.enable();
     const op = s.op ? f(T.status[s.op] ?? s.op, { n: s.step?.n ?? 0, total: s.step?.total ?? 0 }) : "";
     const n = s.conflicts.length;
     const conflicts = n ? (n === 1 ? T.conflictBadge : f(T.conflictsBadge, { n })) : "";
@@ -125,20 +133,7 @@ export class GitPanel implements vscode.Disposable {
   }
 
   async open(): Promise<void> {
-    if (this.panel) this.panel.reveal(vscode.ViewColumn.Beside, true);
-    else {
-      const media = vscode.Uri.joinPath(this.extensionUri, "media");
-      const panel = vscode.window.createWebviewPanel("pebble.git", this.T.title, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {
-        enableScripts: true,
-        localResourceRoots: [media],
-        retainContextWhenHidden: true,
-      });
-      panel.iconPath = vscode.Uri.joinPath(media, "pebble.svg");
-      panel.webview.html = html(panel.webview.cspSource, panel.webview.asWebviewUri(vscode.Uri.joinPath(media, "git.css")), panel.webview.asWebviewUri(vscode.Uri.joinPath(media, "git.js")), this.deps.lang());
-      panel.webview.onDidReceiveMessage((m: FromView) => void this.onMessage(m));
-      panel.onDidDispose(() => (this.panel = undefined));
-      this.panel = panel;
-    }
+    await this.view.reveal(false);
     await this.refresh();
   }
 
@@ -243,21 +238,21 @@ export class GitPanel implements vscode.Disposable {
   }
 
   private post(): void {
-    const panel = this.panel;
-    if (!panel) return;
+    const webview = this.view.webview;
+    if (!webview) return;
     const lang = this.deps.lang();
     const T = this.T;
-    const ghost = (name: string) => panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `${name}.svg`)).toString();
+    const ghost = (name: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `${name}.svg`)).toString();
     const r = this.read;
     const base = { type: "state", T, ghosts: { git: ghost("ghost-git"), thinking: ghost("ghost-thinking"), worried: ghost("ghost-worried") } };
-    if (!r) return void panel.webview.postMessage({ ...base, loading: true });
-    if (!r.ok) return void panel.webview.postMessage({ ...base, problem: T[r.reason === "untrusted" ? "notTrusted" : r.reason === "noGit" ? "noGit" : "noRepo"] });
+    if (!r) return void webview.postMessage({ ...base, loading: true });
+    if (!r.ok) return void webview.postMessage({ ...base, problem: T[r.reason === "untrusted" ? "notTrusted" : r.reason === "noGit" ? "noGit" : "noRepo"] });
     const s: GitState = r.state;
     const picked = pickCards(s);
     const cards = GIT_CARDS[lang];
     const e = this.explained;
     const names = sideNames(s);
-    void panel.webview.postMessage({
+    void webview.postMessage({
       ...base,
       state: s,
       names: { ours: names.ours, theirs: s.op === "rebase" ? T.yourCommit.replace("{subject}", names.theirs) : names.theirs, swapped: names.swapped },
@@ -274,7 +269,7 @@ export class GitPanel implements vscode.Disposable {
   dispose(): void {
     if (this.timer) clearTimeout(this.timer);
     this.item.dispose();
-    this.panel?.dispose();
+    this.view.dispose();
     for (const d of this.disposables) d.dispose();
   }
 }

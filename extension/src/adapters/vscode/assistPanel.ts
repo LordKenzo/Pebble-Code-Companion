@@ -14,6 +14,7 @@ import { WorkspaceStore } from "../store/workspaceStore";
 import { renderMarkdown } from "./markdown";
 import { editorProblems } from "./problems";
 import { toDiagnostics } from "./diagnostics";
+import { SideView } from "./sideView";
 
 /** ⌥P (ADR-015): un menu, poi un pannello accanto al codice con una scheda per tipo di aiuto. */
 export interface AssistDeps {
@@ -64,7 +65,8 @@ type FromView =
   | { type: "ladder"; action: "up" | "why" | "deep" | "code" | "close" | "reply"; text?: string };
 
 export class AssistPanel implements vscode.Disposable {
-  private panel: vscode.WebviewPanel | undefined;
+  /** La sezione ⌥P nella barra laterale di Pebble, accanto a Percorso e Mentor. */
+  readonly view: SideView;
   private s: Session | undefined;
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -73,6 +75,11 @@ export class AssistPanel implements vscode.Disposable {
     private readonly root: vscode.Uri | undefined,
     private readonly deps: AssistDeps,
   ) {
+    this.view = new SideView("pebble.assist", "pebble.assistOpen", extensionUri, (webview) => {
+      const media = vscode.Uri.joinPath(extensionUri, "media");
+      webview.html = html(webview.cspSource, webview.asWebviewUri(vscode.Uri.joinPath(media, "assist.css")), webview.asWebviewUri(vscode.Uri.joinPath(media, "assist.js")), this.deps.lang());
+      webview.onDidReceiveMessage((m: FromView) => void this.onMessage(m));
+    });
     // Il file cambia sotto il pannello: le risposte restano, ma il pannello lo dice.
     this.disposables.push(vscode.workspace.onDidChangeTextDocument((e) => {
       if (this.s && e.document.uri.toString() === this.s.uri.toString()) this.post();
@@ -123,27 +130,13 @@ export class AssistPanel implements vscode.Disposable {
       red,
       ladder: { rung: 1, history: [], turns: [], busy: false, concepts: [] },
     };
-    this.show();
+    await this.show();
     await this.select(pick.id);
   }
 
-  private show(): void {
-    if (this.panel) {
-      this.panel.reveal(vscode.ViewColumn.Beside, true);
-      this.panel.title = this.T.tab;
-      return;
-    }
-    const media = vscode.Uri.joinPath(this.extensionUri, "media");
-    const panel = vscode.window.createWebviewPanel("pebble.assist", this.T.tab, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {
-      enableScripts: true,
-      localResourceRoots: [media],
-      retainContextWhenHidden: true,
-    });
-    panel.iconPath = vscode.Uri.joinPath(media, "pebble.svg");
-    panel.webview.html = html(panel.webview.cspSource, panel.webview.asWebviewUri(vscode.Uri.joinPath(media, "assist.css")), panel.webview.asWebviewUri(vscode.Uri.joinPath(media, "assist.js")), this.deps.lang());
-    panel.webview.onDidReceiveMessage((m: FromView) => void this.onMessage(m));
-    panel.onDidDispose(() => (this.panel = undefined));
-    this.panel = panel;
+  private async show(): Promise<void> {
+    await this.view.reveal(true);
+    this.view.description = this.s?.path.split("/").pop();
   }
 
   private async onMessage(m: FromView): Promise<void> {
@@ -158,7 +151,7 @@ export class AssistPanel implements vscode.Disposable {
     if (m.type === "insert" || m.type === "copy") return this.pseudocode(m.type === "insert");
     if (m.type === "ladder") {
       if (m.action === "close") {
-        this.panel?.dispose();
+        await this.view.hide();
         return;
       }
       if (m.action === "reply" && m.text?.trim()) {
@@ -314,8 +307,8 @@ export class AssistPanel implements vscode.Disposable {
 
   private post(): void {
     const s = this.s;
-    const panel = this.panel;
-    if (!s || !panel) return;
+    const webview = this.view.webview;
+    if (!s || !webview) return;
     const T = this.T;
     const file = s.path.split("/").pop() ?? s.path;
     const label: Record<Tab, string> = {
@@ -326,7 +319,7 @@ export class AssistPanel implements vscode.Disposable {
       similar: T.tabSimilar,
       ladder: s.selection ? T.tabLadderSelection : T.tabLadderFile(s.red),
     };
-    const ghost = (mood: string) => panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === s.uri.toString());
     // Nella webview passano solo dati: i testi con parametri diventano modelli con {segnaposto}.
     const W = {
@@ -334,7 +327,7 @@ export class AssistPanel implements vscode.Disposable {
       insertComment: T.insertComment("{fn}"),
       rung: T.rung("{n}" as unknown as number, "{name}"),
     };
-    void panel.webview.postMessage({
+    void webview.postMessage({
       type: "state",
       T: W,
       ghosts: { neutral: ghost("neutral"), thinking: ghost("thinking"), worried: ghost("worried"), happy: ghost("happy") },
@@ -349,7 +342,7 @@ export class AssistPanel implements vscode.Disposable {
   }
 
   dispose(): void {
-    this.panel?.dispose();
+    this.view.dispose();
     for (const d of this.disposables) d.dispose();
   }
 }
