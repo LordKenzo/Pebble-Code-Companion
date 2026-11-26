@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import * as vscode from "vscode";
 import { findExports, type Signals, type Task } from "../../core/path";
 import { NOTICE_TEXT, type Lang } from "../../core/i18n";
-import { DEFAULT_TEST_COMMAND, detectTestCommand, packageDependencies } from "../../core/runner";
+import { DEFAULT_TEST_COMMAND, detectTestCommand, packageDependencies, packageScripts } from "../../core/runner";
 import { parseTap, type ParsedTest } from "../../core/tap";
 
 export interface TestRun {
@@ -53,6 +53,8 @@ export class SignalCollector {
     const needsDeps = tasks.some((t) => t.conditions.some((c) => c.kind === "dependency"));
     const manifest = await this.read(vscode.Uri.joinPath(this.root, "package.json"));
     const dependencies = needsDeps ? packageDependencies(manifest) : undefined;
+    const needsScripts = tasks.some((t) => t.conditions.some((c) => c.kind === "script"));
+    const scripts = needsScripts ? packageScripts(manifest) : undefined;
 
     const files: Record<string, string[]> = {};
     const errors: Record<string, number> = {};
@@ -70,6 +72,7 @@ export class SignalCollector {
       files,
       errors,
       ...(dependencies && { dependencies }),
+      ...(scripts && { scripts }),
       ...(run && !run.error && { tests: run.tests }),
     };
   }

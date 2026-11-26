@@ -31,6 +31,16 @@ export function detectTestCommand(packageJson: string | null, lang: Lang = "it")
 }
 
 /** Le dipendenze dichiarate nel package.json, per la condizione "dipendenza". */
+/** Gli script di package.json; un manifest che manca o non si legge vuol dire "non so". */
+export function packageScripts(packageJson: string | null): Record<string, string> | undefined {
+  if (packageJson === null) return undefined;
+  try {
+    return (JSON.parse(packageJson) as { scripts?: Record<string, string> }).scripts ?? {};
+  } catch {
+    return undefined;
+  }
+}
+
 export function packageDependencies(packageJson: string | null): string[] | undefined {
   if (packageJson === null) return undefined;
   try {

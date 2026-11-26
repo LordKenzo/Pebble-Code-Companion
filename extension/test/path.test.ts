@@ -378,3 +378,15 @@ test("nomi dei test attesi: nome suggerito nel compito e stato dall'ultima esecu
   ]);
   assert.equal(buildViewModel(tasks, undefined, "it", run).steps[0]!.tests.length, 3);
 });
+
+test("la condizione sugli script di package.json", () => {
+  assert.deepEqual(parseCondition('script test "vitest run"'), { kind: "script", name: "test", text: "vitest run" });
+  assert.deepEqual(parseCondition("script test:unit «vitest run»"), { kind: "script", name: "test:unit", text: "vitest run" });
+  assert.equal(parseCondition("script test vitest").kind, "invalid");
+  const task = parsePath('# Percorso\n\n## Passo 1 · Setup\n- [ ] Comando test\n  fatto quando: script test "vitest run"\n').tasks[0]!;
+  const r = (sig: Signals) => evaluate([task], sig)[0]!;
+  assert.equal(r({ scripts: { test: 'echo "Error: no test specified" && exit 1' } }).status, "open");
+  assert.equal(r({ scripts: { test: "vitest run" } }).status, "done");
+  assert.equal(r({ scripts: {} }).status, "open");
+  assert.equal(r({}).status, "unknown");
+});

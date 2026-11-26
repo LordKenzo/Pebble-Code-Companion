@@ -21,6 +21,8 @@ export type Condition =
   | { kind: "file"; path: string; exports: string[] }
   | { kind: "noErrors"; path: string }
   | { kind: "dependency"; names: string[] }
+  /** Uno script di package.json che contiene un testo: `script test "vitest run"`. */
+  | { kind: "script"; name: string; text: string }
   | { kind: "manual" }
   | { kind: "invalid"; raw: string };
 
@@ -103,6 +105,9 @@ export function parseCondition(raw: string): Condition {
     return names.length ? { kind: "dependency", names } : { kind: "invalid", raw };
   }
 
+  const script = /^script\s+([\w:.-]+)\s+(?:"([^"]+)"|«([^»]+)»)$/i.exec(s);
+  if (script) return { kind: "script", name: script[1]!, text: (script[2] ?? script[3])!.trim() };
+
   const noErrors = /^(?:nessun errore in|no errors in)\s+(\S+)$/i.exec(s);
   if (noErrors) return { kind: "noErrors", path: noErrors[1]! };
 
@@ -133,6 +138,8 @@ export interface Signals {
   errors?: Record<string, number>;
   /** Dipendenze dichiarate nel manifest del progetto (package.json: dependencies e devDependencies). */
   dependencies?: readonly string[];
+  /** Gli script di package.json (nome → comando). */
+  scripts?: Readonly<Record<string, string>>;
   /** Nomi dei test che Pebble ha visto fallire almeno una volta (ADR-010). */
   seenRed?: readonly string[];
 }
@@ -145,7 +152,7 @@ export interface EvaluateOptions {
 }
 
 /** Perché un compito è aperto, in forma che la vista sa riconoscere senza leggere la frase. */
-export type ReasonCode = "testMissing" | "testRed" | "neverRed" | "fileMissing" | "fileNoExport" | "errors" | "dependency";
+export type ReasonCode = "testMissing" | "testRed" | "neverRed" | "fileMissing" | "fileNoExport" | "errors" | "dependency" | "script";
 
 export type TaskState =
   | { status: "done"; progress?: Progress; warning?: string }
@@ -222,6 +229,12 @@ function checkCondition(c: Condition, s: Signals, opts: EvaluateOptions): CondSt
       if (!s.dependencies) return { result: "unknown", reason: T.depsNotChecked };
       const missing = c.names.filter((n) => !s.dependencies!.includes(n));
       return missing.length ? { result: "false", reason: T.depMissing(missing), code: "dependency" } : { result: "true" };
+    }
+    case "script": {
+      if (!s.scripts) return { result: "unknown", reason: T.scriptsNotChecked };
+      const cmd = s.scripts[c.name];
+      if (cmd === undefined) return { result: "false", reason: T.scriptMissing(c.name, c.text), code: "script" };
+      return cmd.includes(c.text) ? { result: "true" } : { result: "false", reason: T.scriptDiffers(c.name, c.text, cmd), code: "script" };
     }
     case "noErrors": {
       if (!s.errors || !s.files) return { result: "unknown", reason: T.errorsNotChecked };
@@ -304,6 +317,8 @@ export function describeCondition(c: Condition, lang: Lang = "it"): string {
       return T.descNoErrors(c.path);
     case "dependency":
       return T.descDependency(c.names);
+    case "script":
+      return T.descScript(c.name, c.text);
     case "manual":
       return T.descManual;
     case "invalid":
@@ -332,6 +347,8 @@ export function explainCondition(c: Condition, lang: Lang = "it"): { text: strin
       return c.names.length === 1
         ? { text: T.expDependency1(c.names[0]!), example: `npm install -D ${c.names[0]}` }
         : { text: T.expDependencyN(c.names), example: `npm install -D ${c.names.join(" ")}` };
+    case "script":
+      return { text: T.expScript(c.name, c.text), example: `"scripts": { "${c.name}": "${c.text}" }` };
     case "manual":
       return { text: T.expManual };
     case "invalid":
@@ -354,6 +371,8 @@ export function summarizeConditions(conditions: readonly Condition[], lang: Lang
           return T.sumNoErrors;
         case "dependency":
           return T.sumDependency;
+        case "script":
+          return T.sumScript;
         case "manual":
           return T.sumManual;
         case "invalid":
