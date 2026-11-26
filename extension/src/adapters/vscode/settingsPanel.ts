@@ -319,6 +319,17 @@ function html(csp: string, lang: Lang): string {
   const J = ${JSON.stringify(T.js)};
   let S = null;
   let openaiModels = [];
+  /** Gli elenchi di modelli per provider, condivisi dalla sezione Modello e dalle schede dei fantasmini. */
+  const lists = { anthropic: [...ANTHROPIC_MODELS], openai: [], local: [] };
+  const requested = { anthropic: false, openai: false, local: false };
+  /** Chiede l'elenco al provider una volta sola, se c'è modo di averlo (una chiave, o un server locale). */
+  function ensureList(provider) {
+    if (requested[provider]) return;
+    if (provider !== "local" && !S.keys[provider]) return;
+    requested[provider] = true;
+    if (provider === "openai") openaiRequested = true;
+    vscode.postMessage({ type: "listModels", provider });
+  }
   let openaiRequested = false;
 
   /** Riempie un menu di modelli: il modello attuale è sempre presente, "Altro…" permette di scriverne uno. */
@@ -334,7 +345,7 @@ function html(csp: string, lang: Lang): string {
   }
   const $ = (id) => document.getElementById(id);
   const LEVEL_IDS = ["entry", "junior", "mid", "senior"];
-  const PROVIDER_LABELS = { "": J.ghostDefault, anthropic: "Claude", openai: "OpenAI", local: "Local" };
+  const PROVIDER_LABELS = { "": J.ghostDefault, anthropic: "Claude", openai: "OpenAI", local: ${JSON.stringify(T.local)} };
   const EFFORT_IDS = ["", "low", "medium", "high", "xhigh"];
   /** Una scheda per fantasmino: provider, modello, sforzo, il consiglio e il costo stimato (#20). */
   function renderGhosts() {
@@ -356,18 +367,30 @@ function html(csp: string, lang: Lang): string {
       prov.setAttribute("aria-label", g.name + " · provider");
       Object.entries(PROVIDER_LABELS).forEach(([id, label]) => prov.add(new Option(label, id)));
       prov.value = g.provider;
-      const model = document.createElement("input");
-      model.type = "text";
-      model.dataset.key = "ghost." + g.id + ".model";
-      model.placeholder = J.ghostModelPlaceholder;
-      model.value = g.model;
+      // Il modello si sceglie da un menu con i modelli del provider del fantasmino; "Altro…" per scriverlo a mano.
+      const provider = g.provider || S.provider;
+      ensureList(provider);
+      const model = document.createElement("select");
       model.setAttribute("aria-label", g.name + " · model");
+      model.dataset.ghostModel = g.id;
+      model.add(new Option(J.ghostModelPlaceholder, ""));
+      const options = [...lists[provider]];
+      if (g.model && !options.includes(g.model)) options.unshift(g.model);
+      options.forEach((id) => model.add(new Option(id, id)));
+      model.add(new Option(J.other, OTHER));
+      model.value = g.model || "";
+      const custom = document.createElement("input");
+      custom.type = "text";
+      custom.dataset.key = "ghost." + g.id + ".model";
+      custom.placeholder = J.exactModelName;
+      custom.hidden = true;
+      custom.setAttribute("aria-label", g.name + " · model");
       const eff = document.createElement("select");
       eff.dataset.key = "ghost." + g.id + ".effort";
       eff.setAttribute("aria-label", g.name + " · effort");
       EFFORT_IDS.forEach((id) => eff.add(new Option(id || J.ghostEffortDefault, id)));
       eff.value = g.effort;
-      row.append(prov, model, eff);
+      row.append(prov, model, custom, eff);
       const uses = document.createElement("span"); uses.className = "help"; uses.textContent = g.uses;
       const advice = document.createElement("span"); advice.className = "help advice"; advice.textContent = g.advice;
       card.append(head, row, uses, advice);
@@ -404,13 +427,10 @@ function html(csp: string, lang: Lang): string {
     renderGhosts();
     document.querySelectorAll('input[name=language]').forEach((r) => (r.checked = r.value === S.language));
     document.querySelectorAll('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== S.provider));
-    fillSelect($("anthropicModelSelect"), ANTHROPIC_MODELS, S.anthropicModel, "");
     fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, J.pressRefreshList);
-    if (S.provider === "openai" && S.keys.openai && !openaiRequested) {
-      openaiRequested = true;
-      $("openaiListInfo").textContent = J.loadingAccountModels;
-      vscode.postMessage({ type: "listModels", provider: "openai" });
-    }
+    if (S.provider === "openai" && S.keys.openai && !requested.openai) $("openaiListInfo").textContent = J.loadingAccountModels;
+    ensureList(S.provider);
+    fillSelect($("anthropicModelSelect"), lists.anthropic, S.anthropicModel, "");
     for (const [id, v] of [["anthropicModel", S.anthropicModel], ["anthropicEffort", S.anthropicEffort], ["openaiModel", S.openaiModel], ["localBaseUrl", S.localBaseUrl], ["budget", S.monthlyBudgetUsd]]) {
       if (document.activeElement !== $(id)) $(id).value = v;
     }
@@ -448,6 +468,16 @@ function html(csp: string, lang: Lang): string {
     const t = e.target;
     if (t.name === "provider") { S.provider = t.value; render(); set("provider", t.value); $("checkResult").hidden = true; }
     else if (t.name === "level") vscode.postMessage({ type: "setLevel", level: t.value });
+    else if (t.dataset.ghostModel) {
+      const input = t.parentElement.querySelector("input[type=text]");
+      if (t.value === OTHER) { input.hidden = false; input.value = ""; input.focus(); }
+      else { input.hidden = true; set("ghost." + t.dataset.ghostModel + ".model", t.value); }
+    }
+    else if (t.dataset.key && /^ghost\\.[a-z]+\\.provider$/.test(t.dataset.key)) {
+      // Un provider nuovo vuol dire un elenco nuovo: il modello di prima non vale più.
+      set(t.dataset.key, t.value);
+      set(t.dataset.key.replace(".provider", ".model"), "");
+    }
     else if (t.dataset.langLevel) vscode.postMessage({ type: "setLanguageLevel", language: t.dataset.langLevel, level: t.value || null });
     else if (t.name === "training") set("training", t.checked);
     else if (t.name === "language") set("language", t.value);
@@ -488,8 +518,16 @@ function html(csp: string, lang: Lang): string {
     if (m.type === "check") { const r = $("checkResult"); r.hidden = false; r.className = "status " + (m.ok ? "ok" : "err"); r.textContent = m.message; }
     if (m.type === "models") {
       const info = $(m.provider + "ListInfo");
-      if (m.error) { info.textContent = m.error; return; }
+      if (m.error) { if (info) info.textContent = m.error; return; }
+      if (m.provider === "anthropic") {
+        // I modelli che l'account vede davvero, più quelli con il prezzo noto.
+        lists.anthropic = [...new Set([...m.models.filter((id) => /^claude-/.test(id) && !/-\\d{8}$/.test(id)), ...ANTHROPIC_MODELS])];
+        fillSelect($("anthropicModelSelect"), lists.anthropic, S.anthropicModel, "");
+        renderGhosts();
+        return;
+      }
       if (m.provider === "local") {
+        lists.local = [...m.models];
         const sel = $("localModelSelect"); sel.innerHTML = "";
         if (!m.models.length) sel.add(new Option(J.noLocalModels, ""));
         else { if (!S.localModel) sel.add(new Option(J.chooseModel, "")); m.models.forEach((id) => sel.add(new Option(id, id))); }
@@ -503,9 +541,11 @@ function html(csp: string, lang: Lang): string {
             const ga = a.startsWith("gpt"), gb = b.startsWith("gpt");
             return ga === gb ? b.localeCompare(a, undefined, { numeric: true }) : ga ? -1 : 1;
           });
+        lists.openai = [...openaiModels];
         fillSelect($("openaiModelSelect"), openaiModels, S.openaiModel, J.noModelsFound);
         info.textContent = openaiModels.length + J.openaiCount;
       }
+      renderGhosts();
     }
   });
 
