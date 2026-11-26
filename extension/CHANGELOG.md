@@ -2,6 +2,11 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.30
+- **The Git ghost** (ADR-017). When a rebase, a merge or a cherry-pick stops halfway, a status bar item opens a panel beside the code, also from **Pebble: Git**. Without any model call it shows where you are, the files in conflict and the next commands to copy, and it calls the two sides by name, because in a rebase "ours" and "theirs" are swapped.
+- **Explain the conflict** sends a single block to the model and proposes a union, which enters the file only when you apply it; in training you get only the explanation. Local cards cover push rejected, lost commits, wrong branch, detached HEAD, stash conflicts and undoing a commit. Pebble runs only read-only git commands, and only in trusted folders.
+- The Git ghost is lilac, has its own model in the settings page, and the diary records the conflicts resolved.
+
 ## 0.7.29
 - **One review.** In the ⌥P panel, *Suggestions on the file* became *Review the file*: the same review as the chat, with severity, line and decision, shown as underlines in the editor and noted in the diary.
 - **The chat is for questions.** The `/review`, `/tests`, `/next` and `/init` buttons are gone from the Mentor chat. Typing `/review`, `/tests` or `/init` still works. The next step is in the Path panel and on the map, worked out without the model: `/next` and **What's the next step?** open it.
