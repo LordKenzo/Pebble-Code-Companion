@@ -41,11 +41,9 @@ test("INIT porta livello e bootstrap", () => {
   assert.match(m, /explain each technical term in brackets/);
 });
 
-test("NEXT non include il file aperto, CHAT include la conversazione recente", () => {
+test("CHAT include la roadmap e la conversazione recente", () => {
   const ctx = { bootstrap: "B", architecture: null, roadmap: "1. Setup", decisions: [] };
-  const next = buildTextMessage("NEXT", ctx, "mid");
-  assert.match(next, /<roadmap>\n1\. Setup/);
-  assert.doesNotMatch(next, /<file/);
+  assert.match(buildTextMessage("CHAT", ctx, "mid"), /<roadmap>\n1\. Setup/);
   const history = Array.from({ length: 12 }, (_, i) => ({ role: "user" as const, text: `msg${i}` }));
   const chat = buildTextMessage("CHAT", ctx, "mid", { question: "Perché?", history, file: { path: "a.ts", content: "x" } });
   assert.match(chat, /<file path="a.ts">\n1 \| x/);

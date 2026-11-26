@@ -70,7 +70,7 @@ const followUpActions = (lang: Lang): ChatAction[] => Object.entries(followUps(l
 
 const labels = (lang: Lang): Record<TextMode, string> => {
   const C = CHAT_TEXT[lang];
-  return { CHAT: C.labelChat, NEXT: C.labelNext, TESTS: C.labelTests, NEW_FILE: C.labelNewFile };
+  return { CHAT: C.labelChat, TESTS: C.labelTests, NEW_FILE: C.labelNewFile };
 };
 
 /** Orchestrazione della conversazione con il mentor nel pannello laterale. */
@@ -185,7 +185,7 @@ export class MentorSession {
     const cmd = text.trim().toLowerCase();
     if (cmd === "/review") return this.review();
     if (cmd === "/tests") return this.text("TESTS");
-    if (cmd === "/next") return this.text("NEXT");
+    if (cmd === "/next") return this.openPath();
     if (cmd === "/init") return this.init();
     if (cmd === "/clear") {
       this.history = [];
@@ -218,7 +218,7 @@ export class MentorSession {
     if (id === "save-adoption") return this.saveAdoption();
     if (id === "init") return this.init();
     if (id === "save-plan") return this.savePlan();
-    if (id === "next") return this.text("NEXT");
+    if (id === "next") return this.openPath();
     if (id === "review") return this.review();
     if (id === "create-bootstrap") return this.createBootstrap();
     if (id === "open-architecture") {
@@ -330,19 +330,19 @@ export class MentorSession {
     const file = this.openFile();
     if (mode === "TESTS" && !file) return this.info(this.C.openFileForTests);
     const ctx = await store.load();
-    const thinking = { CHAT: this.C.thinkingChat, NEXT: this.C.thinkingNext, TESTS: this.C.thinkingTests, NEW_FILE: this.C.thinkingNewFile }[mode];
+    const thinking = { CHAT: this.C.thinkingChat, TESTS: this.C.thinkingTests, NEW_FILE: this.C.thinkingNewFile }[mode];
 
     await this.run(thinking, async (mentor, system) => {
       const msg = buildTextMessage(mode, ctx, this.deps.level(file?.path), {
-        file: file && (mode !== "NEXT" ? { path: file.path, content: file.content } : undefined),
+        file: file && { path: file.path, content: file.content },
         question,
         history: mode === "CHAT" ? this.history : undefined,
         lang: this.deps.lang(),
-        ...(file && mode !== "NEXT" && { problems: editorProblems(file.doc.uri) }),
+        ...(file && { problems: editorProblems(file.doc.uri) }),
       });
       if (question) this.history.push({ role: "user", text: question });
-      await this.answer(mentor, system, msg, ctx, store.rootUri, labels(this.deps.lang())[mode], mode === "NEXT" ? undefined : file?.path);
-    }, mode === "NEXT" ? "roadmap" : "mentor");
+      await this.answer(mentor, system, msg, ctx, store.rootUri, labels(this.deps.lang())[mode], file?.path);
+    });
   }
 
   /** Indicazioni su un file appena creato (come nel mockup). */
@@ -419,6 +419,11 @@ export class MentorSession {
       html: renderMarkdown(this.C.decisionWritten(c.isNew, c.path)),
     });
     await vscode.window.showTextDocument(vscode.Uri.joinPath(c.root, ...c.path.split("/")), { preview: true, preserveFocus: true });
+  }
+
+  /** Il prossimo passo lo sa già il pannello Percorso, senza modello: ci si va direttamente. */
+  private async openPath(): Promise<void> {
+    await vscode.commands.executeCommand("pebble.path.focus");
   }
 
   async review(): Promise<void> {

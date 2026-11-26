@@ -159,19 +159,11 @@ function html(csp: string, lang: Lang, ghosts: { neutral: string; thinking: stri
   @keyframes bob{50%{transform:translateY(-3px)}}
   @media (prefers-reduced-motion:reduce){.thinking .ghost{animation:none}}
   footer{border-top:1px solid var(--vscode-panel-border);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
-  .chips{display:flex;gap:4px;flex-wrap:wrap}
-  .chips button{font-family:var(--vscode-editor-font-family);font-size:11px;padding:2px 8px;border-radius:999px}
   textarea{font:inherit;resize:none;color:var(--vscode-input-foreground);background:var(--vscode-input-background);border:1px solid var(--vscode-input-border,transparent);border-radius:4px;padding:6px 8px;min-height:34px;max-height:120px}
   .hint{font-size:10.5px;color:var(--vscode-descriptionForeground)}
 </style></head><body>
 <div id="feed"></div>
 <footer>
-  <div class="chips">
-    <button data-cmd="/review" title="${a(C.chipReview)}">/review</button>
-    <button data-cmd="/tests" title="${a(C.chipTests)}">/tests</button>
-    <button data-cmd="/next" title="${a(C.chipNext)}">/next</button>
-    <button data-cmd="/init" title="${a(C.chipInit)}">/init</button>
-  </div>
   <textarea id="input" rows="1" placeholder="${a(C.inputPlaceholder)}" aria-label="${a(C.inputLabel)}"></textarea>
   <span class="hint">${a(C.footerHint)}</span>
 </footer>

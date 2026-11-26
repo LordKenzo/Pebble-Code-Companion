@@ -70,7 +70,6 @@ const GHOST_OF_MODE: Record<string, Ghost> = {
   INIT: "roadmap",
   ADOPT: "roadmap",
   PLAN_STEP: "roadmap",
-  NEXT: "roadmap",
   SCAFFOLD: "roadmap",
   CHAT: "mentor",
   REVIEW: "mentor",

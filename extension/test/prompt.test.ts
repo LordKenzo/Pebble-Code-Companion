@@ -54,7 +54,7 @@ test("il prompt vero: ogni modalità ha la sua sezione e il prompt si accorcia",
   const full = readFileSync(join(__dirname, "..", "..", "..", "prompts", "mentor.md"), "utf8");
   const p = splitPrompt(full);
   assert.ok(p);
-  for (const m of ["INIT", "ADOPT", "NEW_FILE", "REVIEW", "TESTS", "NEXT", "PLAN_STEP", "SCAFFOLD", "HELP", "ASSIST", "CHAT"]) {
+  for (const m of ["INIT", "ADOPT", "NEW_FILE", "REVIEW", "TESTS", "PLAN_STEP", "SCAFFOLD", "HELP", "ASSIST", "CHAT"]) {
     assert.ok(p.modes[m], `manca la modalità ${m}`);
     assert.ok(ghostOfMode(m), `nessun fantasmino per ${m}`);
     const out = promptForMode(full, m);

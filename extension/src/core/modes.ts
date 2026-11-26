@@ -115,7 +115,7 @@ export function initPlanToFiles(p: InitPlan, date: string, lang: Lang = "it"): {
 
 // ---------- Modalità in testo libero ----------
 
-export type TextMode = "CHAT" | "NEXT" | "TESTS" | "NEW_FILE";
+export type TextMode = "CHAT" | "TESTS" | "NEW_FILE";
 
 export interface OpenFile {
   path: string;

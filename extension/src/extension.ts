@@ -268,6 +268,7 @@ export function activate(context: vscode.ExtensionContext): void {
     helpContext: (path) => pathView.helpContext(path),
     lang,
     training: () => config().get("training", false),
+    diagnostics,
     note: (event) => diary.append(event),
   });
 
@@ -309,10 +310,8 @@ export function activate(context: vscode.ExtensionContext): void {
       await chatView.reveal();
       await session.init();
     }),
-    vscode.commands.registerCommand("pebble.next", async () => {
-      await chatView.reveal();
-      await session.text("NEXT");
-    }),
+    // Il prossimo passo è nel pannello Percorso (e sulla mappa), calcolato senza modello.
+    vscode.commands.registerCommand("pebble.next", () => vscode.commands.executeCommand("pebble.path.focus")),
     vscode.commands.registerCommand("pebble.tests", async () => {
       await chatView.reveal();
       await session.text("TESTS");
