@@ -2,6 +2,11 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.27
+- **A level per project and per language**: you can be senior in TypeScript and entry in C#. The level is kept per project, on your computer; each language found in the folder can have its own, from the settings page or **Pebble: Set the level**. Pebble uses the level of the file you're working on, plans take all of them into account, and the status bar shows the level of the open file.
+- After adopting a project with several languages, Pebble offers to set a level for each.
+- The diary notes the level at which Pebble wrote code.
+
 ## 0.7.26
 - **Pebble writes code when you ask, at every level** (ADR-016). Unasked, it still points and explains; when you ask, the level decides the shape. Entry gets complete code explained line by line, with a question to check it makes sense. Junior gets complete code with the principle behind it. Mid gets lean code with the choices motivated. Senior gets a targeted patch with the trade-off.
 - **Show me the code** in the ⌥P help ladder: the corrected code for the red test, once you've seen the rungs.
