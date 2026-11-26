@@ -522,7 +522,7 @@ Under each task: do, signature, done when. Lines Pebble doesn't recognise stay w
 `,
 };
 
-// ---------- il fumetto sulla riga (adapters/vscode/helpBalloon) ----------
+// ---------- la scala di aiuto (scheda del pannello ⌥P, ADR-015) ----------
 
 const helpIt = {
   rungs: { 1: "Domanda", 2: "Direzione precisa", 3: "Esempio analogo", 4: "La riga esatta" } as Record<1 | 2 | 3 | 4, string>,
