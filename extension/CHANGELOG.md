@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.28
+- **A model per ghost**: Roadmap, Mentor and the ⌥P helper can each use their own provider, model and effort, from the settings page; empty means the default. Each one shows the estimated cost of a typical call and the recommendation from the evals.
+- The help ladder is now answered by the Mentor's model. In the evals a cheap model handles the ⌥P tabs well, but not the ladder's rules.
+
 ## 0.7.27
 - **A level per project and per language**: you can be senior in TypeScript and entry in C#. The level is kept per project, on your computer; each language found in the folder can have its own, from the settings page or **Pebble: Set the level**. Pebble uses the level of the file you're working on, plans take all of them into account, and the status bar shows the level of the open file.
 - After adopting a project with several languages, Pebble offers to set a level for each.
