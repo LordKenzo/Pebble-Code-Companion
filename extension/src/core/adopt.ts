@@ -1,3 +1,4 @@
+import { slugify } from "./slug";
 import { z } from "zod";
 import { composeBootstrap } from "./bootstrap";
 import { LEVEL_HINTS, numberLines } from "./context";
@@ -84,8 +85,7 @@ export function buildAdoptMessage(s: AdoptSnapshot, level: ExperienceLevel, lang
 }
 
 const pad = (n: number) => String(n).padStart(3, "0");
-const slug = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40).replace(/-$/, "");
+const slug = (s: string) => slugify(s);
 const tree = (s: string) => s.replace(/^```\w*\n?|```$/g, "").trim();
 
 /** Una riga di sintesi del campo base: file, test, storia. */

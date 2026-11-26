@@ -2,6 +2,8 @@
  * Che cosa è la cartella aperta, prima di cominciare: un progetto esistente da adottare, un contenitore di progetti
  * (es. ~/dev), una cartella vuota per un progetto nuovo, o un dubbio. Logica pura sui percorsi relativi dei file.
  */
+import { slugify } from "./slug";
+
 export type FolderKind = "empty" | "project" | "container" | "other";
 
 /** I file che dicono "qui c'è un progetto", per gli stack più comuni. */
@@ -32,13 +34,6 @@ export function classifyFolder(paths: readonly string[]): FolderInfo {
 /** Un nome di cartella dal titolo del bootstrap: "# Progetto Uno — bootstrap" → "progetto-uno". */
 export function folderNameFromBootstrap(bootstrap: string | null | undefined): string {
   const title = /^#\s+(.+)$/m.exec(bootstrap ?? "")?.[1] ?? "";
-  const name = title
-    .replace(/\s*[—–-]\s*bootstrap\s*$/i, "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
+  const name = slugify(title.replace(/\s*[—–-]\s*bootstrap\s*$/i, ""));
   return name || "nuovo-progetto";
 }

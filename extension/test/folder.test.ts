@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { classifyFolder, folderNameFromBootstrap } from "../src/core/folder";
+import { slugify } from "../src/core/slug";
 
 test("cartella vuota, o con i soli file di Pebble e dell'editor: progetto nuovo", () => {
   assert.deepEqual(classifyFolder([]), { kind: "empty", projects: [] });
@@ -27,4 +28,11 @@ test("il nome della cartella nuova viene dal titolo del bootstrap", () => {
   assert.equal(folderNameFromBootstrap("# Progetto Uno — bootstrap\n\n## Cosa devo fare"), "progetto-uno");
   assert.equal(folderNameFromBootstrap("# Città & Caffè"), "citta-caffe");
   assert.equal(folderNameFromBootstrap(null), "nuovo-progetto");
+});
+
+test("nomi di file tagliati tra due parole, mai a metà", () => {
+  assert.equal(slugify("Separare la logica dalla finestra: un 'core' testabile"), "separare-la-logica-dalla-finestra-un");
+  assert.equal(slugify("XCTest come test runner, senza librerie esterne"), "xctest-come-test-runner-senza-librerie");
+  assert.equal(slugify("Corto"), "corto");
+  assert.equal(slugify("a".repeat(50)).length, 40);
 });

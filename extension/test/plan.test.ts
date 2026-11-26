@@ -136,3 +136,9 @@ test("sentieri brevi: messaggio con PATH_TO_PREPARE, titolo, sezione in fondo", 
   assert.equal(appendSection("# Percorso\n\n## Passo 0 · Campo base\n- [x] a\n\n", markdown), "# Percorso\n\n## Passo 0 · Campo base\n- [x] a\n\n" + markdown);
   assert.match(appendSection(null, markdown, "en"), /^# Path\n\n## Bug 2/);
 });
+
+test("il titolo del passo si ferma prima di un comando tra virgolette", () => {
+  assert.equal(stepTitle("Creare il pacchetto SupportCore con 'swift package init --type library --name SupportCore' e far passare il test"), "Creare il pacchetto SupportCore");
+  assert.equal(stepTitle("Install the tools with `npm install`"), "Install the tools");
+  assert.equal(stepTitle("Aggiungere l'archivio dell'app"), "Aggiungere l'archivio dell'app");
+});

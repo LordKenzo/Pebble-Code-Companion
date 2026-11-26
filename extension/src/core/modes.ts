@@ -1,3 +1,4 @@
+import { slugify } from "./slug";
 import { INIT_TEXT, languageLine, type Lang } from "./i18n";
 import { z } from "zod";
 import { formatProblems, LEVEL_HINTS, numberLines } from "./context";
@@ -55,15 +56,7 @@ export function buildInitMessage(bootstrap: string, level: ExperienceLevel, lang
 const pad = (n: number) => String(n).padStart(3, "0");
 /** I modelli a volte numerano già il titolo ("ADR-003: …"): la numerazione la fa Pebble. */
 export const cleanTitle = (s: string) => s.replace(/^\s*\**\s*ADR[-\s]?\d+\s*[:·.\-–—]?\s*/i, "").trim();
-const slug = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40)
-    .replace(/-$/, "");
+const slug = (s: string) => slugify(s);
 
 /** Il piano mostrato nella chat. */
 export function initPlanToMarkdown(p: InitPlan, lang: Lang = "it"): string {

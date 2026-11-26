@@ -52,14 +52,23 @@ export function parseRoadmap(markdown: string): RoadmapStep[] {
 }
 
 /** Titolo breve: fino al primo ";", ": ", ". " o " (", e al massimo circa 48 caratteri tagliati su una parola. */
+const FILLER = /\s+(e|ed|o|di|da|a|in|il|lo|la|i|gli|le|per|con|su|tra|fra|del|della|dei|delle|che|with|and|or|of|by|using|to)$/i;
+/** Non finire su una parola vuota: "…delle formule e…" diventa "…delle formule…". */
+const trimFiller = (t: string) => {
+  while (FILLER.test(t)) t = t.replace(FILLER, "");
+  return t;
+};
+
 export function stepTitle(raw: string): string {
-  const cut = raw.replace(/[*✅🟡⛔]/g, "").split(/;|:\s|\.\s|\.$|\s\(|\s[—–]\s/)[0]!.trim();
+  let cut = raw.replace(/[*✅🟡⛔]/g, "").split(/;|:\s|\.\s|\.$|\s\(|\s[—–]\s/)[0]!.trim();
+  // Un comando tra virgolette resta nel testo del passo, non nel titolo: "Creare il pacchetto SupportCore con 'swift…'"
+  // diventa "Creare il pacchetto SupportCore".
+  // Un nome breve tra apici (`1rm`) invece resta: si taglia solo se tra le virgolette ci sono più parole.
+  const q = /\s['"`‘“]([^'"`’”]*)/.exec(cut);
+  if (q && q.index >= 12 && /\s/.test(q[1]!)) cut = trimFiller(cut.slice(0, q.index).trim());
   if (cut.length <= 48) return cut;
   const short = cut.slice(0, 48);
-  let t = short.slice(0, short.lastIndexOf(" ") > 20 ? short.lastIndexOf(" ") : 48).trim();
-  // Non finire su una parola vuota: "…delle formule e…" diventa "…delle formule…".
-  const filler = /\s+(e|ed|o|di|da|a|in|il|lo|la|i|gli|le|per|con|su|tra|fra|del|della|dei|delle|che)$/i;
-  while (filler.test(t)) t = t.replace(filler, "");
+  const t = trimFiller(short.slice(0, short.lastIndexOf(" ") > 20 ? short.lastIndexOf(" ") : 48).trim());
   return `${t}…`;
 }
 
