@@ -18,6 +18,8 @@ export interface ProviderSettings {
   lang?: Lang;
   /** Allenamento (ADR-016): ogni messaggio porta la riga TRAINING: yes. */
   training?: boolean;
+  /** "LEVELS: typescript=senior, csharp=entry" quando i livelli per linguaggio differiscono (roadmap #23). */
+  levels?: string | null;
 }
 
 export const PROVIDER_LABEL: Record<ProviderId, string> = {
@@ -28,7 +30,7 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
 
 /** Sceglie l'adapter in base alle impostazioni (ADR-005). */
 export function createMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {
-  return withModePrompts(createProviderMentor(s, apiKey), { training: !!s.training });
+  return withModePrompts(createProviderMentor(s, apiKey), { training: !!s.training, levels: s.levels ?? null });
 }
 
 function createProviderMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {

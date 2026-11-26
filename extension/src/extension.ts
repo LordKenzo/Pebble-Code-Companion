@@ -10,6 +10,8 @@ import { PathView } from "./adapters/vscode/pathView";
 import { AssistPanel } from "./adapters/vscode/assistPanel";
 import { ReviewPanel } from "./adapters/vscode/panel";
 import { ProposalDocs } from "./adapters/vscode/proposals";
+import { LevelStore } from "./adapters/vscode/levelStore";
+import { isLevel, LANGUAGES } from "./core/level";
 import { SpendLedger } from "./adapters/vscode/spendLedger";
 import { SettingsPanel } from "./adapters/vscode/settingsPanel";
 import { formatUsd, resolvePrice, type Price } from "./core/cost";
@@ -26,9 +28,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const config = () => vscode.workspace.getConfiguration("pebble");
   /** Lingua di Pebble (ADR-012): "auto" segue la lingua di VS Code. */
   const lang = (): Lang => resolveLang(config().get<string>("language", "auto"), vscode.env.language);
-  const level = (): ExperienceLevel => {
-    const v = config().get<string>("experienceLevel", "mid");
-    return (LEVELS as readonly string[]).includes(v) ? (v as ExperienceLevel) : "mid";
+  // Livello per progetto e per linguaggio (roadmap #23): senza percorso, quello del progetto.
+  const levels = new LevelStore(context.workspaceState);
+  context.subscriptions.push(levels);
+  const level = (path?: string | null): ExperienceLevel => levels.levelFor(path);
+  const activePath = () => {
+    const doc = vscode.window.activeTextEditor?.document;
+    return doc ? vscode.workspace.asRelativePath(doc.uri) : null;
   };
 
   // Barra di stato: livello e spesa del mese. Clic = riepilogo della spesa.
@@ -38,7 +44,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const m = ledger.monthTotal();
     const budget = config().get<number>("monthlyBudgetUsd", 0);
     const over = budget > 0 && m.costUsd >= budget;
-    status.text = `$(milestone) Pebble · ${level()} · ${formatUsd(m.costUsd, lang())}`;
+    status.text = `$(milestone) Pebble · ${level(activePath())} · ${formatUsd(m.costUsd, lang())}`;
     status.tooltip = EXT_TEXT[lang()].statusTooltip(m.reviews, formatUsd(m.costUsd, lang()), budget > 0 ? formatUsd(budget, lang()) : "", m.unpriced);
     status.backgroundColor = over ? new vscode.ThemeColor("statusBarItem.warningBackground") : undefined;
     status.show();
@@ -56,6 +62,7 @@ export function activate(context: vscode.ExtensionContext): void {
       localModel: c.get("local.model", ""),
       lang: lang(),
       training: c.get("training", false),
+      levels: levels.line(),
     };
   };
 
@@ -105,7 +112,9 @@ export function activate(context: vscode.ExtensionContext): void {
       const m = ledger.monthTotal();
       return {
         ...s,
-        experienceLevel: level(),
+        experienceLevel: levels.profile().project,
+        byLanguage: levels.profile().byLanguage as Record<string, string>,
+        languages: (await levels.detect()).map((id) => ({ id, name: LANGUAGES[id]?.name ?? id })),
         training: config().get("training", false),
         monthlyBudgetUsd: c.get<number>("monthlyBudgetUsd", 0),
         prices: c.get<Record<string, Price>>("prices", {}),
@@ -122,6 +131,10 @@ export function activate(context: vscode.ExtensionContext): void {
       return createMentor(s, await context.secrets.get(secretKey(provider)));
     },
     setKey: (provider) => askKey(provider),
+    setLevel: async (l) => {
+      if (isLevel(l)) await levels.setProject(l);
+    },
+    setLanguageLevel: async (language, l) => levels.setLanguage(language, isLevel(l) ? l : null),
     deleteKey: async (provider) => {
       await context.secrets.delete(secretKey(provider));
     },
@@ -204,6 +217,7 @@ export function activate(context: vscode.ExtensionContext): void {
       refreshStatus();
       void settingsPanel.refresh();
     },
+    setLevel: (l) => levels.setProject(l),
     proposals,
   }, diary);
   pathViewRef = pathView;
@@ -244,7 +258,16 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pebble.path.refresh", () => pathView.refresh()),
     vscode.commands.registerCommand("pebble.path.verify", () => pathView.verify(true)),
     vscode.commands.registerCommand("pebble.map.open", () => mapPanel.show()),
-    vscode.commands.registerCommand("pebble.adopt", () => session.adopt()),
+    vscode.commands.registerCommand("pebble.adopt", async () => {
+      await session.adopt();
+      // Dopo l'adozione Pebble conosce lo stack: con più linguaggi propone un livello per ciascuno (roadmap #23).
+      const langs = await levels.detect();
+      if (langs.length < 2 || Object.keys(levels.profile().byLanguage).length) return;
+      const T = EXT_TEXT[lang()];
+      const names = langs.slice(0, 4).map((id) => LANGUAGES[id]?.name ?? id).join(", ");
+      const go = await vscode.window.showInformationMessage(T.levelsFound(names), T.levelsSet);
+      if (go) void vscode.commands.executeCommand("pebble.setLevel");
+    }),
     vscode.commands.registerCommand("pebble.newFeature", () => pathView.newPath("feature")),
     vscode.commands.registerCommand("pebble.newBug", () => pathView.newPath("bug")),
     vscode.commands.registerCommand("pebble.map.reviewStep", (n: number) => mapPanel.reviewStep(n)),
@@ -283,13 +306,39 @@ export function activate(context: vscode.ExtensionContext): void {
     status,
 
     vscode.commands.registerCommand("pebble.setLevel", async () => {
-      const labels: Record<ExperienceLevel, string> = EXT_TEXT[lang()].levels;
-      const pick = await vscode.window.showQuickPick(
-        LEVELS.map((l) => ({ label: labels[l], id: l, picked: l === level() })),
-        { placeHolder: EXT_TEXT[lang()].currentLevel(level()) },
-      );
-      if (pick) await config().update("experienceLevel", pick.id, vscode.ConfigurationTarget.Global);
+      const T = EXT_TEXT[lang()];
+      const labels: Record<ExperienceLevel, string> = T.levels;
+      const p = levels.profile();
+      // Con più linguaggi nella cartella si sceglie prima per cosa: il progetto o un linguaggio (roadmap #23).
+      const langs = await levels.detect();
+      let scope: string | null = null;
+      if (langs.length > 1) {
+        const pickScope = await vscode.window.showQuickPick(
+          [
+            { label: T.levelScopeProject, description: p.project, id: null as string | null },
+            ...langs.map((id) => ({ label: T.levelScopeLanguage(LANGUAGES[id]?.name ?? id, p.byLanguage[id] ?? T.levelSameAsProject(p.project)), id })),
+          ],
+          { placeHolder: T.levelScopePick },
+        );
+        if (!pickScope) return;
+        scope = pickScope.id;
+      }
+      const current = scope ? p.byLanguage[scope] : p.project;
+      const items = [
+        ...(scope ? [{ label: T.levelSameAsProject(p.project), id: null as ExperienceLevel | null, picked: !current }] : []),
+        ...LEVELS.map((l) => ({ label: labels[l], id: l as ExperienceLevel | null, picked: l === current })),
+      ];
+      const pick = await vscode.window.showQuickPick(items, { placeHolder: T.currentLevel(current ?? p.project) });
+      if (!pick) return;
+      if (scope) await levels.setLanguage(scope, pick.id);
+      else if (pick.id) await levels.setProject(pick.id);
     }),
+
+    levels.onDidChange(() => {
+      refreshStatus();
+      void settingsPanel.refresh();
+    }),
+    vscode.window.onDidChangeActiveTextEditor(() => refreshStatus()),
 
     vscode.commands.registerCommand("pebble.showSpend", () =>
       panel.show({

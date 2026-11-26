@@ -4,7 +4,7 @@
   "command.setApiKey": "Imposta la chiave API",
   "command.clearReview": "Rimuovi le note",
   "command.openSettings": "Impostazioni",
-  "command.setLevel": "Imposta il mio livello di esperienza",
+  "command.setLevel": "Imposta il livello (progetto o linguaggio)",
   "command.showSpend": "Mostra la spesa",
   "command.resetSpend": "Azzera il conteggio della spesa",
   "command.init": "Leggi il bootstrap e proponi il piano",

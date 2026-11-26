@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ghostOfMode, modeOf, promptForMode, splitPrompt, withModePrompts, withTraining } from "../src/core/prompt";
+import { ghostOfMode, modeOf, promptForMode, splitPrompt, withLevels, withModePrompts, withTraining } from "../src/core/prompt";
 import type { MentorModel } from "../src/core/ports";
 
 const FULL = [
@@ -99,4 +99,10 @@ test("in allenamento ogni messaggio porta TRAINING: yes, una volta sola", async 
   await withModePrompts(inner, { training: true }).chat(FULL, "MODE: CHAT");
   await withModePrompts(inner).generate(FULL, "MODE: REVIEW", {} as never, "r");
   assert.deepEqual(sent, ["MODE: CHAT\nTRAINING: yes", "MODE: REVIEW"]);
+});
+
+test("la riga LEVELS si aggiunge solo se c'è e una volta sola", () => {
+  assert.equal(withLevels("MODE: PLAN_STEP", null), "MODE: PLAN_STEP");
+  assert.equal(withLevels("MODE: PLAN_STEP", "LEVELS: csharp=entry, other=senior"), "MODE: PLAN_STEP\nLEVELS: csharp=entry, other=senior");
+  assert.equal(withLevels("MODE: X\nLEVELS: a=b", "LEVELS: c=d"), "MODE: X\nLEVELS: a=b");
 });

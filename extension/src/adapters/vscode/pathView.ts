@@ -26,7 +26,10 @@ const SEEN_RED_KEY = "pebble.path.seenRed";
 export interface PlannerDeps {
   mentor(): Promise<MentorModel>;
   systemPrompt(): Promise<string>;
-  level(): ExperienceLevel;
+  /** Il livello per quel file, o del progetto senza percorso (roadmap #23). */
+  level(path?: string | null): ExperienceLevel;
+  /** Il livello scelto nell'onboarding diventa quello del progetto. */
+  setLevel(level: ExperienceLevel): Promise<void>;
   priceFor(mentor: MentorModel): Price | undefined;
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   proposals: ProposalDocs;
@@ -231,7 +234,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
         hasCode: this.hasCode,
         roadmap: !!this.roadmap?.trim(),
         commonUnknowns: commonUnknowns(this.settings().lang),
-        level: vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
+        level: this.planner?.level() ?? vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
       },
     };
     void vscode.commands.executeCommand("setContext", "pebble.hasPath", text !== null);
@@ -512,7 +515,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     }
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
     if (level && (LEVELS as readonly string[]).includes(level)) {
-      await vscode.workspace.getConfiguration("pebble").update("experienceLevel", level as Level, vscode.ConfigurationTarget.Global);
+      if (this.planner) await this.planner.setLevel(level as Level);
+      else await vscode.workspace.getConfiguration("pebble").update("experienceLevel", level as Level, vscode.ConfigurationTarget.Global);
     }
     await vscode.window.showTextDocument(uri, { preview: false });
     void vscode.window.showInformationMessage(guide ? N.bootstrapGuideWritten : N.bootstrapWritten);
@@ -542,7 +546,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       const ctx = await new WorkspaceStore(this.root).load();
       const task = fromTask && { title: fromTask.title, todo: fromTask.todo, signature: fromTask.signature, when: fromTask.when.map((w) => w.text) };
       const signatures = (step?.tasks ?? []).map((t) => t.signature).filter((x): x is string => !!x);
-      const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(), signatures, lang);
+      const message = buildScaffoldMessage(ctx, rel, task, await planFiles(this.root), planner.level(rel), signatures, lang);
       const mentor = await planner.mentor();
       const { data, usage } = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: N.preparingFile(rel) },

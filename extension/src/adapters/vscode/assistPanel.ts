@@ -16,7 +16,8 @@ import { editorProblems } from "./problems";
 export interface AssistDeps {
   mentor(): Promise<MentorModel>;
   systemPrompt(): Promise<string>;
-  level(): ExperienceLevel;
+  /** Il livello per quel file: quello del suo linguaggio, o del progetto (roadmap #23). */
+  level(path?: string | null): ExperienceLevel;
   priceFor(mentor: MentorModel): Price | undefined;
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   helpContext(filePath: string): { task?: HelpTask; tests?: (TestResult & { detail?: string })[] };
@@ -196,7 +197,7 @@ export class AssistPanel implements vscode.Disposable {
       const { tests } = this.deps.helpContext(s.path);
       const message = buildAssistMessage({
         ctx,
-        level: this.deps.level(),
+        level: this.deps.level(s.path),
         file: { path: s.path, content: doc.getText() },
         ask: tab,
         selection: s.selection,
@@ -229,7 +230,7 @@ export class AssistPanel implements vscode.Disposable {
       const problems = editorProblems(s.uri);
       const message = buildHelpMessage({
         ctx,
-        level: this.deps.level(),
+        level: this.deps.level(s.path),
         file: { path: s.path, content: doc.getText() },
         line: s.line,
         ask,
@@ -247,7 +248,7 @@ export class AssistPanel implements vscode.Disposable {
       if (concept && !s.ladder.concepts.includes(concept)) s.ladder.concepts.push(concept);
       s.ladder.history.push(historyLine(body));
       s.ladder.turns.push({ who: "pebble", html: renderMarkdown(body), ...(concept && { concept }) });
-      if (ask.kind === "code") this.deps.note?.({ kind: "code", where: `${s.path}:${s.line}` });
+      if (ask.kind === "code") this.deps.note?.({ kind: "code", where: `${s.path}:${s.line}`, level: this.deps.level(s.path) });
       else if (ask.kind !== "reply") {
         const fix = problems.some((p) => p.severity === "errore");
         const rung = ask.kind === "why" ? "why" : ask.kind === "deep" ? "deep" : fix ? "fix" : ask.rung;
@@ -313,7 +314,7 @@ export class AssistPanel implements vscode.Disposable {
       T: W,
       ghosts: { neutral: ghost("neutral"), thinking: ghost("thinking"), worried: ghost("worried"), happy: ghost("happy") },
       title: s.selection ? T.onLines(s.selection.from, s.selection.to) : T.onFile(file),
-      sub: T.sub(this.deps.level(), s.red ? T.redBadge(s.red) : ""),
+      sub: T.sub(this.deps.level(s.path), s.red ? T.redBadge(s.red) : ""),
       tabs: s.tabs.map((id) => ({ id, label: label[id], active: id === s.active, ladder: id === "ladder" })),
       active: s.active,
       result: s.active === "ladder" ? null : s.results.get(s.active) ?? null,

@@ -40,7 +40,8 @@ export interface SessionDeps {
   /** Annota nel diario del passo (ADR-013). */
   note?(event: DiaryEvent): void;
   mentor(): Promise<MentorModel>;
-  level(): ExperienceLevel;
+  /** Il livello per quel file, o del progetto senza percorso (roadmap #23). */
+  level(path?: string | null): ExperienceLevel;
   systemPrompt(): Promise<string>;
   priceFor(mentor: MentorModel): Price | undefined;
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
@@ -330,7 +331,7 @@ export class MentorSession {
     const thinking = { CHAT: this.C.thinkingChat, NEXT: this.C.thinkingNext, TESTS: this.C.thinkingTests, NEW_FILE: this.C.thinkingNewFile }[mode];
 
     await this.run(thinking, async (mentor, system) => {
-      const msg = buildTextMessage(mode, ctx, this.deps.level(), {
+      const msg = buildTextMessage(mode, ctx, this.deps.level(file?.path), {
         file: file && (mode !== "NEXT" ? { path: file.path, content: file.content } : undefined),
         question,
         history: mode === "CHAT" ? this.history : undefined,
@@ -355,7 +356,7 @@ export class MentorSession {
     const content = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)).slice(0, 20000);
     await this.view.reveal();
     await this.run(this.C.newFileThinking(rel), async (mentor, system) => {
-      const msg = buildTextMessage("NEW_FILE", ctx, this.deps.level(), { file: { path: rel, content }, lang: this.deps.lang() });
+      const msg = buildTextMessage("NEW_FILE", ctx, this.deps.level(rel), { file: { path: rel, content }, lang: this.deps.lang() });
       await this.answer(mentor, system, msg, ctx, folder.uri, this.C.labelNewFile, rel);
     });
   }
@@ -376,7 +377,7 @@ export class MentorSession {
     const filtered = stripLongCode(data.answer, this.deps.lang());
     const training = this.deps.setting("training", false);
     const clean = training ? filtered.text : data.answer;
-    if (!training && filtered.removed > 0) this.deps.note?.({ kind: "code", where: file ?? label });
+    if (!training && filtered.removed > 0) this.deps.note?.({ kind: "code", where: file ?? label, level: this.deps.level(file) });
     this.history.push({ role: "pebble", text: clean });
 
     const actions: ChatAction[] = [];
@@ -430,7 +431,7 @@ export class MentorSession {
         store,
         system,
         { path: file.path, content: file.content, languageId: file.doc.languageId, problems: editorProblems(file.doc.uri) },
-        this.deps.level(),
+        this.deps.level(file.path),
         this.deps.priceFor(mentor),
         this.deps.lang(),
       );

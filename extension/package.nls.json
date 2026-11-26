@@ -4,7 +4,7 @@
   "command.setApiKey": "Set the API key",
   "command.clearReview": "Remove the notes",
   "command.openSettings": "Settings",
-  "command.setLevel": "Set my experience level",
+  "command.setLevel": "Set the level (project or language)",
   "command.showSpend": "Show spending",
   "command.resetSpend": "Reset the spending count",
   "command.init": "Read the bootstrap and propose the plan",

@@ -89,12 +89,17 @@ export function withTraining(message: string, training: boolean): string {
   return training && !/^TRAINING:/m.test(message) ? `${message}\nTRAINING: yes` : message;
 }
 
+/** Aggiunge la riga LEVELS (livelli per linguaggio, roadmap #23) se c'è e se il messaggio non la porta già. */
+export function withLevels(message: string, line: string | null): string {
+  return line && !/^LEVELS:/m.test(message) ? `${message}\n${line}` : message;
+}
+
 /**
  * Avvolge un modello: a ogni richiesta manda solo la parte di prompt della modalità scritta nel messaggio
  * e segna quella modalità sui token restituiti; in allenamento aggiunge la riga TRAINING. Chi chiama non cambia.
  */
-export function withModePrompts(inner: MentorModel, opts: { training?: boolean } = {}): MentorModel {
-  const t = (message: string) => withTraining(message, !!opts.training);
+export function withModePrompts(inner: MentorModel, opts: { training?: boolean; levels?: string | null } = {}): MentorModel {
+  const t = (message: string) => withLevels(withTraining(message, !!opts.training), opts.levels ?? null);
   return {
     provider: inner.provider,
     model: inner.model,

@@ -65,4 +65,5 @@ test("eventi delle caselle e chiusura del passo", () => {
 test("il codice scritto da Pebble su richiesta finisce nel diario (ADR-016)", () => {
   assert.equal(formatEvent({ kind: "code", where: "src/plates.ts:20" }, "it"), "codice scritto da Pebble su richiesta: src/plates.ts:20");
   assert.equal(formatEvent({ kind: "code", where: "src/plates.ts:20" }, "en"), "code written by Pebble on request: src/plates.ts:20");
+  assert.equal(formatEvent({ kind: "code", where: "Api/Orders.cs", level: "entry" }, "it"), "codice scritto da Pebble su richiesta: Api/Orders.cs (livello entry)");
 });

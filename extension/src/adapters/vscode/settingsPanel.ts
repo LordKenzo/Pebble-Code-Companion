@@ -13,6 +13,10 @@ export interface SettingsState {
   localBaseUrl: string;
   localModel: string;
   experienceLevel: string;
+  /** Livelli per linguaggio in questo progetto (roadmap #23). */
+  byLanguage: Record<string, string>;
+  /** Linguaggi trovati nella cartella, con il nome da mostrare. */
+  languages: { id: string; name: string }[];
   training: boolean;
   monthlyBudgetUsd: number;
   prices: Record<string, Price>;
@@ -30,11 +34,15 @@ export interface SettingsDeps {
   deleteKey(provider: ProviderId): Promise<void>;
   /** Lingua del pannello (ADR-012). */
   lang(): Lang;
+  setLevel(level: string): Promise<void>;
+  setLanguageLevel(language: string, level: string | null): Promise<void>;
 }
 
 type FromWebview =
   | { type: "ready" }
   | { type: "set"; key: string; value: unknown }
+  | { type: "setLevel"; level: string }
+  | { type: "setLanguageLevel"; language: string; level: string | null }
   | { type: "setPrice"; model: string; price: Price | null }
   | { type: "setKey" | "deleteKey"; provider: ProviderId }
   | { type: "check"; provider: ProviderId; model: string }
@@ -85,6 +93,12 @@ export class SettingsPanel {
       case "set":
         await config.update(m.key, m.value, vscode.ConfigurationTarget.Global);
         return;
+      case "setLevel":
+        await this.deps.setLevel(m.level);
+        return this.refresh();
+      case "setLanguageLevel":
+        await this.deps.setLanguageLevel(m.language, m.level);
+        return this.refresh();
       case "setPrice": {
         const prices = { ...config.get<Record<string, Price>>("prices", {}) };
         if (m.price) prices[m.model] = m.price;
@@ -168,6 +182,8 @@ function html(csp: string, lang: Lang): string {
   .prices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .prices label{font-size:12px;color:var(--vscode-descriptionForeground);display:flex;flex-direction:column;gap:2px}
   .check{display:flex;gap:8px;align-items:center;margin:6px 0}
+  .bylang{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:6px 0}
+  .langrow{display:flex;gap:8px;align-items:center;justify-content:space-between}
   h3{font-size:13px;margin:16px 0 4px}
   .spend{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
   .spend strong{font-size:20px;font-variant-numeric:tabular-nums}
@@ -247,6 +263,9 @@ function html(csp: string, lang: Lang): string {
     ${LEVELS.map((l) => `<label class="choice"><input type="radio" name="level" value="${l}"><b>${levels[l][0]}</b><span>${levels[l][1]}</span></label>`).join("")}
   </div>
   <p class="muted">${T.levelNote}</p>
+  <h3>${T.byLanguageTitle}</h3>
+  <div class="bylang" id="byLanguage"></div>
+  <p class="muted">${T.byLanguageHelp}</p>
   <h3>${T.trainingTitle}</h3>
   <label class="check"><input type="checkbox" id="training" name="training"> ${T.trainingLabel}</label>
   <p class="muted">${T.trainingHelp}</p>
@@ -294,12 +313,34 @@ function html(csp: string, lang: Lang): string {
     sel.value = current || "";
   }
   const $ = (id) => document.getElementById(id);
+  const LEVEL_IDS = ["entry", "junior", "mid", "senior"];
+  /** Un menu per linguaggio: "come il progetto" oppure un livello suo (roadmap #23). */
+  function renderLanguages() {
+    const box = $("byLanguage");
+    if (document.activeElement && box.contains(document.activeElement)) return;
+    box.innerHTML = "";
+    if (!S.languages.length) { box.textContent = J.noLanguages; return; }
+    S.languages.forEach((l) => {
+      const row = document.createElement("label");
+      row.className = "langrow";
+      const name = document.createElement("span");
+      name.textContent = l.name;
+      const sel = document.createElement("select");
+      sel.dataset.langLevel = l.id;
+      sel.add(new Option(J.sameAsProject, ""));
+      LEVEL_IDS.forEach((id) => sel.add(new Option(id[0].toUpperCase() + id.slice(1), id)));
+      sel.value = S.byLanguage[l.id] || "";
+      row.append(name, sel);
+      box.append(row);
+    });
+  }
   const set = (key, value) => vscode.postMessage({ type: "set", key, value });
 
   function render() {
     document.querySelectorAll('input[name=provider]').forEach((r) => (r.checked = r.value === S.provider));
     document.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === S.experienceLevel));
     $("training").checked = !!S.training;
+    renderLanguages();
     document.querySelectorAll('input[name=language]').forEach((r) => (r.checked = r.value === S.language));
     document.querySelectorAll('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== S.provider));
     fillSelect($("anthropicModelSelect"), ANTHROPIC_MODELS, S.anthropicModel, "");
@@ -345,7 +386,8 @@ function html(csp: string, lang: Lang): string {
   document.addEventListener("change", (e) => {
     const t = e.target;
     if (t.name === "provider") { S.provider = t.value; render(); set("provider", t.value); $("checkResult").hidden = true; }
-    else if (t.name === "level") set("experienceLevel", t.value);
+    else if (t.name === "level") vscode.postMessage({ type: "setLevel", level: t.value });
+    else if (t.dataset.langLevel) vscode.postMessage({ type: "setLanguageLevel", language: t.dataset.langLevel, level: t.value || null });
     else if (t.name === "training") set("training", t.checked);
     else if (t.name === "language") set("language", t.value);
     else if (t.id === "localModelSelect") { if (t.value) set("local.model", t.value); }
