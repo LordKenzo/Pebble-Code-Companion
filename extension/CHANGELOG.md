@@ -2,6 +2,13 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.26
+- **Pebble writes code when you ask, at every level** (ADR-016). Unasked, it still points and explains; when you ask, the level decides the shape. Entry gets complete code explained line by line, with a question to check it makes sense. Junior gets complete code with the principle behind it. Mid gets lean code with the choices motivated. Senior gets a targeted patch with the trade-off.
+- **Show me the code** in the ⌥P help ladder: the corrected code for the red test, once you've seen the rungs.
+- **Training** (`pebble.training`, also in the settings page): for those who want to practise. Pebble doesn't write the project's logic even if you insist, and the ladder stops at the exact line.
+- The diary records code written by Pebble, so the step review shows what is yours.
+- The level descriptions say what each level gets when you ask for code.
+
 ## 0.7.25
 - **Fewer tokens per call** (ADR-016): each request sends only the part of Pebble's instructions its mode needs, about half the system prompt. In the evals that is 37% fewer input tokens per call, with the same answers.
 - **Spending by ghost**: the spending page also shows what Roadmap, Mentor and the ⌥P helper cost, mode by mode.
