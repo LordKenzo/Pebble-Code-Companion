@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.34
+- **No need to know model names by heart.** In the settings page each ghost's model is a menu with the models of its provider: the known Claude models plus those your account sees, your OpenAI account's models, the models installed on your local server. *Other…* still lets you type a name. Changing a ghost's provider clears its model, since the old name belongs to another list.
+- The local server's model list loads by itself, without pressing *Refresh*.
+
 ## 0.7.33
 - **Each ghost has its colour, as in the banner.** The Mentor stays azure in the chat. The Roadmap ghost is peach in the Path panel and on the map. The ⌥P helper is green, with a green accent in its section, and the help ladder stays the Mentor's azure. Git is lilac in every mood.
 
