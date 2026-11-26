@@ -2,6 +2,9 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.32
+- **⌥P and Git live in Pebble's sidebar**, as sections next to Path and Mentor, instead of an extra editor column: the code keeps a single column and you switch by opening and closing sections. ⌥P keeps the cursor in the editor; *Got it* hides the section. The Git section appears when a rebase or merge needs you.
+
 ## 0.7.31
 - **The Git ghost never proposes losing a side.** If the proposed union is the same as one side, Pebble shows it as "keep that side" and warns you. The instructions also say that lines both sides added, such as two tests, are kept both.
 - **Unsaved resolutions are flagged.** A file resolved in the editor but not saved still has the markers on disk: the panel says so and offers *Save* before you run `git add`.
