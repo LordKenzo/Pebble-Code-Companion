@@ -5,17 +5,20 @@ Usage:
     python3 evals/run.py                 # all cases
     python3 evals/run.py 05 07           # only the cases starting with these prefixes
     python3 evals/run.py --model opus    # a specific model
+    python3 evals/run.py --whole-prompt  # the whole prompt, to compare costs
 
 For each case: takes the "## Input" section, expands the "@include <path>" lines,
 adds the LANGUAGE line as the extension does (en for cases ending in "-en", otherwise it)
 unless the case already has one, sends it to the model with prompts/mentor.md as the
-system prompt (no tools, no MCP, empty working folder) and saves the answer in
-evals/runs/<date-time>/.
+system prompt, cut to the case's MODE as the extension does (--whole-prompt sends it all),
+with no tools, no MCP, an empty working folder, and saves the answer in evals/runs/<date-time>/,
+with tokens and cost per case in _auto.md.
 The automatic check only flags code blocks that are too long; the rest is judged
 by hand against the case's "## Expected" section.
 """
 import argparse
 import datetime as dt
+import json
 import re
 import subprocess
 import sys
@@ -37,6 +40,34 @@ def system_prompt() -> str:
     text = PROMPT.read_text()
     _, sep, body = text.partition("\n---\n")
     return body.strip() if sep else text
+
+
+def prompt_for_mode(full: str, mode: str | None) -> str:
+    """The same cut as the extension (core/prompt.ts, ADR-016): the core, only this mode's section, the tone."""
+    if not mode:
+        return full
+    start = re.search(r"^## Modes\s*$", full, re.M)
+    if not start:
+        return full
+    core, rest = full[:start.start()].rstrip(), full[start.end():]
+    heads = list(re.finditer(r"^### MODE: ([A-Z_]+)\s*$", rest, re.M))
+    for i, h in enumerate(heads):
+        if h.group(1) != mode:
+            continue
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(rest)
+        body = rest[h.start():end]
+        tail = ""
+        if i == len(heads) - 1:
+            nxt = re.search(r"^## ", body[len(h.group(0)):], re.M)
+            if nxt:
+                cut = len(h.group(0)) + nxt.start()
+                body, tail = body[:cut], body[cut:]
+        else:
+            t = re.search(r"^## (?!Modes)", rest[heads[-1].start() + len(heads[-1].group(0)):], re.M)
+            if t:
+                tail = rest[heads[-1].start() + len(heads[-1].group(0)) + t.start():]
+        return "\n\n".join(x for x in (core, "## Modes", body.strip(), tail.strip()) if x) + "\n"
+    return full
 
 
 def section(text: str, name: str) -> str:
@@ -100,23 +131,41 @@ def longest_code_block(answer: str) -> int:
     return longest
 
 
-def run_case(case: Path, sysprompt_file: Path, workdir: Path, model: str | None) -> tuple[str, str, int]:
+def run_case(case: Path, full_prompt: str, tmp: Path, model: str | None, whole: bool) -> tuple[str, str, int, dict]:
     message = expand(section(case.read_text(), "Input"))
     if not re.search(r"^LANGUAGE:", message, re.M):
         message += "\n" + LANGUAGE_LINE["en" if case.stem.endswith("-en") else "it"]
-    cmd = ["claude", "-p", "--system-prompt-file", str(sysprompt_file), "--tools", "",
-           "--strict-mcp-config", "--no-session-persistence"]
+    mode = re.search(r"^MODE: ([A-Z_]+)\s*$", message, re.M)
+    sp = tmp / f"system-{case.stem}.md"
+    sp.write_text(full_prompt if whole else prompt_for_mode(full_prompt, mode and mode.group(1)))
+    cmd = ["claude", "-p", "--system-prompt-file", str(sp), "--tools", "",
+           "--strict-mcp-config", "--no-session-persistence", "--output-format", "json"]
     if model:
         cmd += ["--model", model]
-    res = subprocess.run(cmd, input=message, capture_output=True, text=True, cwd=workdir, timeout=600)
-    answer = res.stdout.strip() if res.returncode == 0 else f"ERROR ({res.returncode}): {res.stderr.strip()}"
-    return case.stem, answer, longest_code_block(answer)
+    res = subprocess.run(cmd, input=message, capture_output=True, text=True, cwd=tmp / "work", timeout=600)
+    usage: dict = {"system_chars": len(sp.read_text())}
+    if res.returncode != 0:
+        return case.stem, f"ERROR ({res.returncode}): {res.stderr.strip()}", 0, usage
+    try:
+        out = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return case.stem, res.stdout.strip(), longest_code_block(res.stdout), usage
+    u = out.get("usage") or {}
+    usage.update(
+        tokens_in=u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0),
+        tokens_out=u.get("output_tokens", 0),
+        cost_usd=out.get("total_cost_usd"),
+    )
+    answer = str(out.get("result", "")).strip()
+    return case.stem, answer, longest_code_block(answer), usage
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("prefixes", nargs="*")
     ap.add_argument("--model")
+    ap.add_argument("--whole-prompt", action="store_true",
+                    help="send the whole prompt instead of the mode's part, to compare costs")
     args = ap.parse_args()
 
     cases = sorted((EVALS / "cases").glob("*.md"))
@@ -128,20 +177,26 @@ def main() -> None:
     out = EVALS / "runs" / dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     out.mkdir(parents=True, exist_ok=True)
 
+    full = system_prompt()
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        sp = tmp / "system.md"
-        sp.write_text(system_prompt())
-        work = tmp / "work"
-        work.mkdir()
+        (tmp / "work").mkdir()
         with ThreadPoolExecutor(max_workers=5) as pool:
-            results = list(pool.map(lambda c: run_case(c, sp, work, args.model), cases))
+            results = list(pool.map(lambda c: run_case(c, full, tmp, args.model, args.whole_prompt), cases))
 
-    summary = ["| Case | Longest code block | Check |", "|---|---|---|"]
-    for name, answer, longest in results:
+    # Tokens and cost per case (ADR-016): every prompt change shows what it costs next to what it fixes.
+    summary = ["| Case | Longest code block | Check | System chars | Tokens in | Tokens out | Cost |",
+               "|---|---|---|---|---|---|---|"]
+    totals = {"tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0}
+    for name, answer, longest, usage in results:
         (out / f"{name}.md").write_text(answer + "\n")
         flag = "ok" if longest <= MAX_CODE_LINES else f"⚠ over {MAX_CODE_LINES} lines"
-        summary.append(f"| {name} | {longest} | {flag} |")
+        cost = usage.get("cost_usd")
+        for k in totals:
+            totals[k] += usage.get(k) or 0
+        summary.append(f"| {name} | {longest} | {flag} | {usage['system_chars']} | {usage.get('tokens_in', '–')} "
+                       f"| {usage.get('tokens_out', '–')} | {'–' if cost is None else f'${cost:.4f}'} |")
+    summary.append(f"| **total** | | | | {totals['tokens_in']} | {totals['tokens_out']} | ${totals['cost_usd']:.4f} |")
     (out / "_auto.md").write_text("\n".join(summary) + "\n")
     print(out)
     print("\n".join(summary))
