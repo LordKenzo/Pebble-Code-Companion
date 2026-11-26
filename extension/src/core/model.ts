@@ -57,6 +57,8 @@ export interface Usage {
   outputTokens: number;
   cacheReadTokens: number;
   cacheWriteTokens: number;
+  /** La modalità della richiesta (MODE: …), per contare la spesa per fantasmino (ADR-016). */
+  mode?: string;
 }
 
 export interface ReviewResult {

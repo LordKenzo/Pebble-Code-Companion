@@ -3,6 +3,7 @@ import type { MentorModel } from "../../core/ports";
 import { ClaudeMentor, type Effort } from "./claude";
 import { ProviderError } from "./errors";
 import { OpenAICompatibleMentor } from "./openaiCompatible";
+import { withModePrompts } from "../../core/prompt";
 
 export type ProviderId = "anthropic" | "openai" | "local";
 
@@ -25,6 +26,10 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
 
 /** Sceglie l'adapter in base alle impostazioni (ADR-005). */
 export function createMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {
+  return withModePrompts(createProviderMentor(s, apiKey));
+}
+
+function createProviderMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {
   switch (s.provider) {
     case "anthropic":
       return new ClaudeMentor(s.anthropicModel, s.anthropicEffort, apiKey, s.lang);
