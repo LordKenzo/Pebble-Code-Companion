@@ -278,3 +278,9 @@ Decisions:
 - **The help ladder moves to the Mentor**: its rules are the most protocol-heavy, and a cheap model breaks them.
 - **The ⌥P helper keeps the tabs**, where a cheap model holds.
 - **Recommended**: Roadmap a strong model at high effort, and Sonnet was enough. Mentor a mid, low-cost model at medium effort (Sonnet). ⌥P helper a cheap or local model at low effort (Haiku).
+
+## 2026-11-26 · one review, no NEXT, prompt v1.6 (`runs/2026-11-26_1411`)
+
+- **The ⌥P "Suggestions" tab is now the real review** (MODE: REVIEW): notes with severity, line and anchor, also shown as editor underlines and noted in the diary. The ASSIST `tips` request is gone, and case 38 with it; the review cases (05–07, 12) cover the tab.
+- **MODE: NEXT is gone.** The Path panel and the map already know the next step without the model; `/next`, the welcome button and **Pebble: What's the next step?** open the Path panel. Case 11 removed.
+- Reran 05, 39–42 after the prompt change: same behaviour (05 finds pg, the exception and the race; 41's steps stay short).
