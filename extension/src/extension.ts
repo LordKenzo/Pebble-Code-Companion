@@ -292,6 +292,7 @@ export function activate(context: vscode.ExtensionContext): void {
       panel.show({
         kind: "spend",
         data: ledger.data(),
+        modes: ledger.modes(),
         currentMonth: ledger.monthTotal().costUsd,
         budget: config().get<number>("monthlyBudgetUsd", 0),
       }),

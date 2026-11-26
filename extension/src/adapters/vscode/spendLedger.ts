@@ -18,9 +18,21 @@ export interface SpendRow {
 export type SpendData = Record<string, Record<string, SpendRow>>;
 
 const KEY = "pebble.spend.v1";
+/** mese → modalità (MODE: …) → totali, per vedere quanto costa ogni fantasmino (ADR-016). */
+const MODES_KEY = "pebble.spend.modes.v1";
 const empty = (): SpendRow => ({
   reviews: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costUsd: 0, unpriced: 0,
 });
+
+function add(row: SpendRow, r: SpendEntry): void {
+  row.reviews++;
+  row.inputTokens += r.usage.inputTokens;
+  row.outputTokens += r.usage.outputTokens;
+  row.cacheReadTokens += r.usage.cacheReadTokens;
+  row.cacheWriteTokens += r.usage.cacheWriteTokens;
+  if (r.costUsd === null) row.unpriced++;
+  else row.costUsd += r.costUsd;
+}
 
 export const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
@@ -32,18 +44,18 @@ export class SpendLedger {
     return this.state.get<SpendData>(KEY, {});
   }
 
+  /** La spesa per modalità; le richieste senza modalità finiscono in "?". */
+  modes(): SpendData {
+    return this.state.get<SpendData>(MODES_KEY, {});
+  }
+
   async record(r: SpendEntry): Promise<void> {
     const data = this.data();
-    const month = (data[monthKey()] ??= {});
-    const row = (month[`${r.provider} · ${r.model}`] ??= empty());
-    row.reviews++;
-    row.inputTokens += r.usage.inputTokens;
-    row.outputTokens += r.usage.outputTokens;
-    row.cacheReadTokens += r.usage.cacheReadTokens;
-    row.cacheWriteTokens += r.usage.cacheWriteTokens;
-    if (r.costUsd === null) row.unpriced++;
-    else row.costUsd += r.costUsd;
+    add(((data[monthKey()] ??= {})[`${r.provider} · ${r.model}`] ??= empty()), r);
     await this.state.update(KEY, data);
+    const modes = this.modes();
+    add(((modes[monthKey()] ??= {})[r.usage.mode ?? "?"] ??= empty()), r);
+    await this.state.update(MODES_KEY, modes);
   }
 
   monthTotal(month = monthKey()): { costUsd: number; reviews: number; unpriced: number } {
@@ -57,5 +69,6 @@ export class SpendLedger {
 
   async reset(): Promise<void> {
     await this.state.update(KEY, {});
+    await this.state.update(MODES_KEY, {});
   }
 }

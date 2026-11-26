@@ -2,13 +2,14 @@ import * as vscode from "vscode";
 import type { ReviewResult } from "../../core/model";
 import { formatUsd } from "../../core/cost";
 import { EXT_TEXT, type Lang } from "../../core/i18n";
-import type { SpendData } from "./spendLedger";
+import type { SpendData, SpendRow } from "./spendLedger";
+import { ghostOfMode } from "../../core/prompt";
 
 type State =
   | { kind: "loading"; file: string; provider: string }
   | { kind: "result"; file: string; uri: vscode.Uri; result: ReviewResult }
   | { kind: "error"; file: string; message: string; action?: { label: string; command: string } }
-  | { kind: "spend"; data: SpendData; currentMonth: number; budget: number };
+  | { kind: "spend"; data: SpendData; modes: SpendData; currentMonth: number; budget: number };
 
 /** Pannello laterale con l'esito della review (ADR-001). */
 export class ReviewPanel {
@@ -49,23 +50,36 @@ const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 /** Testo semplice con `codice` inline evidenziato. */
 const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\n/g, "<br>");
-function renderSpend(data: SpendData, currentMonth: number, budget: number, lang: Lang): string {
+function renderSpend(data: SpendData, modes: SpendData, currentMonth: number, budget: number, lang: Lang): string {
   const T = EXT_TEXT[lang];
   const num = (n: number) => n.toLocaleString(T.numberLocale);
   const months = Object.keys(data).sort().reverse();
   if (!months.length) return `<p class="muted">${T.noRequests}</p>`;
   const budgetLine = budget > 0 ? `<p>${T.budgetUsed(formatUsd(budget, lang), Math.round((currentMonth / budget) * 100))}</p>` : "";
+  const row = (label: string, r: SpendRow) =>
+    `<tr><td>${label}</td><td>${r.reviews}</td><td>${num(r.inputTokens)}</td><td>${num(r.outputTokens)}</td><td>${num(r.cacheReadTokens + r.cacheWriteTokens)}</td><td>${r.unpriced === r.reviews ? "–" : formatUsd(r.costUsd, lang)}</td></tr>`;
+  // Per fantasmino: le modalità raggruppate sotto chi le serve, ordinate per costo (ADR-016).
+  const byGhost = (m: string) => {
+    const rows = Object.entries(modes[m] ?? {});
+    if (!rows.length) return "";
+    const ghost = (mode: string) => T.ghostNames[ghostOfMode(mode) ?? "other"];
+    rows.sort(([a, ra], [b, rb]) => ghost(a).localeCompare(ghost(b)) || rb.costUsd - ra.costUsd);
+    return `<h3>${T.byGhostTitle}</h3>
+<table><thead><tr>${[T.byGhostColumn, ...T.columns.slice(1)].map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>
+${rows.map(([mode, r]) => row(`${esc(ghost(mode))} · <code>${esc(mode)}</code>`, r)).join("")}
+</tbody></table>`;
+  };
   const tables = months.map((m) => {
     const rows = Object.entries(data[m]).sort(([, a], [, b]) => b.costUsd - a.costUsd);
     const total = rows.reduce((s, [, r]) => s + r.costUsd, 0);
     const unpriced = rows.reduce((s, [, r]) => s + r.unpriced, 0);
     return `<h2>${esc(m)} · ${formatUsd(total, lang)}${unpriced ? ` <span class="muted">${T.unpricedRequests(unpriced)}</span>` : ""}</h2>
 <table><thead><tr>${T.columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>
-${rows.map(([k, r]) => `<tr><td>${esc(k)}</td><td>${r.reviews}</td><td>${num(r.inputTokens)}</td><td>${num(r.outputTokens)}</td><td>${num(r.cacheReadTokens + r.cacheWriteTokens)}</td><td>${r.unpriced === r.reviews ? "–" : formatUsd(r.costUsd, lang)}</td></tr>`).join("")}
-</tbody></table>`;
+${rows.map(([k, r]) => row(esc(k), r)).join("")}
+</tbody></table>${byGhost(m)}`;
   }).join("");
   return `${budgetLine}${tables}
-<p class="muted">${T.spendNote}</p>
+<p class="muted">${T.spendNote} ${T.byGhostNote}</p>
 <button data-command="pebble.resetSpend">${T.resetCount}</button>`;
 }
 
@@ -75,7 +89,7 @@ function render(state: State, csp: string, lang: Lang): string {
   const nonce = Math.random().toString(36).slice(2);
   let body: string;
   if (state.kind === "spend") {
-    body = renderSpend(state.data, state.currentMonth, state.budget, lang);
+    body = renderSpend(state.data, state.modes, state.currentMonth, state.budget, lang);
   } else if (state.kind === "loading") {
     body = `<p class="muted">${T.reviewing(esc(state.file), esc(state.provider))}</p>`;
   } else if (state.kind === "error") {
