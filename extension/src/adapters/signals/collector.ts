@@ -2,8 +2,9 @@ import { spawn } from "node:child_process";
 import * as vscode from "vscode";
 import { findExports, type Signals, type Task } from "../../core/path";
 import { NOTICE_TEXT, type Lang } from "../../core/i18n";
-import { DEFAULT_TEST_COMMAND, detectTestCommand, packageDependencies, packageScripts } from "../../core/runner";
-import { parseTap, type ParsedTest } from "../../core/tap";
+import { DEFAULT_TEST_COMMAND, OTHER_MANIFESTS, detectTestCommand, packageDependencies, packageScripts } from "../../core/runner";
+import type { ParsedTest } from "../../core/tap";
+import { parseTestOutput } from "../../core/testOutput";
 
 export interface TestRun {
   at: Date;
@@ -93,25 +94,38 @@ export class SignalCollector {
     }
   }
 
-  /** Lancia il comando dei test nella cartella del progetto e legge l'output TAP. */
-  private runTests(manifest: string | null): Promise<TestRun> {
+  /** Quali manifest di altri stack ci sono nella radice (Package.swift, go.mod…). */
+  private async otherManifests(): Promise<string[]> {
+    const found: string[] = [];
+    for (const name of OTHER_MANIFESTS) {
+      try {
+        await vscode.workspace.fs.stat(vscode.Uri.joinPath(this.root, name));
+        found.push(name);
+      } catch {
+        // non c'è
+      }
+    }
+    return found;
+  }
+
+  /** Lancia il comando dei test nella cartella del progetto e ne legge i risultati (TAP o il formato del runner). */
+  private async runTests(manifest: string | null): Promise<TestRun> {
     // In una cartella non attendibile niente comandi: eseguirebbero codice che non hai approvato.
     if (!vscode.workspace.isTrusted) {
-      return Promise.resolve({
-        at: new Date(),
-        durationMs: 0,
-        tests: [],
-        error: NOTICE_TEXT[this.settings().lang].restricted,
-      });
+      return { at: new Date(), durationMs: 0, tests: [], error: NOTICE_TEXT[this.settings().lang].restricted };
     }
-    const { timeoutSeconds, lang } = this.settings();
+    const { lang } = this.settings();
+    let timeoutSeconds = this.settings().timeoutSeconds;
     const N = NOTICE_TEXT[lang];
-    // Se lo sviluppatore non ha scelto un comando, Pebble lo ricava dal package.json (Vitest, node:test…).
+    // Se lo sviluppatore non ha scelto un comando, Pebble lo ricava dal manifest (Vitest, node:test, swift test…).
     let testCommand = this.settings().testCommand;
     if (testCommand === DEFAULT_TEST_COMMAND) {
-      const choice = detectTestCommand(manifest, lang);
-      if (choice.kind === "missing") return Promise.resolve({ at: new Date(), durationMs: 0, tests: [], error: choice.hint });
+      const others = manifest === null ? await this.otherManifests() : [];
+      const choice = detectTestCommand(manifest, lang, others, process.platform === "win32");
+      if (choice.kind === "missing") return { at: new Date(), durationMs: 0, tests: [], error: choice.hint };
       testCommand = choice.command;
+      // Swift, Go e Rust compilano prima di provare: la prima volta può volerci qualche minuto.
+      if (["Swift", "Go", "Cargo"].includes(choice.runner)) timeoutSeconds = Math.max(timeoutSeconds, 300);
     }
     this.lastCommand = testCommand;
     const started = Date.now();
@@ -132,17 +146,18 @@ export class SignalCollector {
       });
       const timer = setTimeout(() => {
         child.kill();
-        done({ tests: parseTap(out), error: N.timeout(timeoutSeconds) });
+        done({ tests: parseTestOutput(out, err), error: N.timeout(timeoutSeconds) });
       }, timeoutSeconds * 1000);
       child.stdout.on("data", (b: Buffer) => {
         if (out.length < MAX_OUTPUT) out += b.toString("utf8");
       });
       child.stderr.on("data", (b: Buffer) => {
-        if (err.length < 16_384) err += b.toString("utf8");
+        // swift test scrive i risultati di XCTest su stderr: si tengono anche quelli.
+        if (err.length < MAX_OUTPUT) err += b.toString("utf8");
       });
       child.on("error", (e) => done({ tests: [], error: N.cannotRun(testCommand, e.message) }));
       child.on("close", (code) => {
-        const tests = parseTap(out);
+        const tests = parseTestOutput(out, err);
         if (tests.length === 0 && code !== 0) {
           const first = (err || out).split(/\r?\n/).find((l) => l.trim()) ?? N.exitCode(code);
           done({ tests, error: first.trim().slice(0, 240) });

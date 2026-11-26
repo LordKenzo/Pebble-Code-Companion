@@ -468,7 +468,7 @@ const noticeIt = {
   timeout: (s: number) => `i test non sono finiti entro ${s} secondi`,
   cannotRun: (cmd: string, e: string) => `non riesco a lanciare "${cmd}": ${e}`,
   exitCode: (code: number | null) => `uscito con codice ${code}`,
-  noTap: (cmd: string) => `"${cmd}" non ha prodotto risultati in formato TAP`,
+  noTap: (cmd: string) => `"${cmd}" non ha prodotto risultati di test che Pebble sa leggere (TAP, Swift, pytest, Go, Cargo)`,
   jest: "il progetto usa Jest, che non produce TAP da solo: installa jest-tap-reporter e imposta pebble.path.testCommand",
   noRunner: "nel progetto non c'è ancora un test runner: per esempio npm install -D vitest",
 };
@@ -517,7 +517,7 @@ const noticeEn: typeof noticeIt = {
   timeout: (s) => `the tests did not finish within ${s} seconds`,
   cannotRun: (cmd, e) => `I can't run "${cmd}": ${e}`,
   exitCode: (code) => `exited with code ${code}`,
-  noTap: (cmd) => `"${cmd}" produced no results in TAP format`,
+  noTap: (cmd) => `"${cmd}" produced no test results Pebble can read (TAP, Swift, pytest, Go, Cargo)`,
   jest: "the project uses Jest, which doesn't output TAP on its own: install jest-tap-reporter and set pebble.path.testCommand",
   noRunner: "the project has no test runner yet: for example npm install -D vitest",
 };

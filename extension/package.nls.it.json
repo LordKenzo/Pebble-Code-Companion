@@ -54,7 +54,7 @@
   "config.prices": "Prezzi per i modelli non noti a Pebble (es. OpenAI), in dollari per milione di token. Esempio: `{ \"gpt-6.2-sol\": { \"input\": 2, \"output\": 8, \"cacheRead\": 0.2 } }`. I prezzi dei modelli Claude sono già inclusi.",
   "config.autoStart": "Quando apri un progetto con bootstrap.md ma senza .pebble/, Pebble lo legge da solo e propone il piano (una volta per progetto).",
   "config.guideNewFiles": "Quando crei un file in un progetto con .pebble/, Pebble ti dice che ruolo ha e cosa evitare.",
-  "config.path.testCommand": "Comando che lancia i test e stampa i risultati in formato TAP, eseguito nella cartella del progetto. Se lasci il valore predefinito, Pebble lo sceglie dal package.json (anche Vitest). Esempi: `node --test --test-reporter=tap \"test/**/*.test.ts\"`, `npx vitest run --reporter=tap-flat`.",
+  "config.path.testCommand": "Comando che lancia i test, eseguito nella cartella del progetto. Pebble legge il formato TAP e l'output di `swift test`, `pytest -v`, `go test -v` e `cargo test`. Se lasci il valore predefinito, Pebble lo sceglie dal manifest: package.json (anche Vitest), Package.swift, pyproject.toml/requirements.txt, go.mod, Cargo.toml. Esempi: `node --test --test-reporter=tap \"test/**/*.test.ts\"`, `npx vitest run --reporter=tap-flat`.",
   "config.path.testTimeoutSeconds": "Tempo massimo per i test lanciati dal percorso, in secondi.",
   "config.path.verifyOnSave": "Quando salvi un file del progetto, rilancia i test e aggiorna le caselle del percorso. Non usa il modello e non costa niente.",
   "config.path.requireRedFirst": "Un compito si chiude solo se Pebble ha visto i suoi test fallire almeno una volta (ADR-010). Disattivato: il compito si chiude con un avviso.",
