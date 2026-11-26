@@ -318,3 +318,15 @@ The developer wrote a bootstrap from scratch (a small database of customers who 
 |---|---|---|
 | 52 step 1 of a new project | ✅ | No mkdir/cd. One condition per task: `file package.json`, `dipendenza typescript vitest @types/node`, `file tsconfig.json`, `script test "vitest run"`, `test "progetto pronto"`, `a mano` |
 | 20, 29 (regressions) | ✅ | Same shape as before, no shared conditions |
+
+## 2026-11-26 · Supporto Mac, a Swift project from a real trial: prompt v2.0, tests beyond Node (cases 53, 52, `runs/2026-11-26_2243`, `runs/2026-11-26_2244`)
+
+The developer started a macOS app (log customer calls and the feature that broke). The plan was sound: Swift and SwiftUI, a testable SupportCore package, SwiftData behind a protocol, a good closing question on the macOS version. Step 1 had three defects:
+- **`test "testExample"`.** Swift 6 `swift package init` writes `@Test func example()` with Swift Testing (checked on Swift 6.4.2). And Pebble ran `node --test` in a project without package.json, so no `test` condition could ever tick, in any non-JS project. The extension now runs `swift test`, pytest, `go test` or `cargo test` from the manifest and reads their output (checked on real `swift test` output, XCTest and Swift Testing, pass and fail).
+- **A task to create `.gitignore`**, which the init command already writes: it would tick before doing anything.
+- **ADR-003 ruled out Swift Testing because it "needs Xcode 16"**, an old version by now. INIT now assumes current tools and asks when a version matters.
+
+| Case | Result | Notes |
+|---|---|---|
+| 53 step 1 of a Swift package | ✅ | Three tasks: `file Package.swift`, `swift test` with `a mano` (explains `example` vs `testExample`), review. No .gitignore task, no mkdir; the question asks for `swift --version` |
+| 52 (regression) | ✅ | Same conditions as before; the `.gitignore` task stays, since `npm init` doesn't write one |
