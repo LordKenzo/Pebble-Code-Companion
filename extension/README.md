@@ -46,6 +46,8 @@ Your code is sent to the provider you choose; with `local` it never leaves your 
 ## Experience level
 `pebble.experienceLevel`: `entry`, `junior`, `mid` (default), `senior`. It changes what Pebble flags, how it explains it and the shape of the code you ask for: entry gets complete code explained line by line, junior complete code with the principle behind it, mid lean code with the choices motivated, senior a targeted patch with the trade-off. Unasked, Pebble points and explains; code enters your files only when you copy or approve it, and the diary records it.
 
+**Per project and per language.** The level is kept per project, on your computer, and each language can have its own: senior in TypeScript, entry in C#. Pebble uses the level of the file you're working on; plans take all of them into account. Set it from the settings page or **Pebble: Set the level (project or language)**.
+
 `pebble.training` (off by default): Pebble doesn't write your project's logic, even if you ask; the help ladder stops at the exact line.
 
 ## Spending

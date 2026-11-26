@@ -254,3 +254,10 @@ Pebble now writes code when asked, shaped by level. The old refusal survives und
 | 46 HELP *Show me the code*, training | ✅ with reservations | Stays at the exact line, says why in one sentence without preaching. The trace of its suggested test is wrong: with `>` 70 kg gives 20 + 2.5 + 1.25, not 20 + 5 |
 
 The rest of the cases didn't change behaviour. The automatic check flags 01 (a folder tree in an unlabelled block) and 11 (complete `package.json` and `tsconfig`, plus the trivial 5-line setup test): zone A, allowed by the extension's filter. The cut prompt is about 1,900 characters longer than with v1.3, from the level and training rules; the whole run cost $2.87.
+
+## 2026-11-26 · levels per language, prompt v1.5, roadmap #23 (cases 43, 47, `runs/2026-11-26_1348`)
+
+| Case | Result | Notes |
+|---|---|---|
+| 47 CHAT, C# at entry and TypeScript at senior in one answer | ✅ | The C# method is complete (`decimal`, `foreach`, `Math.Round` with `AwayFromZero`), every term explained in plain words, three tests with values, a closing question. The TypeScript type is four lines with two terse notes (camelCase from System.Text.Json; `decimal` → `number`, so totals stay on the backend or travel as strings). Nothing in the TypeScript part is explained at entry depth |
+| 43 CHAT code at entry (rerun) | ✅ | This time it returns a result with an outcome (`ok` / `avviso`) as ADR-004 asks, and the test traces 84 kg → 82.5 kg correctly |

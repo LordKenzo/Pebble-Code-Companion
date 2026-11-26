@@ -46,6 +46,8 @@ Il codice va al provider che scegli; con `local` non esce dal computer. I modell
 ## Livello di esperienza
 `pebble.experienceLevel`: `entry`, `junior`, `mid` (predefinito), `senior`. Cambia cosa Pebble segnala, come lo spiega e la forma del codice che chiedi: entry riceve codice completo spiegato riga per riga, junior codice completo con il principio dietro, mid codice asciutto con le scelte motivate, senior una patch mirata con il compromesso. Senza richiesta Pebble indica e spiega; il codice entra nei tuoi file solo se lo copi o lo approvi, e il diario lo segna.
 
+**Per progetto e per linguaggio.** Il livello si tiene per progetto, sul tuo computer, e ogni linguaggio può avere il suo: senior in TypeScript, entry in C#. Pebble usa il livello del file su cui lavori; nei piani tiene conto di tutti. Si imposta dalla pagina impostazioni o con **Pebble: Imposta il livello (progetto o linguaggio)**.
+
 `pebble.training` (spento di default): Pebble non scrive la logica del progetto, anche se glielo chiedi; la scala di aiuto si ferma alla riga esatta.
 
 ## Spesa
