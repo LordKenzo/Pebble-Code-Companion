@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/LordKenzo/pebble-code-companion/main/assets/banner.jpg" alt="Pebble, the Code Path Companion: a developer at the keyboard and a trail of glowing pebbles through a night forest" width="900"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/LordKenzo/pebble-code-companion/main/assets/banner.jpg" alt="Pebble, the Code Path Companion: a developer at the keyboard and a trail of glowing pebbles through a night forest, with colourful ghosts and bugs along the way" width="900"></p>
 
 # Pebble · Code Path Companion
 
