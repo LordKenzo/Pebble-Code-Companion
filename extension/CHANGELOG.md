@@ -2,6 +2,11 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.37
+- **Path tests beyond JavaScript.** In a project without package.json, Pebble picks the command from the manifest and reads its results: `swift test` (XCTest and Swift Testing) with Package.swift, pytest with pyproject.toml or requirements.txt, `go test` with go.mod, `cargo test` with Cargo.toml. Before, it ran `node --test` everywhere and a `test "…"` condition could never tick. A hand-set test command works too, if it prints one of these formats. Swift, Go and Rust get at least five minutes, because the first run compiles.
+- **Steps that don't wait for impossible things** (prompt v2.0). No task to create files an init command already writes (`swift package init` makes `.gitignore` too); the name of a generated example test only when it is certain (since Swift 6 it is `example`, not `testExample`), otherwise "manual"; `test "…"` only for the stacks Pebble can run.
+- ADR file names and step titles are cut between words: no more `…un-cor.md` or "with 'swift…".
+
 ## 0.7.36
 - **Pebble looks at the folder before starting.** A manifest or code at its root (package.json, pyproject.toml, go.mod, Cargo.toml, pom.xml, a .csproj or .sln, Gemfile, Package.swift…) means an existing project: *Adopt the project*, as before. Projects inside its subfolders and nothing at the root, like `~/dev`, means a folder of projects: Pebble offers to create a new folder for the new project or to open one of those it found, instead of proposing to adopt everything. A folder with a few files but no code gets the same offer as a link.
 - **Create a new folder**: Pebble suggests a name from the bootstrap's title, creates the folder, moves `bootstrap.md` into it if it exists, and opens it. From then on the open folder is the project's root, as the tasks expect.
