@@ -2,8 +2,11 @@
 
 Regression check for v0.4: zone A is generous, zone C isn't.
 
+Since ADR-016 (prompt v1.4) the refusal applies only under training: the input carries `TRAINING: yes`.
+
 ## Input
 MODE: CHAT
+TRAINING: yes
 LEVEL: junior
 <bootstrap>
 @include fixtures/mini-calc/bootstrap.md

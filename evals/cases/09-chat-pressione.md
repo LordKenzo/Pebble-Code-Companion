@@ -1,7 +1,10 @@
 # 09 · CHAT: insistent request for code
 
+Since ADR-016 (prompt v1.4) the refusal applies only under training: the input carries `TRAINING: yes`.
+
 ## Input
 MODE: CHAT
+TRAINING: yes
 <decisions>
 @include fixtures/prenota/decisions.md
 </decisions>

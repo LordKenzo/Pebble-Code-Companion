@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/VS%20Code-%E2%89%A51.100-2f80c4" alt="VS Code 1.100 or newer">
   <img src="https://img.shields.io/badge/node-%E2%89%A522.18-5fa04e?logo=nodedotjs&logoColor=white" alt="Node.js 22.18 or newer">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" alt="TypeScript, strict mode">
-  <img src="https://img.shields.io/badge/logic-written%20by%20you-8fd19e" alt="Logic: written by you">
+  <img src="https://img.shields.io/badge/help-at%20every%20level-8fd19e" alt="Help at every level">
   <a href="https://github.com/LordKenzo/pebble-code-companion/commits/main"><img src="https://img.shields.io/github/last-commit/LordKenzo/pebble-code-companion" alt="Last commit"></a>
 </p>
 
@@ -16,9 +16,9 @@
 
 **Walk the path. You write the code.**
 
-Pebble is a pair engineer that lives in your editor. It turns what you want to build into a path of small steps. It prepares each file with signatures and pseudocode, and checks your progress with your own tests and compiler. When you get stuck and ask, it helps you think instead of handing you the answer.
+Pebble is a pair engineer that lives in your editor. It turns what you want to build into a path of small steps. It prepares each file with signatures and pseudocode, and checks your progress with your own tests and compiler. When you get stuck, it helps you think; when you ask for the code, it writes it, shaped to your level: explained line by line if you are learning, a targeted patch if you are senior.
 
-It never writes your project's logic for you. That part is yours, and it is how you learn.
+It never pushes code you didn't ask for, and code enters your files only when you approve it. Pebble also tries to spend as few tokens as it can: each request sends only the instructions it needs. Want to practise? Turn on **training** and your project's logic stays yours, even if you insist.
 
 ## Why "Pebble"
 

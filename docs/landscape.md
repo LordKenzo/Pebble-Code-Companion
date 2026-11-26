@@ -15,7 +15,7 @@ Summary of the analyses done with Claude and Gemini (November 2026). The market 
 
 ## What sets Pebble apart
 
-1. **It doesn't write your logic, by design.** That's the product, not a setting.
+1. **Real help at every level, code on request** (ADR-016). It points and explains first; when you ask, it writes the code in the shape your level needs. Training mode keeps the logic yours. *(Until 2026-11-26 this read "It doesn't write your logic, by design".)*
 2. **Project memory.** `bootstrap.md` → `.pebble/` (architecture + ADRs), used in every answer.
 3. **A path checked by your tests.** Small steps that tick themselves when your tests and the compiler agree, not only feedback on the PR.
 

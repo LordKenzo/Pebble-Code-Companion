@@ -2,7 +2,7 @@
 
 # Pebble · Code Path Companion
 
-**Walk the path. You write the code.** A pair engineer in VS Code: it turns your project into a path of small steps, prepares each file with signatures and pseudocode, checks your progress with your own tests, and helps you think when you get stuck. It never writes your project's logic for you.
+**Walk the path. You write the code.** A pair engineer in VS Code: it turns your project into a path of small steps, prepares each file with signatures and pseudocode, checks your progress with your own tests, and helps you think when you get stuck. When you ask for the code, it writes it, shaped to your level; turn on training and your logic stays yours.
 
 *Leggilo in italiano: [README.it.md](README.it.md).*
 
@@ -25,7 +25,7 @@ Pebble is a **pre-release**: it works, and it is being built in the open. Before
 - **What I expect**: every task explains what closes it, with an example of the test name.
 - **Prepare the file**: imports, types, the signature and the pseudocode as comments, with an empty body. For a test file, one complete example test and the other cases as `test.todo`. Shown as a diff: **Accept**, **Review and edit**, or **Discard**.
 - **Prepare step N**: when a step is done, Pebble plans the next one from your code as it is now.
-- **⌥P, the help panel** (**Alt+P**, Option+P on a Mac, or right click → *Pebble, help me here*): a short menu, then a panel beside the code. With nothing selected: *Suggestions on the file*, *What to study*, *Pseudocode for what is missing* (insertable as comments). With code selected: *Explain this code*, *What to study here*, *Similar examples*. With red tests, the help ladder: it starts with a question, climbs only when you ask (*More concrete*, *Why it matters*, *Deep dive*) and fixes a file that doesn't compile first. The depth follows your level.
+- **⌥P, the help panel** (**Alt+P**, Option+P on a Mac, or right click → *Pebble, help me here*): a short menu, then a panel beside the code. With nothing selected: *Suggestions on the file*, *What to study*, *Pseudocode for what is missing* (insertable as comments). With code selected: *Explain this code*, *What to study here*, *Similar examples*. With red tests, the help ladder: it starts with a question, climbs only when you ask (*More concrete*, *Why it matters*, *Deep dive*), gives you the corrected code with *Show me the code* (not in training) and fixes a file that doesn't compile first. The depth follows your level.
 - **Test names on demand**: each step lists the test names its tasks expect, with their status (green, red, not found), ready to copy.
 - **Adopt a project already under way**: with code but no `.pebble/`, Pebble reads the project and proposes the decisions it finds there, to confirm, and closes a base camp with the state of your tests.
 - **The path map** (map icon at the top of the Path panel): the whole roadmap as a trail of pebbles, and next to it each step's **diary**, which Pebble writes in `.pebble/diario.md` as you work, without a model. **Review the step** asks the Mentor what you built and what is still fragile.
@@ -44,7 +44,9 @@ Pebble is a **pre-release**: it works, and it is being built in the open. Before
 Your code is sent to the provider you choose; with `local` it never leaves your machine. Local models are free but follow Pebble's rules less reliably: a cloud model works better for the balloon, the plan and *Prepare the file*.
 
 ## Experience level
-`pebble.experienceLevel`: `entry`, `junior`, `mid` (default), `senior`. It changes what Pebble flags and how it explains it. At every level Pebble does not write your logic.
+`pebble.experienceLevel`: `entry`, `junior`, `mid` (default), `senior`. It changes what Pebble flags, how it explains it and the shape of the code you ask for: entry gets complete code explained line by line, junior complete code with the principle behind it, mid lean code with the choices motivated, senior a targeted patch with the trade-off. Unasked, Pebble points and explains; code enters your files only when you copy or approve it, and the diary records it.
+
+`pebble.training` (off by default): Pebble doesn't write your project's logic, even if you ask; the help ladder stops at the exact line.
 
 ## Spending
 Every request records the tokens returned by the provider and estimates the cost (Claude prices are built in; set others in `pebble.prices`). The month's total is in the status bar; `pebble.monthlyBudgetUsd` warns you when you go over. **Pebble: Show spending** has the details.

@@ -2,7 +2,7 @@
 
 # Pebble · Code Path Companion
 
-**Cammina sul sentiero, il codice lo scrivi tu.** Un pair engineer in VS Code: trasforma il progetto in un percorso di piccoli passi, prepara ogni file con firme e pseudocodice, verifica i progressi con i tuoi test e ti aiuta a ragionare quando sei bloccato. Non scrive mai la logica del progetto al posto tuo.
+**Cammina sul sentiero, il codice lo scrivi tu.** Un pair engineer in VS Code: trasforma il progetto in un percorso di piccoli passi, prepara ogni file con firme e pseudocodice, verifica i progressi con i tuoi test e ti aiuta a ragionare quando sei bloccato. Quando chiedi il codice lo scrive, nella forma adatta al tuo livello; con l'allenamento attivo la logica resta tua.
 
 *Read it in English: [README.md](README.md).*
 
@@ -25,7 +25,7 @@ Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Pr
 - **Cosa mi aspetto**: ogni compito spiega cosa lo chiude, con un esempio del nome del test.
 - **Prepara il file**: import, tipi, la firma e lo pseudocodice come commenti, con il corpo vuoto. Per un file di test, un test completo d'esempio e gli altri casi come `test.todo`. Mostrato come diff: **Accetta**, **Revisiona e modifica** o **Scarta**.
 - **Prepara il passo N**: chiuso un passo, Pebble prepara il successivo partendo dal codice com'è adesso.
-- **⌥P, il pannello di aiuto** (**Alt+P**, Option+P su Mac, o tasto destro → *Pebble, aiutami qui*): un breve menu, poi un pannello accanto al codice. Senza selezione: *Suggerimenti sul file*, *Da studiare*, *Pseudocodice per ciò che manca* (da inserire come commento). Con codice selezionato: *Spiegami questo codice*, *Cosa studiare qui*, *Esempi simili*. Con test rossi, la scala di aiuto: parte da una domanda, sale solo quando lo chiedi (*Più concreto*, *Perché conta?*, *Approfondisci*) e se il file non compila sistema prima quello. La profondità segue il tuo livello.
+- **⌥P, il pannello di aiuto** (**Alt+P**, Option+P su Mac, o tasto destro → *Pebble, aiutami qui*): un breve menu, poi un pannello accanto al codice. Senza selezione: *Suggerimenti sul file*, *Da studiare*, *Pseudocodice per ciò che manca* (da inserire come commento). Con codice selezionato: *Spiegami questo codice*, *Cosa studiare qui*, *Esempi simili*. Con test rossi, la scala di aiuto: parte da una domanda, sale solo quando lo chiedi (*Più concreto*, *Perché conta?*, *Approfondisci*), ti dà il codice corretto con *Mostrami il codice* (non in allenamento) e se il file non compila sistema prima quello. La profondità segue il tuo livello.
 - **Nomi dei test a richiesta**: ogni passo elenca i nomi dei test che i compiti si aspettano, con lo stato (verde, rosso, non trovato), pronti da copiare.
 - **Adotta un progetto già avviato**: con codice e senza `.pebble/`, Pebble legge il progetto, propone le decisioni che ci trova, da confermare, e chiude un campo base con lo stato dei tuoi test.
 - **La mappa del sentiero** (icona mappa in testa al pannello Percorso): la roadmap intera come un sentiero di sassolini, e accanto il **diario** di ogni passo, che Pebble scrive in `.pebble/diario.md` mentre lavori, senza modello. **Rivedi il passo** chiede al Mentor cosa hai costruito e cosa resta fragile.
@@ -44,7 +44,9 @@ Pebble è in **pre-release**: funziona, e lo stiamo costruendo allo scoperto. Pr
 Il codice va al provider che scegli; con `local` non esce dal computer. I modelli locali non costano, ma rispettano meno le regole di Pebble: per fumetto, piano e *Prepara il file* un modello cloud funziona meglio.
 
 ## Livello di esperienza
-`pebble.experienceLevel`: `entry`, `junior`, `mid` (predefinito), `senior`. Cambia cosa Pebble segnala e come lo spiega. A ogni livello Pebble non scrive la tua logica.
+`pebble.experienceLevel`: `entry`, `junior`, `mid` (predefinito), `senior`. Cambia cosa Pebble segnala, come lo spiega e la forma del codice che chiedi: entry riceve codice completo spiegato riga per riga, junior codice completo con il principio dietro, mid codice asciutto con le scelte motivate, senior una patch mirata con il compromesso. Senza richiesta Pebble indica e spiega; il codice entra nei tuoi file solo se lo copi o lo approvi, e il diario lo segna.
+
+`pebble.training` (spento di default): Pebble non scrive la logica del progetto, anche se glielo chiedi; la scala di aiuto si ferma alla riga esatta.
 
 ## Spesa
 Ogni richiesta registra i token restituiti dal provider e stima il costo (i prezzi Claude sono inclusi; gli altri in `pebble.prices`). Il totale del mese è nella barra di stato; `pebble.monthlyBudgetUsd` ti avvisa quando lo superi. **Pebble: Mostra la spesa** dà il dettaglio.
