@@ -1,4 +1,4 @@
-import { hasProjectCode, takeSnapshot } from "./adapters/vscode/projectSnapshot";
+import { folderInfo, takeSnapshot } from "./adapters/vscode/projectSnapshot";
 import { MapPanel } from "./adapters/vscode/mapPanel";
 import { DiaryWriter } from "./adapters/store/diaryStore";
 import * as vscode from "vscode";
@@ -200,7 +200,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     hasCode: async () => {
       const root = vscode.workspace.workspaceFolders?.[0]?.uri;
-      return root ? hasProjectCode(root) : false;
+      return root ? (await folderInfo(root)).kind === "project" : false;
     },
     mentor: mentorFor,
     level,

@@ -181,7 +181,9 @@
             ? `<button class="link" type="button" data-open-bootstrap>${esc(T.openBootstrap)}</button>`
             : ob.hasCode
               ? `<p class="hint">${esc(T.adoptHint)}</p><button class="btn primary" type="button" data-adopt>${esc(T.adoptProject)}</button><button class="btn" type="button" data-wizard>${esc(T.answerQuestions)}</button>`
-              : `<button class="btn primary" type="button" data-wizard>${esc(T.answerQuestions)}</button><button class="btn" type="button" data-template>${esc(T.writeItMyself)}</button>`)}
+              : ob.folder === "container"
+                ? `<p class="hint">${esc(f(T.containerHint, { list: ob.projects.slice(0, 4).join(", ") + (ob.projects.length > 4 ? "…" : "") }))}</p><button class="btn primary" type="button" data-new-folder>${esc(T.newFolder)}</button><button class="btn" type="button" data-open-project>${esc(T.openProject)}</button><button class="link" type="button" data-use-here>${esc(T.useHere)}</button>`
+                : `${ob.folder === "other" ? `<p class="hint">${esc(T.otherHint)}</p>` : ""}<button class="btn primary" type="button" data-wizard>${esc(T.answerQuestions)}</button><button class="btn" type="button" data-template>${esc(T.writeItMyself)}</button>${ob.folder === "other" ? `<button class="link" type="button" data-new-folder>${esc(T.newFolderLink)}</button>` : ""}`)}
         ${stage(2, ob.roadmap, ob.bootstrap && !ob.roadmap, T.stage2Title, T.stage2Text,
           ob.roadmap ? "" : `<button class="btn primary" type="button" data-init>${esc(T.proposePlan)}</button>`)}
         ${stage(3, false, ob.roadmap, T.stage3Title, T.stage3Text, planBtn)}
@@ -321,6 +323,9 @@
     const copy = e.target.closest("[data-copy]");
     if (copy) return vscode.postMessage({ type: "copy", text: copy.dataset.copy });
     if (e.target.closest("[data-adopt]")) return vscode.postMessage({ type: "adopt" });
+    if (e.target.closest("[data-new-folder]")) return vscode.postMessage({ type: "newFolder" });
+    if (e.target.closest("[data-open-project]")) return vscode.postMessage({ type: "openProject" });
+    if (e.target.closest("[data-use-here]")) return vscode.postMessage({ type: "useHere" });
     const np = e.target.closest("[data-new-path]");
     if (np) return vscode.postMessage({ type: "newPath", kind: np.dataset.newPath });
     if (e.target.closest("[data-plan]")) return vscode.postMessage({ type: "planNext" });

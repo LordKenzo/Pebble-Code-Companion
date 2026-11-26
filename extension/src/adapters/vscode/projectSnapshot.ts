@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import * as vscode from "vscode";
 import type { AdoptFile, AdoptSnapshot, TestSnapshot } from "../../core/adopt";
+import { classifyFolder, type FolderInfo } from "../../core/folder";
 
 const EXCLUDE = "{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.venv/**,**/venv/**,**/__pycache__/**,**/.pebble/**,**/coverage/**,**/*.vsix}";
 const SOURCE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|rb|php|cs|vue|svelte)$/;
@@ -10,10 +11,28 @@ const MAX_FILE = 12_000;
 const MAX_TOTAL = 60_000;
 const MAX_LIST = 400;
 
-/** C'è codice nel progetto? Serve per proporre l'adozione invece del bootstrap. */
-export async function hasProjectCode(root: vscode.Uri): Promise<boolean> {
-  const found = await vscode.workspace.findFiles(new vscode.RelativePattern(root, "**/*"), EXCLUDE, 40);
-  return found.some((u) => SOURCE.test(u.path));
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "out", "build", ".venv", "venv", "__pycache__", "coverage", "target", "bin", "obj"]);
+
+/**
+ * Che cosa è la cartella aperta (core/folder): legge solo due livelli, così una cartella come ~/dev
+ * non costringe a scendere dentro ogni progetto.
+ */
+export async function folderInfo(root: vscode.Uri): Promise<FolderInfo> {
+  const paths: string[] = [];
+  const list = async (uri: vscode.Uri): Promise<[string, vscode.FileType][]> => {
+    try {
+      return await vscode.workspace.fs.readDirectory(uri);
+    } catch {
+      return [];
+    }
+  };
+  for (const [name, type] of await list(root)) {
+    if (type === vscode.FileType.File) paths.push(name);
+    else if (type === vscode.FileType.Directory && !SKIP_DIRS.has(name)) {
+      for (const [child, t] of await list(vscode.Uri.joinPath(root, name))) if (t === vscode.FileType.File) paths.push(`${name}/${child}`);
+    }
+  }
+  return classifyFolder(paths);
 }
 
 /**

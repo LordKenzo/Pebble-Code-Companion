@@ -1,7 +1,8 @@
 import { localSectionName, nextSectionNumber, sectionWord } from "../../core/sections";
 import type { Ghost } from "../../core/prompt";
 import type { TestSnapshot } from "../../core/adopt";
-import { hasProjectCode } from "./projectSnapshot";
+import { folderInfo } from "./projectSnapshot";
+import { folderNameFromBootstrap, type FolderInfo } from "../../core/folder";
 import * as vscode from "vscode";
 import { estimateCost, type Price } from "../../core/cost";
 import type { HelpTask } from "../../core/help";
@@ -51,6 +52,9 @@ interface Onboarding {
   bootstrap: boolean;
   /** C'è codice ma non bootstrap: si propone l'adozione (ADR-014). */
   hasCode: boolean;
+  /** Che cosa è la cartella: un contenitore di progetti propone una cartella nuova; un dubbio la offre. */
+  folder: FolderInfo["kind"];
+  projects: string[];
   roadmap: boolean;
   commonUnknowns: string[];
   level: string;
@@ -81,6 +85,9 @@ type FromWebview =
   | { type: "openBootstrap" }
   | { type: "init" }
   | { type: "adopt" }
+  | { type: "newFolder" }
+  | { type: "openProject" }
+  | { type: "useHere" }
   | { type: "newPath"; kind: "feature" | "bug" }
   | { type: "openMap" }
   | { type: "reviewStep"; n: number }
@@ -101,6 +108,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   private hasBootstrap = false;
   /** C'è già codice nel progetto: l'avvio guidato propone di adottarlo (ADR-014). */
   private hasCode = false;
+  private folder: FolderInfo = { kind: "empty", projects: [] };
   private roadmap: string | null = null;
   private planning = false;
   private text: string | null = null;
@@ -185,6 +193,9 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "openBootstrap" && this.root) void vscode.window.showTextDocument(vscode.Uri.joinPath(this.root, "bootstrap.md"));
       else if (m.type === "init") void vscode.commands.executeCommand("pebble.init");
       else if (m.type === "adopt") void vscode.commands.executeCommand("pebble.adopt");
+      else if (m.type === "newFolder") void this.createProjectFolder();
+      else if (m.type === "openProject") void this.openProject();
+      else if (m.type === "useHere") void this.memento.update("pebble.folder.useHere", true).then(() => this.refresh());
       else if (m.type === "newPath") void this.newPath(m.kind);
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
       else if (m.type === "copy") {
@@ -200,6 +211,42 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     this.decorate();
   }
 
+  /**
+   * Il progetto nuovo in una cartella sua: Pebble la crea, ci sposta bootstrap.md se c'è e la apre.
+   * Da lì la cartella aperta è di nuovo la radice del progetto, come si aspettano i compiti.
+   */
+  private async createProjectFolder(): Promise<void> {
+    if (!this.root) return;
+    const T = VIEW_TEXT[this.settings().lang];
+    const bootstrapUri = vscode.Uri.joinPath(this.root, "bootstrap.md");
+    const bootstrap = await readText(bootstrapUri);
+    const name = (await vscode.window.showInputBox({
+      prompt: T.newFolderPrompt,
+      value: folderNameFromBootstrap(bootstrap),
+      validateInput: (v) => (/^[\w.-]+$/.test(v.trim()) ? null : T.newFolderInvalid),
+    }))?.trim();
+    if (!name) return;
+    const dir = vscode.Uri.joinPath(this.root, name);
+    try {
+      if ((await vscode.workspace.fs.readDirectory(dir)).length) {
+        void vscode.window.showWarningMessage(T.newFolderExists.replace("{name}", name));
+        return;
+      }
+    } catch {
+      // non esiste: la creiamo
+    }
+    await vscode.workspace.fs.createDirectory(dir);
+    if (bootstrap !== null) await vscode.workspace.fs.rename(bootstrapUri, vscode.Uri.joinPath(dir, "bootstrap.md"));
+    await vscode.commands.executeCommand("vscode.openFolder", dir, { forceNewWindow: false });
+  }
+
+  /** In un contenitore di progetti: apre quello scelto. */
+  private async openProject(): Promise<void> {
+    if (!this.root || !this.folder.projects.length) return;
+    const pick = await vscode.window.showQuickPick(this.folder.projects, { placeHolder: VIEW_TEXT[this.settings().lang].pickProject });
+    if (pick) await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.joinPath(this.root, pick), { forceNewWindow: false });
+  }
+
   async refresh(): Promise<void> {
     const uri = this.uri;
     if (!uri) return this.load(null);
@@ -208,7 +255,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     for (const name of ["bootstrap.md", "init.md"]) {
       if (this.root && (await readText(vscode.Uri.joinPath(this.root, name)))?.trim()) this.hasBootstrap = true;
     }
-    this.hasCode = !this.hasBootstrap && !!this.root && (await hasProjectCode(this.root));
+    this.folder = !this.hasBootstrap && this.root ? await folderInfo(this.root) : { kind: "empty", projects: [] };
+    // "Usa comunque questa cartella" vale per questa cartella: il contenitore torna una cartella qualsiasi.
+    if (this.folder.kind === "container" && this.memento.get<boolean>("pebble.folder.useHere")) this.folder = { kind: "other", projects: [] };
+    this.hasCode = this.folder.kind === "project";
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (open) return this.load(open.getText());
     try {
@@ -234,6 +284,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       onboarding: {
         bootstrap: this.hasBootstrap,
         hasCode: this.hasCode,
+        folder: this.folder.kind,
+        projects: this.folder.projects,
         roadmap: !!this.roadmap?.trim(),
         commonUnknowns: commonUnknowns(this.settings().lang),
         level: this.planner?.level() ?? vscode.workspace.getConfiguration("pebble").get<string>("experienceLevel", "mid"),
