@@ -186,9 +186,10 @@ function html(csp: string, lang: Lang): string {
   .check{display:flex;gap:8px;align-items:center;margin:6px 0}
   .ghosts{display:grid;gap:10px}
   .ghost{border:1px solid var(--vscode-panel-border);border-left-width:3px;border-radius:6px;padding:10px 12px;display:grid;gap:6px}
-  .ghost.g-roadmap{border-left-color:#b9d7f2}
-  .ghost.g-mentor{border-left-color:#f5d39a}
-  .ghost.g-assist{border-left-color:#bfe3c7}
+  /* I colori dei fantasmini, come nel banner: Mentor azzurro, Roadmap pesca, Suggeritore verde (Git sarà lilla). */
+  .ghost.g-roadmap{border-left-color:#f7b48a}
+  .ghost.g-mentor{border-left-color:#a9d3f5}
+  .ghost.g-assist{border-left-color:#9fe0b4}
   .ghosthead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
   .ghost .row{flex-wrap:wrap}
   .ghost .row{display:flex;gap:8px}
