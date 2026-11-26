@@ -23,6 +23,24 @@
 
   function render(flashLines) {
     if (!model) return;
+    draw(flashLines);
+    // Una proposta in attesa (passo, sentiero, scheletro) sta in cima finché non scegli: chiudere la notifica non la perde.
+    if (model.offer && !wizard) root.insertAdjacentHTML("afterbegin", offerCard(model.offer));
+  }
+
+  function offerCard(o) {
+    return `<div class="offer" role="region" aria-label="${esc(T.offerTitle)}">
+      <div class="offer-head">${ghost("happy")}<b>${esc(T.offerTitle)}</b></div>
+      <div class="offer-label">${esc(o.label)}</div>
+      <p>${inline(o.text)}</p>
+      <div class="actions"><button class="btn primary" type="button" data-offer="accept">${esc(o.accept)}</button>
+        <button class="btn" type="button" data-offer="diff">${esc(T.offerDiff)}</button>
+        <button class="btn" type="button" data-offer="edit">${esc(o.edit)}</button>
+        <button class="link" type="button" data-offer="discard">${esc(o.discard)}</button></div>
+    </div>`;
+  }
+
+  function draw(flashLines) {
     if (!model.hasFile) return renderEmpty();
     if (model.total === 0) return renderNoTasks();
 
@@ -126,7 +144,7 @@
   /** Il passo è chiuso: Pebble offre di preparare il prossimo, partendo dal codice com'è adesso (ADR-011). */
   function nextCard() {
     const n = model.next;
-    if (!n) return "";
+    if (!n || model.offer) return ""; // la proposta in attesa è già in cima
     const action = model.planning
       ? `<span class="planning"><span class="spin"></span> ${esc(f(T.preparingStep, { n: n.n }))}</span>`
       : `<button class="btn primary" type="button" data-plan>${esc(f(T.prepareStep, { n: n.n }))}</button>`;
@@ -169,7 +187,7 @@
         <div class="stage-head"><span class="stage-n">${done ? "" : n}</span><b>${esc(title)}</b></div>
         <p>${text}</p>${active || done ? `<div class="actions">${actions}</div>` : ""}
       </div>`;
-    const planBtn = model.next && ob.roadmap
+    const planBtn = model.next && ob.roadmap && !model.offer
       ? `<button class="btn primary" type="button" data-plan ${model.planning ? "disabled" : ""}>${esc(model.planning ? T.preparingStepShort : f(T.prepareStep, { n: model.next.n }))}</button>`
       : "";
     root.innerHTML = `
@@ -285,6 +303,8 @@
       vscode.setState({ ...(vscode.getState() || {}), shownStep });
       return render(new Set());
     }
+    const offer = e.target.closest("[data-offer]");
+    if (offer) return vscode.postMessage({ type: "offer", how: offer.dataset.offer });
     if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });
     if (e.target.closest("[data-template]")) return vscode.postMessage({ type: "bootstrapTemplate" });
     if (e.target.closest("[data-open-bootstrap]")) return vscode.postMessage({ type: "openBootstrap" });

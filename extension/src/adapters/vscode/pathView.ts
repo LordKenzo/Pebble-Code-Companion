@@ -91,7 +91,23 @@ type FromWebview =
   | { type: "newPath"; kind: "feature" | "bug" }
   | { type: "openMap" }
   | { type: "reviewStep"; n: number }
-  | { type: "copy"; text: string };
+  | { type: "copy"; text: string }
+  | { type: "offer"; how: OfferAction };
+
+type OfferAction = "accept" | "edit" | "discard" | "diff";
+
+/**
+ * Una proposta del modello in attesa di risposta (passo, sentiero o scheletro). Resta nel pannello finché lo sviluppatore
+ * non sceglie: chiudere la notifica non la perde, e non si paga di nuovo la chiamata per riaverla.
+ */
+interface Offer {
+  label: string;
+  text: string;
+  acceptLabel: string;
+  diff: () => Promise<void>;
+  accept: () => Promise<void>;
+  edit: () => Promise<void>;
+}
 
 const keyOf = (t: Task) => `${t.line}:${t.title}`;
 
@@ -104,7 +120,9 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
 
   private view: vscode.WebviewView | undefined;
   private model: (PathViewModel & {
-    t: (typeof VIEW_TEXT)[Lang]; hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding }) | null = null;
+    t: (typeof VIEW_TEXT)[Lang]; hasFile: boolean; check: CheckInfo; next: { n: number; title: string } | null; planning: boolean; roadmapSteps: number | null; onboarding: Onboarding;
+    offer: { label: string; text: string; accept: string; edit: string; discard: string } | null }) | null = null;
+  private offer: Offer | null = null;
   private hasBootstrap = false;
   /** C'è già codice nel progetto: l'avvio guidato propone di adottarlo (ADR-014). */
   private hasCode = false;
@@ -198,6 +216,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "useHere") void this.memento.update("pebble.folder.useHere", true).then(() => this.refresh());
       else if (m.type === "newPath") void this.newPath(m.kind);
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
+      else if (m.type === "offer") void this.answerOffer(m.how);
       else if (m.type === "copy") {
         void vscode.env.clipboard.writeText(m.text);
         void vscode.window.setStatusBarMessage(VIEW_TEXT[this.settings().lang].testNamesCopied, 2500);
@@ -281,6 +300,10 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       next: next && { n: next.n, title: next.title },
       planning: this.planning,
       roadmapSteps: this.roadmap ? parseRoadmap(this.roadmap).length || null : null,
+      offer: this.offer && (() => {
+        const N = NOTICE_TEXT[this.settings().lang];
+        return { label: this.offer.label, text: this.offer.text, accept: this.offer.acceptLabel, edit: N.reviewEdit, discard: N.discard };
+      })(),
       onboarding: {
         bootstrap: this.hasBootstrap,
         hasCode: this.hasCode,
@@ -443,6 +466,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   async planNext(): Promise<void> {
     const uri = this.uri;
     if (!this.root || !uri || !this.planner || this.planning) return;
+    if (this.offer) return this.remindOffer();
     const planner = this.planner;
     const lang = this.settings().lang;
     const N = NOTICE_TEXT[lang];
@@ -470,22 +494,26 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
         void vscode.window.showWarningMessage(N.stepHasDone(step.n));
         return;
       }
-      const key = `percorso-${Date.now()}`;
-      const left = this.text === null ? planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
-      const right = planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
-      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffStepTitle(step.n));
       const extra = [data.reading, data.question ? N.question(data.question) : "", dropped.length ? N.droppedConditions(dropped.length) : ""]
         .filter(Boolean)
         .join(" ");
-      const choice = await vscode.window.showInformationMessage(N.stepProposal(data.tasks.length, step.n, step.title, extra), N.accept, N.reviewEdit, N.discard);
-      if (choice === N.accept) {
-        await this.writePath(proposed);
-        this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n: step.n, title: step.title });
-        void vscode.window.showInformationMessage(N.stepAdded(step.n));
-        this.schedule(true, 300);
-      } else if (choice === N.reviewEdit) {
-        await reviewInEditor(uri, proposed, N.reviewInEditor(N.stepInEditor));
-      }
+      // Al momento della risposta si riparte dal percorso di allora: nel frattempo lo sviluppatore può averlo cambiato.
+      const fresh = () => insertStep(this.text, markdown, step.n, lang);
+      this.present({
+        label: `${sectionWord("step", lang)} ${step.n} · ${step.title}`,
+        text: N.stepProposal(data.tasks.length, step.n, step.title, extra),
+        acceptLabel: N.accept,
+        diff: () => this.showProposalDiff(fresh() ?? proposed, N.diffStepTitle(step.n)),
+        accept: async () => {
+          const now = fresh();
+          if (now === null) return void vscode.window.showWarningMessage(N.stepHasDone(step.n));
+          await this.writePath(now);
+          this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n: step.n, title: step.title });
+          void vscode.window.showInformationMessage(N.stepAdded(step.n));
+          this.schedule(true, 300);
+        },
+        edit: () => reviewInEditor(uri, fresh() ?? proposed, N.reviewInEditor(N.stepInEditor)),
+      });
     } catch (err) {
       void vscode.window.showErrorMessage(N.stepFailed(err instanceof Error ? err.message : String(err)));
     } finally {
@@ -500,6 +528,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   async newPath(kind: "feature" | "bug"): Promise<void> {
     const uri = this.uri ?? (this.root && vscode.Uri.joinPath(this.root, ...PATH_FILE));
     if (!this.root || !uri || !this.planner || this.planning) return;
+    if (this.offer) return this.remindOffer();
     const planner = this.planner;
     const lang = this.settings().lang;
     const N = NOTICE_TEXT[lang];
@@ -524,25 +553,26 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       );
       await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
       const { markdown, dropped } = planToSection(data, { n, title, text: description }, lang, kind);
-      const proposed = appendSection(this.text, markdown, lang);
-      const key = `percorso-${Date.now()}`;
-      const left = this.text === null ? planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
-      const right = planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
-      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffPathTitle(label));
       const extra = [data.reading, data.question ? N.question(data.question) : "", dropped.length ? N.droppedConditions(dropped.length) : ""].filter(Boolean).join(" ");
-      const choice = await vscode.window.showInformationMessage(N.pathProposal(data.tasks.length, label, extra), N.accept, N.reviewEdit, N.discard);
-      if (choice === N.accept) {
-        if (this.text === null) {
-          await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
-          await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(proposed));
-          await this.refresh();
-        } else await this.writePath(proposed);
-        this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n, title, kind });
-        void vscode.window.showInformationMessage(N.pathAdded(label));
-        this.schedule(true, 300);
-      } else if (choice === N.reviewEdit) {
-        await reviewInEditor(uri, proposed, N.reviewInEditor(N.stepInEditor));
-      }
+      const fresh = () => appendSection(this.text, markdown, lang);
+      this.present({
+        label,
+        text: N.pathProposal(data.tasks.length, label, extra),
+        acceptLabel: N.accept,
+        diff: () => this.showProposalDiff(fresh(), N.diffPathTitle(label)),
+        accept: async () => {
+          const now = fresh();
+          if (this.text === null) {
+            await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
+            await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(now));
+            await this.refresh();
+          } else await this.writePath(now);
+          this.diary?.append({ kind: "stepPlanned", tasks: data.tasks.length }, { n, title, kind });
+          void vscode.window.showInformationMessage(N.pathAdded(label));
+          this.schedule(true, 300);
+        },
+        edit: () => reviewInEditor(uri, fresh(), N.reviewInEditor(N.stepInEditor)),
+      });
     } catch (err) {
       void vscode.window.showErrorMessage(N.pathFailed(err instanceof Error ? err.message : String(err)));
     } finally {
@@ -582,6 +612,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   /** Scheletro di un file nuovo: le parti dal modello, il testo composto da Pebble, un diff da accettare. */
   async scaffold(path?: string, taskLine?: number): Promise<void> {
     if (!this.root || !this.planner) return;
+    if (this.offer) return this.remindOffer();
     const planner = this.planner;
     const lang = this.settings().lang;
     const N = NOTICE_TEXT[lang];
@@ -608,25 +639,78 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       );
       await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
       const { text, dropped } = composeScaffold(data, rel, lang);
-      const key = `scheletro-${Date.now()}`;
-      const left = planner.proposals.put(`${key}/vuoto`, existing ?? "");
-      const right = planner.proposals.put(`${key}/${rel}`, text);
-      await vscode.commands.executeCommand("vscode.diff", left, right, N.diffFileTitle(rel));
       const note = dropped.length ? N.droppedParts(dropped.length) : "";
-      const choice = await vscode.window.showInformationMessage(N.fileProposal(rel, note), N.createFile, N.reviewEdit, N.discard);
-      if (choice === N.reviewEdit) {
-        await reviewInEditor(uri, text, N.reviewInEditor(N.skeletonInEditor));
-        return;
-      }
-      if (choice !== N.createFile) return;
-      await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
-      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
-      this.diary?.append({ kind: "scaffold", path: rel });
-      await vscode.window.showTextDocument(uri);
-      this.schedule(true, 500);
+      const key = `scheletro-${Date.now()}`;
+      this.present({
+        label: rel,
+        text: N.fileProposal(rel, note),
+        acceptLabel: N.createFile,
+        diff: async () => {
+          const left = planner.proposals.put(`${key}/vuoto`, "");
+          const right = planner.proposals.put(`${key}/${rel}`, text);
+          await vscode.commands.executeCommand("vscode.diff", left, right, N.diffFileTitle(rel));
+        },
+        accept: async () => {
+          // Nel frattempo il file può essere nato: non si sovrascrive il codice di nessuno.
+          if ((await readText(uri))?.trim()) return void vscode.window.showInformationMessage(N.fileHasCode(rel));
+          await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, ".."));
+          await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
+          this.diary?.append({ kind: "scaffold", path: rel });
+          await vscode.window.showTextDocument(uri);
+          this.schedule(true, 500);
+        },
+        edit: () => reviewInEditor(uri, text, N.reviewInEditor(N.skeletonInEditor)),
+      });
     } catch (err) {
       void vscode.window.showErrorMessage(N.fileFailed(err instanceof Error ? err.message : String(err)));
     }
+  }
+
+  /**
+   * Mostra la proposta: il diff, la notifica con i tre pulsanti e la scheda nel pannello Percorso.
+   * Non aspetta la notifica: se la chiudi, la proposta resta nel pannello finché non scegli.
+   */
+  private present(offer: Offer): void {
+    this.offer = offer;
+    this.load(this.text);
+    void offer.diff();
+    const N = NOTICE_TEXT[this.settings().lang];
+    void vscode.window.showInformationMessage(offer.text, offer.acceptLabel, N.reviewEdit, N.discard).then((choice) => {
+      // Chiusa senza scegliere, o già decisa dal pannello: la notifica non fa più niente.
+      if (choice === undefined || this.offer !== offer) return;
+      void this.answerOffer(choice === offer.acceptLabel ? "accept" : choice === N.reviewEdit ? "edit" : "discard");
+    });
+  }
+
+  /** Una proposta aspetta già: la si rimostra invece di pagare un'altra chiamata. */
+  private async remindOffer(): Promise<void> {
+    void vscode.window.showInformationMessage(NOTICE_TEXT[this.settings().lang].offerPending);
+    await vscode.commands.executeCommand(`${PathView.id}.focus`);
+    await this.offer?.diff();
+  }
+
+  private async answerOffer(how: OfferAction): Promise<void> {
+    const offer = this.offer;
+    if (!offer) return;
+    if (how === "diff") return offer.diff();
+    this.offer = null;
+    this.load(this.text);
+    try {
+      if (how === "accept") await offer.accept();
+      else if (how === "edit") await offer.edit();
+    } catch (err) {
+      void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /** Il diff tra il percorso di adesso e quello proposto. */
+  private async showProposalDiff(proposed: string, title: string): Promise<void> {
+    const uri = this.uri;
+    if (!uri || !this.planner) return;
+    const key = `percorso-${Date.now()}`;
+    const left = this.text === null ? this.planner.proposals.put(`${key}/percorso-vuoto.md`, "") : uri;
+    const right = this.planner.proposals.put(`${key}/percorso-proposto.md`, proposed);
+    await vscode.commands.executeCommand("vscode.diff", left, right, title);
   }
 
   /** Riscrive percorso.md intero (solo dopo che lo sviluppatore ha accettato la proposta). */

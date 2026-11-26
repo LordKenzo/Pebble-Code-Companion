@@ -177,3 +177,11 @@ button { font: inherit; color: inherit; }
 
 /* Sentieri brevi per una funzionalità o un bug (ADR-014). */
 .newpaths { display: flex; gap: 8px; margin: 10px 12px 0; flex-wrap: wrap; }
+
+/* Proposta in attesa: resta qui finché non scegli. */
+.offer { margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--mentor-line); background: color-mix(in srgb, var(--mentor) 9%, transparent); border-radius: 6px; display: flex; flex-direction: column; gap: 6px; }
+.offer-head { display: flex; align-items: center; gap: 8px; }
+.offer-head .ghost { width: 20px; height: 22px; }
+.offer-label { font-weight: 600; }
+.offer p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.offer .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
