@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.29
+- **One review.** In the ⌥P panel, *Suggestions on the file* became *Review the file*: the same review as the chat, with severity, line and decision, shown as underlines in the editor and noted in the diary.
+- **The chat is for questions.** The `/review`, `/tests`, `/next` and `/init` buttons are gone from the Mentor chat. Typing `/review`, `/tests` or `/init` still works. The next step is in the Path panel and on the map, worked out without the model: `/next` and **What's the next step?** open it.
+
 ## 0.7.28
 - **A model per ghost**: Roadmap, Mentor and the ⌥P helper can each use their own provider, model and effort, from the settings page; empty means the default. Each one shows the estimated cost of a typical call and the recommendation from the evals.
 - The help ladder is now answered by the Mentor's model. In the evals a cheap model handles the ⌥P tabs well, but not the ladder's rules.
