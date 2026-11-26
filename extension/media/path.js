@@ -135,9 +135,14 @@
 
   /** "Prepara il file" (ADR-003): per i compiti da fare che citano un file che manca o non è ancora verificato. */
   function scaffoldButton(t) {
-    if (t.checked || !t.files.length) return "";
-    const missing = t.state && t.state.code === "fileMissing" ? t.state.path : !t.state ? t.files[0] : null;
-    if (!missing) return "";
+    if (t.checked) return "";
+    // Un comando nel "fare" (npm init -y, swift package init…): lo si lancia, non si prepara il file a mano.
+    const run = (t.commands || []).map((c) => `<button class="btn${t.current ? " primary" : ""}" type="button" data-run="${esc(c)}" title="${esc(T.runInTerminalTitle)}">${esc(f(T.runInTerminal, { cmd: c }))}</button>`).join("");
+    if (run) return run;
+    const files = t.scaffoldable || [];
+    if (!files.length) return "";
+    const missing = t.state && t.state.code === "fileMissing" ? t.state.path : !t.state ? files[0] : null;
+    if (!missing || !files.includes(missing)) return "";
     return `<button class="btn primary" type="button" data-scaffold="${esc(missing)}" data-line="${t.line}" title="${esc(f(T.prepareFileTitle, { path: missing }))}">${esc(T.prepareFile)}</button>`;
   }
 
@@ -303,6 +308,8 @@
       vscode.setState({ ...(vscode.getState() || {}), shownStep });
       return render(new Set());
     }
+    const run = e.target.closest("[data-run]");
+    if (run) return vscode.postMessage({ type: "runCommand", cmd: run.dataset.run });
     const offer = e.target.closest("[data-offer]");
     if (offer) return vscode.postMessage({ type: "offer", how: offer.dataset.offer });
     if (e.target.closest("[data-create]")) return vscode.postMessage({ type: "createExample" });

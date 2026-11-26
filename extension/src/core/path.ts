@@ -13,6 +13,7 @@
  * Il parsing è tollerante: le righe che non riconosce restano nel file e vengono ignorate.
  */
 
+import { canScaffold, taskCommands } from "./commands";
 import { localSectionName } from "./sections";
 import { PATH_TEXT, type Lang } from "./i18n";
 
@@ -425,8 +426,12 @@ export interface TaskView {
   signature: string | null;
   summary: string;
   when: { text: string; invalid: boolean }[];
-  /** File citati dalle condizioni (file, nessun errore in): candidati per "Prepara il file". */
+  /** File citati dalle condizioni (file, nessun errore in). */
   files: string[];
+  /** Quelli che "Prepara il file" sa preparare: sorgenti e test TypeScript/JavaScript, non manifest o configurazioni. */
+  scaffoldable: string[];
+  /** Comandi da terminale citati nel "fare" (npm init -y, swift package init…), per "Esegui nel terminale". */
+  commands: string[];
   /** "Cosa mi aspetto": le condizioni spiegate, con un esempio quando serve. */
   expect: { text: string; example?: string; invalid: boolean }[];
   /** Stato dai segnali; assente se non si può decidere (vale la casella). */
@@ -492,13 +497,17 @@ export function buildViewModel(tasks: readonly Task[], states?: readonly TaskSta
           invalid: c.kind === "invalid",
         })),
         expect: (t.conditions.length ? t.conditions : [{ kind: "manual" } as const]).map((c) => ({ ...explainCondition(c, lang), invalid: c.kind === "invalid" })),
-        files: [...new Set(t.conditions.flatMap((c) => (c.kind === "file" || c.kind === "noErrors" ? [c.path] : [])))],
+        files: taskFiles(t),
+        scaffoldable: taskFiles(t).filter(canScaffold),
+        commands: taskCommands(t.todo),
         ...viewState(stateOf.get(t.line)),
       })),
     };
   });
   return { done: tasks.filter((t) => t.checked).length, total: tasks.length, currentStep, steps };
 }
+
+const taskFiles = (t: Task) => [...new Set(t.conditions.flatMap((c) => (c.kind === "file" || c.kind === "noErrors" ? [c.path] : [])))];
 
 function viewState(s: TaskState | undefined): { state?: TaskView["state"] } {
   if (!s || s.status === "unknown") return {};

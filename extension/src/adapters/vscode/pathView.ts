@@ -1,4 +1,5 @@
 import { localSectionName, nextSectionNumber, sectionWord } from "../../core/sections";
+import { canScaffold, taskCommands } from "../../core/commands";
 import type { Ghost } from "../../core/prompt";
 import type { TestSnapshot } from "../../core/adopt";
 import { folderInfo } from "./projectSnapshot";
@@ -92,7 +93,8 @@ type FromWebview =
   | { type: "openMap" }
   | { type: "reviewStep"; n: number }
   | { type: "copy"; text: string }
-  | { type: "offer"; how: OfferAction };
+  | { type: "offer"; how: OfferAction }
+  | { type: "runCommand"; cmd: string };
 
 type OfferAction = "accept" | "edit" | "discard" | "diff";
 
@@ -217,6 +219,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       else if (m.type === "newPath") void this.newPath(m.kind);
       else if (m.type === "openMap") void vscode.commands.executeCommand("pebble.map.open");
       else if (m.type === "offer") void this.answerOffer(m.how);
+      else if (m.type === "runCommand") void this.runCommand(m.cmd);
       else if (m.type === "copy") {
         void vscode.env.clipboard.writeText(m.text);
         void vscode.window.setStatusBarMessage(VIEW_TEXT[this.settings().lang].testNamesCopied, 2500);
@@ -621,6 +624,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
     const target = path ?? (await vscode.window.showInputBox({ prompt: N.whichFile, value: fromTask?.files[0] ?? "src/" }));
     if (!target?.trim()) return;
     const rel = target.trim().replace(/^\.?\//, "");
+    // Uno scheletro è TypeScript/JavaScript: un manifest vuoto spunterebbe "file package.json" senza che ci sia niente.
+    if (!canScaffold(rel)) return void vscode.window.showInformationMessage(N.notScaffoldable(rel));
     const uri = vscode.Uri.joinPath(this.root, ...rel.split("/"));
     const existing = await readText(uri);
     if (existing?.trim()) {
@@ -639,6 +644,7 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       );
       await planner.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, planner.priceFor(mentor)) });
       const { text, dropped } = composeScaffold(data, rel, lang);
+      if (!text.trim()) return void vscode.window.showInformationMessage(N.emptyScaffold(rel));
       const note = dropped.length ? N.droppedParts(dropped.length) : "";
       const key = `scheletro-${Date.now()}`;
       this.present({
@@ -680,6 +686,35 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
       if (choice === undefined || this.offer !== offer) return;
       void this.answerOffer(choice === offer.acceptLabel ? "accept" : choice === N.reviewEdit ? "edit" : "discard");
     });
+  }
+
+  /**
+   * "Esegui nel terminale": lancia un comando citato in un compito, nella cartella del progetto, in un terminale visibile.
+   * Solo comandi che stanno davvero nel percorso (la pagina potrebbe mandare altro) e solo in una cartella attendibile.
+   */
+  private async runCommand(cmd: string): Promise<void> {
+    if (!this.root) return;
+    const N = NOTICE_TEXT[this.settings().lang];
+    const known = parsePath(this.text ?? "").tasks.some((t) => taskCommands(t.todo).includes(cmd));
+    if (!known) return;
+    if (!vscode.workspace.isTrusted) return void vscode.window.showWarningMessage(N.runRestricted);
+    const name = "Pebble";
+    const terminal = vscode.window.terminals.find((t) => t.name === name && t.exitStatus === undefined) ?? vscode.window.createTerminal({ name, cwd: this.root });
+    terminal.show(true);
+    // Con la shell integration si sa quando il comando finisce (npm install può metterci un minuto): lì si ricontrolla.
+    const si = terminal.shellIntegration ?? (await shellIntegrationOf(terminal, 3000));
+    if (!si) {
+      terminal.sendText(cmd, true);
+      this.schedule(false, 4000);
+      return;
+    }
+    const execution = si.executeCommand(cmd);
+    const sub = vscode.window.onDidEndTerminalShellExecution((e) => {
+      if (e.execution !== execution) return;
+      sub.dispose();
+      this.schedule(false, 300);
+    });
+    this.disposables.push(sub);
   }
 
   /** Una proposta aspetta già: la si rimostra invece di pagare un'altra chiamata. */
@@ -856,4 +891,20 @@ function html(cspSource: string, css: vscode.Uri, js: vscode.Uri): string {
 </head><body><div id="root" aria-live="polite"></div>
 <script nonce="${nonce}" src="${js}"></script>
 </body></html>`;
+}
+
+/** La shell integration di un terminale appena aperto arriva dopo un attimo; se non arriva, null. */
+function shellIntegrationOf(terminal: vscode.Terminal, timeoutMs: number): Promise<vscode.TerminalShellIntegration | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      sub.dispose();
+      resolve(null);
+    }, timeoutMs);
+    const sub = vscode.window.onDidChangeTerminalShellIntegration((e) => {
+      if (e.terminal !== terminal) return;
+      clearTimeout(timer);
+      sub.dispose();
+      resolve(e.shellIntegration);
+    });
+  });
 }
