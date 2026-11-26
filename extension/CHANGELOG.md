@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.35
+- **Pebble works in the folder you have open.** It no longer asks you to create a project folder and `cd` into it: package.json would have ended up in a subfolder, and no task could have ticked.
+- **A new "done when": `script test "vitest run"`.** It ticks when that script in package.json contains the text. Before, a task like "add the test script" was closed by `file package.json`, which already exists after `npm init`. Each task now gets a condition of its own.
+
 ## 0.7.34
 - **No need to know model names by heart.** In the settings page each ghost's model is a menu with the models of its provider: the known Claude models plus those your account sees, your OpenAI account's models, the models installed on your local server. *Other…* still lets you type a name. Changing a ghost's provider clears its model, since the old name belongs to another list.
 - The local server's model list loads by itself, without pressing *Refresh*.
