@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="134" viewBox="-12 -12 124 134">
+  <!-- Fantasmino assist, happy: generato da ghost-happy.svg (scripts/ghost-tints.mjs). -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#bfe8cc"/></linearGradient>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <path d="M50 6C74 6 88 25 88 50V94Q82 106 75 98Q69 90 63 98Q56 106 50 98Q44 90 37 98Q31 106 25 98Q18 90 12 96V50C12 25 26 6 50 6Z" fill="#5fe08f" opacity=".55" filter="url(#g)"/>
+  <path d="M50 6C74 6 88 25 88 50V94Q82 106 75 98Q69 90 63 98Q56 106 50 98Q44 90 37 98Q31 106 25 98Q18 90 12 96V50C12 25 26 6 50 6Z" fill="url(#b)" stroke="#5fa877" stroke-opacity=".7" stroke-width="2"/>
+  <ellipse cx="35" cy="25" rx="10" ry="5.5" fill="#ffffff" opacity=".75" transform="rotate(-28 35 25)"/>
+  <path d="M32 53Q39 43 46 53M54 53Q61 43 68 53" stroke="#263042" stroke-width="3.8" stroke-linecap="round" fill="none"/><ellipse cx="29" cy="62" rx="5.5" ry="3.2" fill="#ff9fb6" opacity=".6"/><ellipse cx="71" cy="62" rx="5.5" ry="3.2" fill="#ff9fb6" opacity=".6"/><path d="M44 63Q50 70 56 63" stroke="#263042" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+</svg>

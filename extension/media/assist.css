@@ -5,8 +5,9 @@
   --fg: var(--vscode-foreground, #d6dae1);
   --muted: var(--vscode-descriptionForeground, #8b929e);
   --line: color-mix(in srgb, var(--fg) 14%, var(--bg));
-  --mentor: #e3b25c;
-  --mentor-ink: #2a1f08;
+  /* Il Suggeritore ⌥P è verde, come il suo fantasmino nel banner. */
+  --mentor: #8fd19e;
+  --mentor-ink: #10241a;
   --err: #f07178;
   --blue: #82aaff;
   --purple: #c792ea;
@@ -14,7 +15,7 @@
   --ui: var(--vscode-font-family, system-ui, sans-serif);
   --mono: var(--vscode-editor-font-family, ui-monospace, Menlo, monospace);
 }
-body.vscode-light { --mentor: #a86f12; --mentor-ink: #ffffff; --err: #c4383f; --blue: #2f5fbf; --purple: #7a3fb0; --green: #2f7a3b; }
+body.vscode-light { --mentor: #2f7a3b; --mentor-ink: #ffffff; --err: #c4383f; --blue: #2f5fbf; --purple: #7a3fb0; --green: #2f7a3b; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--ui); font-size: 13.5px; line-height: 1.55; }
 button { font: inherit; color: inherit; }

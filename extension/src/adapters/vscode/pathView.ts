@@ -260,8 +260,8 @@ export class PathView implements vscode.WebviewViewProvider, vscode.Disposable {
   private post(): void {
     const view = this.view;
     if (!this.model || !view) return;
-    // I fantasmini del Mentor (media/ghost-*.svg), come indirizzi che la webview può caricare.
-    const ghost = (mood: string) => view.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    // Il fantasmino Roadmap, pesca come nel banner (media/ghost-*-roadmap.svg): il Percorso è casa sua.
+    const ghost = (mood: string) => view.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}-roadmap.svg`)).toString();
     const ghosts = { neutral: ghost("neutral"), happy: ghost("happy"), worried: ghost("worried") };
     void view.webview.postMessage({ type: "model", model: { ...this.model, ghosts } });
   }

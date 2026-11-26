@@ -244,7 +244,7 @@ export class GitPanel implements vscode.Disposable {
     const T = this.T;
     const ghost = (name: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `${name}.svg`)).toString();
     const r = this.read;
-    const base = { type: "state", T, ghosts: { git: ghost("ghost-git"), thinking: ghost("ghost-thinking"), worried: ghost("ghost-worried") } };
+    const base = { type: "state", T, ghosts: { git: ghost("ghost-git"), thinking: ghost("ghost-thinking-git"), worried: ghost("ghost-worried-git") } };
     if (!r) return void webview.postMessage({ ...base, loading: true });
     if (!r.ok) return void webview.postMessage({ ...base, problem: T[r.reason === "untrusted" ? "notTrusted" : r.reason === "noGit" ? "noGit" : "noRepo"] });
     const s: GitState = r.state;

@@ -69,7 +69,8 @@ export class MapPanel {
     if (!this.panel) return;
     const data = await this.load();
     const webview = this.panel.webview;
-    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    // Sulla mappa accompagna il fantasmino Roadmap, pesca.
+    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}-roadmap.svg`)).toString();
     void webview.postMessage({ type: "model", model: data.model, T: MAP_TEXT[this.lang()], ghosts: { neutral: ghost("neutral"), happy: ghost("happy") } });
   }
 

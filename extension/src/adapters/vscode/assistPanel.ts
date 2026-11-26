@@ -319,7 +319,8 @@ export class AssistPanel implements vscode.Disposable {
       similar: T.tabSimilar,
       ladder: s.selection ? T.tabLadderSelection : T.tabLadderFile(s.red),
     };
-    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}.svg`)).toString();
+    // Il Suggeritore ⌥P è verde; la scala di aiuto è del Mentor, azzurro (#20).
+    const ghost = (mood: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", `ghost-${mood}${s.active === "ladder" ? "" : "-assist"}.svg`)).toString();
     const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === s.uri.toString());
     // Nella webview passano solo dati: i testi con parametri diventano modelli con {segnaposto}.
     const W = {
