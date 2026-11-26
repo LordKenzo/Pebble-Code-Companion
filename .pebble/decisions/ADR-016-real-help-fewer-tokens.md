@@ -16,8 +16,9 @@ Decision:
   - next: a model per ghost with the recommended effort, work done without the model wherever the answer is deterministic (git state, tests, compiler errors), minimal context, answer caps per mode, and answers cached on disk by file content.
 - **Ghosts and modes:**
   - **Roadmap**: INIT, ADOPT, PLAN_STEP, NEXT, SCAFFOLD;
-  - **Mentor**: CHAT, REVIEW, TESTS, NEW_FILE;
-  - **⌥P helper**: ASSIST, HELP.
+  - **Mentor**: CHAT, REVIEW, TESTS, NEW_FILE, and HELP (the help ladder, moved here on 2026-11-26: in the evals a cheap model breaks its rules);
+  - **⌥P helper**: ASSIST (the panel's tabs).
+- **A model per ghost** (roadmap #20, 0.7.28): each ghost can use its own provider, model and effort, falling back to the default. The settings page shows the current model with the estimated cost of a typical call, and the recommendation from the evals: Roadmap a strong model at high effort, Mentor a mid, low-cost one at medium effort, the ⌥P helper a cheap or local one at low effort.
 Alternatives ruled out:
 - **Code only at entry and junior, and only as the last rung** (proposed earlier the same day): still holds back help from mid and senior, against the first goal.
 - **Keeping one prompt and relying on provider caching**: the cache lasts minutes, and free or local models often have none.

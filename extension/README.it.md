@@ -48,6 +48,9 @@ Il codice va al provider che scegli; con `local` non esce dal computer. I modell
 
 **Per progetto e per linguaggio.** Il livello si tiene per progetto, sul tuo computer, e ogni linguaggio può avere il suo: senior in TypeScript, entry in C#. Pebble usa il livello del file su cui lavori; nei piani tiene conto di tutti. Si imposta dalla pagina impostazioni o con **Pebble: Imposta il livello (progetto o linguaggio)**.
 
+## Un modello per fantasmino
+Il lavoro di Pebble è diviso tra tre fantasmini: **Roadmap** (piani, adozione, prossimo passo, file preparati), **Mentor** (chat, review, test, file nuovi, scala di aiuto) e il **Suggeritore ⌥P** (le schede del pannello di aiuto). Nella pagina impostazioni ognuno può usare provider, modello e sforzo suoi; vuoto vuol dire il default. Accanto a ciascuno Pebble mostra il costo stimato di una chiamata tipica e il consiglio delle valutazioni: un modello forte per la Roadmap, uno medio a basso costo per il Mentor, uno economico o locale per il Suggeritore.
+
 `pebble.training` (spento di default): Pebble non scrive la logica del progetto, anche se glielo chiedi; la scala di aiuto si ferma alla riga esatta.
 
 ## Spesa

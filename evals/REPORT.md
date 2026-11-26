@@ -261,3 +261,20 @@ The rest of the cases didn't change behaviour. The automatic check flags 01 (a f
 |---|---|---|
 | 47 CHAT, C# at entry and TypeScript at senior in one answer | ✅ | The C# method is complete (`decimal`, `foreach`, `Math.Round` with `AwayFromZero`), every term explained in plain words, three tests with values, a closing question. The TypeScript type is four lines with two terse notes (camelCase from System.Text.Json; `decimal` → `number`, so totals stay on the backend or travel as strings). Nothing in the TypeScript part is explained at entry depth |
 | 43 CHAT code at entry (rerun) | ✅ | This time it returns a result with an outcome (`ok` / `avviso`) as ADR-004 asks, and the test traces 84 kg → 82.5 kg correctly |
+
+## 2026-11-26 · a model per ghost, roadmap #20 (`runs/2026-11-26_1353`, `runs/2026-11-26_1354`)
+
+The same cases on cheaper models, to back the recommendations in the settings page with data.
+
+| Ghost · model | Cases | Result | Cost per call |
+|---|---|---|---|
+| Roadmap · Sonnet | 20, 29, 30, 34, 36 | ✅ all five. 30 also notices that `Infinity` slips through the input check; 34 reads the red test on arrival correctly | about $0.065 (Opus: $0.07–0.13) |
+| Mentor · Sonnet | 05, 06, 07, 09, 13, 31, 43, 44, 47 | ✅ all nine, code on request included (43 keeps the below-bar warning as a result, 47 keeps the two levels apart) | about $0.039 |
+| Mentor · Haiku | 05, 06, 07, 09, 13, 43 | ⚠️ reviews and the training refusal hold; at entry, 43 forgets the below-bar case (ADR-004) and returns plates for a negative remainder | about $0.002 |
+| ⌥P tabs · Haiku | 38, 39, 40, 41, 42 | ✅ tips, explain and similar hold; ⚠️ 41's pseudocode steps are long sentences, not one short line each | about $0.002 |
+| Help ladder · Haiku | 15, 16, 23, 28, 45 | ❌ 15 reveals the cause at rung 1 and adds a Concept line; 16 traces the 70 kg test wrongly; 23 asks a question instead of "Prima sistemiamo il file"; 28 replies in Italian with a rung instead of **Answer · right** | about $0.002 |
+
+Decisions:
+- **The help ladder moves to the Mentor**: its rules are the most protocol-heavy, and a cheap model breaks them.
+- **The ⌥P helper keeps the tabs**, where a cheap model holds.
+- **Recommended**: Roadmap a strong model at high effort, and Sonnet was enough. Mentor a mid, low-cost model at medium effort (Sonnet). ⌥P helper a cheap or local model at low effort (Haiku).

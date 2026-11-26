@@ -48,6 +48,9 @@ Your code is sent to the provider you choose; with `local` it never leaves your 
 
 **Per project and per language.** The level is kept per project, on your computer, and each language can have its own: senior in TypeScript, entry in C#. Pebble uses the level of the file you're working on; plans take all of them into account. Set it from the settings page or **Pebble: Set the level (project or language)**.
 
+## A model per ghost
+Pebble's work is split among three ghosts: **Roadmap** (plans, adoption, next step, prepared files), **Mentor** (chat, reviews, tests, new files, the help ladder) and the **⌥P helper** (the tabs of the help panel). In the settings page each one can use its own provider, model and effort; empty means the default. Next to each one Pebble shows the estimated cost of a typical call and the recommendation from the evals: a strong model for Roadmap, a mid, low-cost one for the Mentor, a cheap or local one for the ⌥P helper.
+
 `pebble.training` (off by default): Pebble doesn't write your project's logic, even if you ask; the help ladder stops at the exact line.
 
 ## Spending
