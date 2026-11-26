@@ -55,6 +55,7 @@ export function activate(context: vscode.ExtensionContext): void {
       localBaseUrl: c.get("local.baseUrl", "http://localhost:11434/v1"),
       localModel: c.get("local.model", ""),
       lang: lang(),
+      training: c.get("training", false),
     };
   };
 
@@ -105,6 +106,7 @@ export function activate(context: vscode.ExtensionContext): void {
       return {
         ...s,
         experienceLevel: level(),
+        training: config().get("training", false),
         monthlyBudgetUsd: c.get<number>("monthlyBudgetUsd", 0),
         prices: c.get<Record<string, Price>>("prices", {}),
         keys,
@@ -228,6 +230,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     helpContext: (path) => pathView.helpContext(path),
     lang,
+    training: () => config().get("training", false),
     note: (event) => diary.append(event),
   });
 

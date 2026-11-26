@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { appendToDiary, parseDiary, stepNumber, taskEvents, testEvents } from "../src/core/diary";
+import { appendToDiary, formatEvent, parseDiary, stepNumber, taskEvents, testEvents } from "../src/core/diary";
 import { parsePath } from "../src/core/path";
 
 const at = (h: number, m: number) => new Date(2026, 10, 24, h, m);
@@ -60,4 +60,9 @@ test("eventi delle caselle e chiusura del passo", () => {
     { kind: "stepClosed", done: 2, total: 2 },
   ]);
   assert.deepEqual(taskEvents(tasks, [{ status: "open", reason: "x" }, undefined]), []);
+});
+
+test("il codice scritto da Pebble su richiesta finisce nel diario (ADR-016)", () => {
+  assert.equal(formatEvent({ kind: "code", where: "src/plates.ts:20" }, "it"), "codice scritto da Pebble su richiesta: src/plates.ts:20");
+  assert.equal(formatEvent({ kind: "code", where: "src/plates.ts:20" }, "en"), "code written by Pebble on request: src/plates.ts:20");
 });

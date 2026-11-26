@@ -298,6 +298,11 @@
           "default": "mid",
           "description": "%config.experienceLevel%"
         },
+        "pebble.training": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.training%"
+        },
         "pebble.provider": {
           "type": "string",
           "enum": [

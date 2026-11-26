@@ -13,6 +13,7 @@ export interface SettingsState {
   localBaseUrl: string;
   localModel: string;
   experienceLevel: string;
+  training: boolean;
   monthlyBudgetUsd: number;
   prices: Record<string, Price>;
   keys: Record<ProviderId, boolean>;
@@ -166,6 +167,8 @@ function html(csp: string, lang: Lang): string {
   .muted{color:var(--vscode-descriptionForeground)}
   .prices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .prices label{font-size:12px;color:var(--vscode-descriptionForeground);display:flex;flex-direction:column;gap:2px}
+  .check{display:flex;gap:8px;align-items:center;margin:6px 0}
+  h3{font-size:13px;margin:16px 0 4px}
   .spend{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
   .spend strong{font-size:20px;font-variant-numeric:tabular-nums}
   [hidden]{display:none!important}
@@ -244,6 +247,9 @@ function html(csp: string, lang: Lang): string {
     ${LEVELS.map((l) => `<label class="choice"><input type="radio" name="level" value="${l}"><b>${levels[l][0]}</b><span>${levels[l][1]}</span></label>`).join("")}
   </div>
   <p class="muted">${T.levelNote}</p>
+  <h3>${T.trainingTitle}</h3>
+  <label class="check"><input type="checkbox" id="training" name="training"> ${T.trainingLabel}</label>
+  <p class="muted">${T.trainingHelp}</p>
 </section>
 
 <section>
@@ -293,6 +299,7 @@ function html(csp: string, lang: Lang): string {
   function render() {
     document.querySelectorAll('input[name=provider]').forEach((r) => (r.checked = r.value === S.provider));
     document.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === S.experienceLevel));
+    $("training").checked = !!S.training;
     document.querySelectorAll('input[name=language]').forEach((r) => (r.checked = r.value === S.language));
     document.querySelectorAll('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== S.provider));
     fillSelect($("anthropicModelSelect"), ANTHROPIC_MODELS, S.anthropicModel, "");
@@ -339,6 +346,7 @@ function html(csp: string, lang: Lang): string {
     const t = e.target;
     if (t.name === "provider") { S.provider = t.value; render(); set("provider", t.value); $("checkResult").hidden = true; }
     else if (t.name === "level") set("experienceLevel", t.value);
+    else if (t.name === "training") set("training", t.checked);
     else if (t.name === "language") set("language", t.value);
     else if (t.id === "localModelSelect") { if (t.value) set("local.model", t.value); }
     else if (t.dataset.modelFor) {

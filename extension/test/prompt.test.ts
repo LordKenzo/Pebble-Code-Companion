@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ghostOfMode, modeOf, promptForMode, splitPrompt, withModePrompts } from "../src/core/prompt";
+import { ghostOfMode, modeOf, promptForMode, splitPrompt, withModePrompts, withTraining } from "../src/core/prompt";
 import type { MentorModel } from "../src/core/ports";
 
 const FULL = [
@@ -82,4 +82,21 @@ test("withModePrompts manda il prompt della modalità e la segna sui token", asy
   const b = await m.chat(FULL, "una domanda senza modalità");
   assert.equal(b.usage.mode, undefined);
   assert.equal(seen[1], FULL);
+});
+
+test("in allenamento ogni messaggio porta TRAINING: yes, una volta sola", async () => {
+  assert.equal(withTraining("MODE: CHAT", false), "MODE: CHAT");
+  assert.equal(withTraining("MODE: CHAT", true), "MODE: CHAT\nTRAINING: yes");
+  assert.equal(withTraining("MODE: CHAT\nTRAINING: yes", true), "MODE: CHAT\nTRAINING: yes");
+  const sent: string[] = [];
+  const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 };
+  const inner: MentorModel = {
+    provider: "fake", model: "m",
+    generate: async (_s, m) => { sent.push(m); return { data: {} as never, usage }; },
+    chat: async (_s, m) => { sent.push(m); return { text: "", usage }; },
+    check: async () => {}, listModels: async () => [],
+  };
+  await withModePrompts(inner, { training: true }).chat(FULL, "MODE: CHAT");
+  await withModePrompts(inner).generate(FULL, "MODE: REVIEW", {} as never, "r");
+  assert.deepEqual(sent, ["MODE: CHAT\nTRAINING: yes", "MODE: REVIEW"]);
 });

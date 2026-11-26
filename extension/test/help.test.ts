@@ -41,6 +41,7 @@ test("risposta, perché e approfondimento hanno le loro righe", () => {
   assert.match(reply, /<reply>\nil while salta l'uguaglianza\n<\/reply>/);
   assert.match(buildHelpMessage({ ...base, ask: { kind: "why", rung: 2 } }), /RUNG: 2\nWHY: yes/);
   assert.match(buildHelpMessage({ ...base, ask: { kind: "deep", rung: 1 } }), /DEEP_DIVE: yes/);
+  assert.match(buildHelpMessage({ ...base, ask: { kind: "code", rung: 4 } }), /RUNG: 4\nCODE: yes/);
 });
 
 test("senza compito e senza test il messaggio resta valido", () => {

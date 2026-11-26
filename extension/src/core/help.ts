@@ -21,7 +21,9 @@ export type HelpAsk =
   | { kind: "rung"; rung: Rung }
   | { kind: "reply"; rung: Rung; text: string }
   | { kind: "why"; rung: Rung }
-  | { kind: "deep"; rung: Rung };
+  | { kind: "deep"; rung: Rung }
+  /** *Mostrami il codice* (ADR-016): il codice corretto per il caso, nella forma del livello. */
+  | { kind: "code"; rung: Rung };
 
 export interface HelpTask {
   title: string;
@@ -77,7 +79,7 @@ export function buildHelpMessage(req: HelpRequest): string {
   const { ask } = req;
   const head = ["MODE: HELP", `LEVEL: ${req.level}`];
   if (ask.kind === "rung") head.push(`RUNG: ${ask.rung}`);
-  else head.push(`RUNG: ${ask.rung}`, ask.kind === "why" ? "WHY: yes" : ask.kind === "deep" ? "DEEP_DIVE: yes" : "");
+  else head.push(`RUNG: ${ask.rung}`, ask.kind === "why" ? "WHY: yes" : ask.kind === "deep" ? "DEEP_DIVE: yes" : ask.kind === "code" ? "CODE: yes" : "");
 
   const task = req.task
     ? block("task", [req.task.title, req.task.todo && `fare: ${req.task.todo}`, req.task.signature && `firma: ${req.task.signature}`, ...req.task.when.map((w) => `fatto quando: ${w}`)].filter(Boolean).join("\n"))

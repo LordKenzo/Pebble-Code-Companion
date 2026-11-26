@@ -16,6 +16,8 @@ export interface ProviderSettings {
   localModel: string;
   /** Lingua dei messaggi d'errore (ADR-012). */
   lang?: Lang;
+  /** Allenamento (ADR-016): ogni messaggio porta la riga TRAINING: yes. */
+  training?: boolean;
 }
 
 export const PROVIDER_LABEL: Record<ProviderId, string> = {
@@ -26,7 +28,7 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
 
 /** Sceglie l'adapter in base alle impostazioni (ADR-005). */
 export function createMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {
-  return withModePrompts(createProviderMentor(s, apiKey));
+  return withModePrompts(createProviderMentor(s, apiKey), { training: !!s.training });
 }
 
 function createProviderMentor(s: ProviderSettings, apiKey: string | undefined): MentorModel {

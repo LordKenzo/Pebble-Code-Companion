@@ -21,6 +21,8 @@ export interface AssistDeps {
   record(entry: { provider: string; model: string; usage: Usage; costUsd: number | null }): Promise<void>;
   helpContext(filePath: string): { task?: HelpTask; tests?: (TestResult & { detail?: string })[] };
   lang(): Lang;
+  /** Allenamento (ADR-016): niente *Mostrami il codice*. */
+  training(): boolean;
   note?(event: DiaryEvent): void;
 }
 
@@ -52,7 +54,7 @@ type FromView =
   | { type: "retry" }
   | { type: "insert" }
   | { type: "copy" }
-  | { type: "ladder"; action: "up" | "why" | "deep" | "close" | "reply"; text?: string };
+  | { type: "ladder"; action: "up" | "why" | "deep" | "code" | "close" | "reply"; text?: string };
 
 export class AssistPanel implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
@@ -162,6 +164,7 @@ export class AssistPanel implements vscode.Disposable {
       }
       if (m.action === "why") return this.ladder({ kind: "why", rung: this.s.ladder.rung });
       if (m.action === "deep") return this.ladder({ kind: "deep", rung: this.s.ladder.rung });
+      if (m.action === "code" && !this.deps.training()) return this.ladder({ kind: "code", rung: this.s.ladder.rung });
     }
   }
 
@@ -239,11 +242,13 @@ export class AssistPanel implements vscode.Disposable {
       const mentor = await this.deps.mentor();
       const { text, usage } = await mentor.chat(await this.deps.systemPrompt(), message);
       await this.deps.record({ provider: mentor.provider, model: mentor.model, usage, costUsd: estimateCost(usage, this.deps.priceFor(mentor)) });
-      const { body, concept } = parseHelpAnswer(stripLongCode(text, this.deps.lang()).text);
+      // Il codice chiesto con *Mostrami il codice* passa; il resto della scala resta filtrato (ADR-016).
+      const { body, concept } = parseHelpAnswer(ask.kind === "code" ? text : stripLongCode(text, this.deps.lang()).text);
       if (concept && !s.ladder.concepts.includes(concept)) s.ladder.concepts.push(concept);
       s.ladder.history.push(historyLine(body));
       s.ladder.turns.push({ who: "pebble", html: renderMarkdown(body), ...(concept && { concept }) });
-      if (ask.kind !== "reply") {
+      if (ask.kind === "code") this.deps.note?.({ kind: "code", where: `${s.path}:${s.line}` });
+      else if (ask.kind !== "reply") {
         const fix = problems.some((p) => p.severity === "errore");
         const rung = ask.kind === "why" ? "why" : ask.kind === "deep" ? "deep" : fix ? "fix" : ask.rung;
         this.deps.note?.({ kind: "help", file: s.path, line: s.line, rung, ...(concept && { concept }) });
@@ -312,7 +317,7 @@ export class AssistPanel implements vscode.Disposable {
       tabs: s.tabs.map((id) => ({ id, label: label[id], active: id === s.active, ladder: id === "ladder" })),
       active: s.active,
       result: s.active === "ladder" ? null : s.results.get(s.active) ?? null,
-      ladder: { rung: s.ladder.rung, busy: s.ladder.busy, turns: s.ladder.turns },
+      ladder: { rung: s.ladder.rung, busy: s.ladder.busy, turns: s.ladder.turns, code: !this.deps.training() },
       stale: !!open && open.version !== s.version,
     });
   }

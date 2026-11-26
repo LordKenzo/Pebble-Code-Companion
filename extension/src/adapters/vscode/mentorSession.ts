@@ -372,7 +372,11 @@ export class MentorSession {
   ): Promise<void> {
     const { data, usage } = await mentor.generate(system, msg, TextAnswer, "answer");
     const cost = await this.account(mentor, usage);
-    const clean = stripLongCode(data.answer, this.deps.lang()).text;
+    // ADR-016: il codice chiesto passa; il filtro resta solo in allenamento. Il diario segna il codice dato da Pebble.
+    const filtered = stripLongCode(data.answer, this.deps.lang());
+    const training = this.deps.setting("training", false);
+    const clean = training ? filtered.text : data.answer;
+    if (!training && filtered.removed > 0) this.deps.note?.({ kind: "code", where: file ?? label });
     this.history.push({ role: "pebble", text: clean });
 
     const actions: ChatAction[] = [];

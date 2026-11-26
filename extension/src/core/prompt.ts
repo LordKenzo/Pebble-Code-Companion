@@ -84,22 +84,28 @@ export function ghostOfMode(mode: string | null | undefined): Ghost | null {
   return (mode && GHOST_OF_MODE[mode]) || null;
 }
 
+/** Aggiunge la riga TRAINING: yes al messaggio quando lo sviluppatore ha scelto di allenarsi (ADR-016). */
+export function withTraining(message: string, training: boolean): string {
+  return training && !/^TRAINING:/m.test(message) ? `${message}\nTRAINING: yes` : message;
+}
+
 /**
  * Avvolge un modello: a ogni richiesta manda solo la parte di prompt della modalità scritta nel messaggio
- * e segna quella modalità sui token restituiti. Chi chiama non cambia.
+ * e segna quella modalità sui token restituiti; in allenamento aggiunge la riga TRAINING. Chi chiama non cambia.
  */
-export function withModePrompts(inner: MentorModel): MentorModel {
+export function withModePrompts(inner: MentorModel, opts: { training?: boolean } = {}): MentorModel {
+  const t = (message: string) => withTraining(message, !!opts.training);
   return {
     provider: inner.provider,
     model: inner.model,
     async generate(system, message, schema, name) {
       const mode = modeOf(message);
-      const res = await inner.generate(promptForMode(system, mode), message, schema, name);
+      const res = await inner.generate(promptForMode(system, mode), t(message), schema, name);
       return { ...res, usage: { ...res.usage, ...(mode && { mode }) } };
     },
     async chat(system, message) {
       const mode = modeOf(message);
-      const res = await inner.chat(promptForMode(system, mode), message);
+      const res = await inner.chat(promptForMode(system, mode), t(message));
       return { ...res, usage: { ...res.usage, ...(mode && { mode }) } };
     },
     check: () => inner.check(),

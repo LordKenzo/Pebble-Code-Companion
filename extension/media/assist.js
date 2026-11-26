@@ -78,6 +78,7 @@
     const actions = L.busy ? "" : `
       <div class="actions">
         ${L.rung < 4 ? `<button type="button" class="btn ghostbtn" data-ladder="up">${esc(T.more)}</button>` : ""}
+        ${L.code && L.turns.length ? `<button type="button" class="btn ghostbtn" data-ladder="code">${esc(T.showCode)}</button>` : ""}
         <button type="button" class="btn ghostbtn" data-ladder="why">${esc(T.why)}</button>
         <button type="button" class="btn ghostbtn" data-ladder="deep">${esc(T.deep)}</button>
         <button type="button" class="btn ghostbtn" data-ladder="close">${esc(T.close)}</button>

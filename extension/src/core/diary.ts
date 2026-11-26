@@ -16,6 +16,8 @@ export type DiaryEvent =
   | { kind: "taskReopened"; title: string }
   | { kind: "help"; file: string; line: number; rung: number | "why" | "deep" | "fix"; concept?: string }
   | { kind: "review"; file: string; notes: number }
+  /** Codice scritto da Pebble su richiesta (ADR-016): la rilettura del passo mostra cosa è tuo e cosa no. */
+  | { kind: "code"; where: string }
   | { kind: "stepClosed"; done: number; total: number };
 
 export interface DiaryStep {
@@ -39,6 +41,7 @@ export function formatEvent(e: DiaryEvent, lang: Lang = "it"): string {
       return T.help(`${e.file}:${e.line}`, rung, e.concept);
     }
     case "review": return T.review(e.file, e.notes);
+    case "code": return T.code(e.where);
     case "stepClosed": return T.stepClosed(e.done, e.total);
   }
 }
