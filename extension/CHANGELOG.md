@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.36
+- **Pebble looks at the folder before starting.** A manifest or code at its root (package.json, pyproject.toml, go.mod, Cargo.toml, pom.xml, a .csproj or .sln, Gemfile, Package.swift…) means an existing project: *Adopt the project*, as before. Projects inside its subfolders and nothing at the root, like `~/dev`, means a folder of projects: Pebble offers to create a new folder for the new project or to open one of those it found, instead of proposing to adopt everything. A folder with a few files but no code gets the same offer as a link.
+- **Create a new folder**: Pebble suggests a name from the bootstrap's title, creates the folder, moves `bootstrap.md` into it if it exists, and opens it. From then on the open folder is the project's root, as the tasks expect.
+
 ## 0.7.35
 - **Pebble works in the folder you have open.** It no longer asks you to create a project folder and `cd` into it: package.json would have ended up in a subfolder, and no task could have ticked.
 - **A new "done when": `script test "vitest run"`.** It ticks when that script in package.json contains the text. Before, a task like "add the test script" was closed by `file package.json`, which already exists after `npm init`. Each task now gets a condition of its own.
