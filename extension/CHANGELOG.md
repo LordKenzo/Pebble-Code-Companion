@@ -2,6 +2,11 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.39
+- **▶ Run in the terminal.** A task that cites a command (`npm init -y`, `npm install -D …`, `swift package init …`, `mvn archetype:generate …`, `cargo init`, `go mod init …`, `dotnet new …`) shows a button with that command: it runs in a visible "Pebble" terminal, in the project folder, and the path checks again when it ends. Only commands written in the path, never `rm`, `mv`, `cd`, `mkdir` or anything chained with `&&` or pipes, and only in a trusted folder.
+- **Prepare the file only where it makes sense.** It composes TypeScript/JavaScript skeletons, so it no longer appears for manifests and configuration (`package.json`, `Package.swift`, `pom.xml`, `tsconfig.json`…): before, it created an empty package.json and the task ticked with nothing inside. An empty skeleton is never proposed.
+- Prompt v2.1: every command in backticks, complete and non-interactive; manifests are made by running their command.
+
 ## 0.7.38
 - **Closing the notification no longer loses a proposal.** A planned step, a short path or a file skeleton stays at the top of the Path panel, with *Accept*, *See the changes*, *Review and edit* and *Discard*, until you choose. Before, closing the notification threw the proposal away and getting it back meant paying for the call again. While a proposal waits, *Prepare step N* doesn't call the model: Pebble shows the waiting proposal instead.
 - Accepting starts from the path as it is at that moment, so edits made while the proposal waited are kept. A skeleton is not written if the file got code in the meantime.
