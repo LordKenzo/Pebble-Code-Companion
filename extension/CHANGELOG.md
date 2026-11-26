@@ -2,6 +2,9 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.33
+- **Each ghost has its colour, as in the banner.** The Mentor stays azure in the chat. The Roadmap ghost is peach in the Path panel and on the map. The ⌥P helper is green, with a green accent in its section, and the help ladder stays the Mentor's azure. Git is lilac in every mood.
+
 ## 0.7.32
 - **⌥P and Git live in Pebble's sidebar**, as sections next to Path and Mentor, instead of an extra editor column: the code keeps a single column and you switch by opening and closing sections. ⌥P keeps the cursor in the editor; *Got it* hides the section. The Git section appears when a rebase or merge needs you.
 
