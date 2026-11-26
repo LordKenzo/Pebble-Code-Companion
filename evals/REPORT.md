@@ -307,3 +307,14 @@ In VS Code, with the local model `qwen3-coder:30b`, *Explain the conflict* on tw
 | 49 two tests in a merge, entry, English (rerun) | ✅ | ✅ |
 
 The same trial showed two more things, fixed in the panel. Resolved files were unsaved, so the disk still had the markers and `git add` would have recorded them: the panel now says so and offers *Save*. In an untrusted folder the status bar item now appears from the files in `.git`, without running git.
+
+## 2026-11-26 · Progetto Uno, a project made up for the trial: step 1 fixed, prompt v1.9 (cases 52, 20, 29, `runs/2026-11-26_2134`)
+
+The developer wrote a bootstrap from scratch (a small database of customers who call, with search by tag and product). The plan was good: a sensible stack chosen and explained at entry level, five anchored ADRs, eight small steps and one real question (are tags about the customer or the call?). Step 1 had two defects that block a real session:
+- **`mkdir progetto-uno` and `cd progetto-uno`.** Pebble is already in the project's folder, so package.json would land in a subfolder and no task could tick. The prompt now says the editor's folder is the project root: no project folder to create, no `cd`.
+- **Two tasks closed by `file package.json`.** "Add the test script" would tick as soon as `npm init` ran. New condition `script name "text"` (`script test "vitest run"`), evaluated on package.json's scripts; the prompt also says no two tasks share a condition.
+
+| Case | Result | Notes |
+|---|---|---|
+| 52 step 1 of a new project | ✅ | No mkdir/cd. One condition per task: `file package.json`, `dipendenza typescript vitest @types/node`, `file tsconfig.json`, `script test "vitest run"`, `test "progetto pronto"`, `a mano` |
+| 20, 29 (regressions) | ✅ | Same shape as before, no shared conditions |
