@@ -2,6 +2,10 @@
 
 Pebble is in **beta** (pre-release). Versions with an odd minor number (0.7.x) are pre-releases.
 
+## 0.7.25
+- **Fewer tokens per call** (ADR-016): each request sends only the part of Pebble's instructions its mode needs, about half the system prompt. In the evals that is 37% fewer input tokens per call, with the same answers.
+- **Spending by ghost**: the spending page also shows what Roadmap, Mentor and the ⌥P helper cost, mode by mode.
+
 ## 0.7.24
 - **⌥P, the help panel** (ADR-015): a short menu, then a panel beside the code, and what you select decides the help. Nothing selected: suggestions on the file, what to study, pseudocode for what is missing (insertable as comments). Code selected: an explanation line by line, what to study, similar examples on a different case. The help ladder stays as one more entry when tests are red. The depth follows your level. The balloon under the line is retired.
 - The settings gear sits with the other icons of the Path panel.

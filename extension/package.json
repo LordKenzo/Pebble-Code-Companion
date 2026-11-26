@@ -2,7 +2,7 @@
   "name": "pebble-code-companion",
   "displayName": "Pebble · Code Path Companion",
   "description": "%description%",
-  "version": "0.7.24",
+  "version": "0.7.25",
   "publisher": "lofrance",
   "preview": true,
   "license": "MIT",
